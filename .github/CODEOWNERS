@@ -1,0 +1,28 @@
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repository
+*                   @dhirajnavghare
+
+# Core Expo Router Navigation & Screens
+/app/               @dhirajnavghare
+
+# Astronomical Ephemeris & Vedic Calculation Engines
+/src/core/          @dhirajnavghare
+
+# Reusable UI & Themed Components
+/components/        @dhirajnavghare
+
+# Design Tokens & Theme Palettes
+/constants/         @dhirajnavghare
+
+# Static Assets, Icons & Typography
+/assets/            @dhirajnavghare
+
+# Repository, Build & Expo Configurations
+/.github/           @dhirajnavghare
+/app.json           @dhirajnavghare
+/package.json       @dhirajnavghare
+/tsconfig.json      @dhirajnavghare
+/LICENSE            @dhirajnavghare
+/README.md          @dhirajnavghare
+/AGENTS.md          @dhirajnavghare
