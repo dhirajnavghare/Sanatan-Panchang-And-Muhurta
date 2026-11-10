@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Linking, Modal } from 'react-native';
-import { Text, View } from '@/components/Themed';
+import { StyleSheet, ScrollView, TouchableOpacity, Linking, Modal, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { TEMPLES_DATABASE } from '@/src/core/temples/data';
@@ -11,6 +10,7 @@ import { VRAT_KATHAS_DATABASE, VratKathaRecord } from '@/src/core/vrat-katha/dat
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle } from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
+import { Palette, Radius, Spacing } from '@/constants/Colors';
 
 type MoreSection = 'temples' | 'devatas' | 'vrat_katha';
 
@@ -605,24 +605,30 @@ export default function MoreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8f8fa',
   },
   content: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.dockClearance,
   },
   settingsCard: {
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e4e4e7',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardHeader: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#18181b',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   settingRow: {
     flexDirection: 'row',
@@ -635,7 +641,7 @@ const styles = StyleSheet.create({
   },
   settingTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#18181b',
   },
   settingDesc: {
@@ -646,16 +652,16 @@ const styles = StyleSheet.create({
   toggleGroup: {
     flexDirection: 'row',
     backgroundColor: '#f4f4f5',
-    borderRadius: 8,
+    borderRadius: Radius.md,
     padding: 3,
   },
   toggleBtn: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: Radius.sm,
   },
   toggleBtnActive: {
-    backgroundColor: '#d97706',
+    backgroundColor: '#18181b',
   },
   toggleText: {
     fontSize: 12,
@@ -664,27 +670,28 @@ const styles = StyleSheet.create({
   },
   toggleTextActive: {
     color: '#ffffff',
+    fontWeight: '700',
   },
   featureSwitcher: {
     flexDirection: 'row',
     backgroundColor: '#f4f4f5',
-    borderRadius: 14,
+    borderRadius: Radius.lg,
     padding: 4,
-    marginBottom: 16,
+    marginBottom: Spacing.md,
     gap: 4,
   },
   featureTab: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: Radius.md,
   },
   featureTabActive: {
     backgroundColor: '#ffffff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
-    shadowRadius: 2,
+    shadowRadius: 3,
     elevation: 2,
   },
   featureTabText: {
@@ -693,49 +700,49 @@ const styles = StyleSheet.create({
     color: '#71717a',
   },
   featureTabTextActive: {
-    color: '#d97706',
-    fontWeight: 'bold',
+    color: '#18181b',
+    fontWeight: '800',
   },
   sectionContainer: {
-    marginBottom: 20,
+    marginBottom: Spacing.xl,
     backgroundColor: 'transparent',
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#18181b',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   circuitRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: Spacing.md,
     backgroundColor: 'transparent',
   },
   horizontalScroll: {
-    marginBottom: 14,
+    marginBottom: Spacing.md,
   },
   circuitPill: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#f4f4f5',
+    borderRadius: Radius.xl,
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e4e4e7',
     marginRight: 8,
   },
   circuitPillActive: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#d97706',
+    backgroundColor: '#18181b',
+    borderColor: '#18181b',
   },
   circuitText: {
     fontSize: 12,
     color: '#71717a',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   circuitTextActive: {
-    color: '#d97706',
-    fontWeight: 'bold',
+    color: '#ffffff',
+    fontWeight: '700',
   },
   card: {
     backgroundColor: '#ffffff',

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
-import { Text, View } from '@/components/Themed';
+import { StyleSheet, ScrollView, TouchableOpacity, FlatList, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MUHURTA_CATEGORIES } from '@/src/core/muhurta-finder/categories';
 import { findMuhurtas } from '@/src/core/muhurta-finder/calculator';
@@ -9,6 +8,7 @@ import { PRESET_CITIES } from '@/src/core/panchang';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle } from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
+import { Palette, Radius, Spacing } from '@/constants/Colors';
 
 export default function MuhurtaScreen() {
   const { language } = useLanguage();
@@ -19,6 +19,7 @@ export default function MuhurtaScreen() {
   const [suitabilityFilter, setSuitabilityFilter] = useState<'All' | 'Good' | 'Optimal'>('Good');
   const [evaluations, setEvaluations] = useState<MuhurtaDayEvaluation[]>([]);
   const [isCalculating, setIsCalculating] = useState(true);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
   // Defer heavy astrological search off the critical render path
   useEffect(() => {
@@ -65,30 +66,38 @@ export default function MuhurtaScreen() {
     setSuitabilityFilter(s);
   };
 
+  const toggleExpand = (dateStr: string) => {
+    setExpandedDate((prev) => (prev === dateStr ? null : dateStr));
+  };
+
   const activeCategoryMeta = useMemo(() => {
     return MUHURTA_CATEGORIES.find((c) => c.id === selectedCategory) || MUHURTA_CATEGORIES[0];
   }, [selectedCategory]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Category Horizontal Scroll */}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Category Horizontal Pill Selector */}
       <View style={styles.categoryContainer}>
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
           data={MUHURTA_CATEGORIES}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: 2 }}
           renderItem={({ item }) => {
             const isSelected = item.id === selectedCategory;
             return (
               <TouchableOpacity
                 style={[styles.categoryPill, isSelected && styles.categoryPillSelected]}
                 onPress={() => handleCategorySelect(item.id)}
+                activeOpacity={0.8}
               >
                 <Text style={styles.categoryIcon}>{item.icon}</Text>
-                <Text
-                  style={[styles.categoryText, isSelected && styles.categoryTextSelected]}
-                >
+                <Text style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>
                   {isHi ? item.titleDevanagari : item.title}
                 </Text>
               </TouchableOpacity>
@@ -97,14 +106,35 @@ export default function MuhurtaScreen() {
         />
       </View>
 
-      {/* Filter Row: Horizon & Quality */}
-      <View style={styles.filterRow}>
-        <View style={styles.segmentedGroup}>
+      {/* Active Category Shastric Reference Callout Banner */}
+      <View style={styles.categoryBanner}>
+        <View style={styles.bannerHeader}>
+          <Text style={styles.bannerTitle}>
+            {isHi ? activeCategoryMeta.titleDevanagari : activeCategoryMeta.title}
+          </Text>
+          <View style={styles.cityBadge}>
+            <Ionicons name="location-sharp" size={11} color={Palette.primary} />
+            <Text style={styles.cityBadgeText}>{PRESET_CITIES[0].name}</Text>
+          </View>
+        </View>
+        <Text style={styles.bannerDesc}>{activeCategoryMeta.description}</Text>
+        <View style={styles.scriptureBadge}>
+          <Text style={styles.scriptureBadgeText}>
+            📜 {activeCategoryMeta.traditionalReference}
+          </Text>
+        </View>
+      </View>
+
+      {/* Modern Filter Strip: Horizon & Quality */}
+      <View style={styles.filterSection}>
+        {/* Horizon Filter (30 / 60 / 90 Days) */}
+        <View style={styles.segmentedFilter}>
           {([30, 60, 90] as const).map((d) => (
             <TouchableOpacity
               key={d}
               style={[styles.segmentBtn, daysCount === d && styles.segmentBtnActive]}
               onPress={() => handleDaysSelect(d)}
+              activeOpacity={0.8}
             >
               <Text style={[styles.segmentText, daysCount === d && styles.segmentTextActive]}>
                 {d} {isHi ? 'दिन' : 'Days'}
@@ -113,15 +143,17 @@ export default function MuhurtaScreen() {
           ))}
         </View>
 
-        <View style={styles.segmentedGroup}>
+        {/* Quality Filter (Good / Optimal) */}
+        <View style={styles.segmentedFilter}>
           {(['Good', 'Optimal'] as const).map((s) => (
             <TouchableOpacity
               key={s}
               style={[styles.segmentBtn, suitabilityFilter === s && styles.segmentBtnActive]}
               onPress={() => handleSuitabilitySelect(s)}
+              activeOpacity={0.8}
             >
               <Text style={[styles.segmentText, suitabilityFilter === s && styles.segmentTextActive]}>
-                {s === 'Optimal' ? (isHi ? 'श्रेष्ठ' : 'Optimal') : (isHi ? 'उत्तम' : 'Good')}
+                {s === 'Optimal' ? (isHi ? '🌟 श्रेष्ठ' : '🌟 Optimal') : (isHi ? '✨ उत्तम' : '✨ Good')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -133,113 +165,176 @@ export default function MuhurtaScreen() {
           message={
             isHi
               ? 'शास्त्रसम्मत शुभ मुहूर्त की खगोलीय गणना जारी है...'
-              : 'Calculating Auspicious Muhurtas...'
+              : 'Calculating Astrological Muhurtas...'
           }
         />
       ) : (
         <>
+          {/* Results Summary Bar */}
+          <View style={styles.resultsSummaryBar}>
+            <Text style={styles.resultsCountText}>
+              {isHi
+                ? `कुल ${evaluations.length} अनुकूल मुहूर्त उपलब्ध (${daysCount} दिनों में)`
+                : `Found ${evaluations.length} auspicious dates across ${daysCount} days`}
+            </Text>
+          </View>
 
-      {/* Results Header */}
-      <View style={styles.resultsHeader}>
-        <Text style={styles.resultsCount}>
-          {isHi
-            ? `कुल ${evaluations.length} शुभ मुहूर्त उपलब्ध (${daysCount} दिनों में)`
-            : `Found ${evaluations.length} auspicious dates across ${daysCount} days`}
-        </Text>
-        <Text style={styles.scriptureRef}>
-          📜 {activeCategoryMeta.traditionalReference}
-        </Text>
-      </View>
-
-      {/* Evaluations List */}
-      {evaluations.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>🔍</Text>
-          <Text style={styles.emptyText}>
-            {isHi
-              ? 'इस अवधि में कोई अनुकूल मुहूर्त नहीं मिला। अवधि बढ़ाएं।'
-              : 'No matching muhurta in this window. Try increasing days.'}
-          </Text>
-        </View>
-      ) : (
-        evaluations.map((item) => {
-          const isOptimal = item.suitability === 'Optimal';
-          return (
-            <View key={item.isoDate} style={styles.evalCard}>
-              <View style={styles.evalHeader}>
-                <View style={{ backgroundColor: 'transparent' }}>
-                  <Text style={styles.evalDate}>{item.isoDate}</Text>
-                  <Text style={styles.evalLimbSummary}>
-                    {isHi
-                      ? `${item.panchangSummary.tithiNameDevanagari || item.panchangSummary.tithiName} • ${item.panchangSummary.nakshatraNameDevanagari || item.panchangSummary.nakshatraName}`
-                      : `${item.panchangSummary.tithiName} • ${item.panchangSummary.nakshatraName}`}
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.suitabilityBadge,
-                    isOptimal ? styles.badgeOptimal : styles.badgeGood,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.suitabilityText,
-                      isOptimal ? styles.suitTextOptimal : styles.suitTextGood,
-                    ]}
-                  >
-                    {isOptimal
-                      ? (isHi ? 'अति उत्तम' : 'Optimal')
-                      : (isHi ? 'उत्तम' : 'Good')}{' '}
-                    ({item.score}%)
-                  </Text>
-                </View>
+          {/* Evaluations List */}
+          {evaluations.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIconCircle}>
+                <Text style={{ fontSize: 32 }}>🔍</Text>
               </View>
-
-              {/* Special Yogas */}
-              {item.specialYogas.length > 0 && (
-                <View style={styles.yogasRow}>
-                  {item.specialYogas.map((y) => (
-                    <View key={y} style={styles.yogaPill}>
-                      <Text style={styles.yogaText}>✨ {cleanBilingualTitle(y, isHi)}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Best Time Windows */}
-              {item.windows.length > 0 && (
-                <View style={styles.windowsContainer}>
-                  <Text style={styles.windowLabel}>
-                    {isHi ? 'सर्वोत्तम समय खिड़की:' : 'Recommended Time Window:'}
-                  </Text>
-                  {item.windows.slice(0, 2).map((w, idx) => (
-                    <View key={idx} style={styles.windowItem}>
-                      <Text style={styles.windowName}>
-                        {cleanBilingualTitle(w.label, isHi)}
-                      </Text>
-                      <Text style={styles.windowTime}>
-                        {new Date(w.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
-                        {new Date(w.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Avoidances if any */}
-              {item.avoidWindows.length > 0 && (
-                <View style={styles.avoidContainer}>
-                  <Text style={styles.avoidLabel}>{isHi ? 'वर्जित काल:' : 'Avoid:'}</Text>
-                  <Text style={styles.avoidText}>
-                    {item.avoidWindows.map((a) => cleanBilingualTitle(a.label, isHi)).join(', ')}
-                  </Text>
-                </View>
-              )}
+              <Text style={styles.emptyTitle}>
+                {isHi ? 'कोई अनुकूल मुहूर्त नहीं मिला' : 'No matching muhurta found'}
+              </Text>
+              <Text style={styles.emptySubtitle}>
+                {isHi
+                  ? 'चयनित मापदंडों में कोई निर्दोष काल उपलब्ध नहीं है। कृपया समय सीमा को ९० दिन करें अथवा उत्तम गुणवत्ता चुनें।'
+                  : 'No dates match the strict astrological criteria in this period. Try expanding to 90 days.'}
+              </Text>
+              <TouchableOpacity
+                style={styles.expandDaysBtn}
+                onPress={() => {
+                  setDaysCount(90);
+                  setSuitabilityFilter('Good');
+                }}
+              >
+                <Text style={styles.expandDaysBtnText}>
+                  {isHi ? '९० दिनों में खोजें' : 'Search Next 90 Days'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          );
-        })
-      )}
+          ) : (
+            evaluations.map((item) => {
+              const isOptimal = item.suitability === 'Optimal';
+              const isExpanded = expandedDate === item.isoDate;
+
+              return (
+                <View key={item.isoDate} style={styles.evalCard}>
+                  {/* Top Date & Score Row */}
+                  <View style={styles.evalHeaderRow}>
+                    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+                      <Text style={styles.evalDateText}>{item.isoDate}</Text>
+                      <Text style={styles.evalLimbSummaryText}>
+                        {isHi
+                          ? `${item.panchangSummary.tithiNameDevanagari || item.panchangSummary.tithiName} • ${item.panchangSummary.nakshatraNameDevanagari || item.panchangSummary.nakshatraName}`
+                          : `${item.panchangSummary.tithiName} • ${item.panchangSummary.nakshatraName}`}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.suitabilityBadge,
+                        isOptimal ? styles.badgeOptimal : styles.badgeGood,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.suitabilityBadgeText,
+                          isOptimal ? styles.suitTextOptimal : styles.suitTextGood,
+                        ]}
+                      >
+                        {isOptimal ? (isHi ? 'अति उत्तम' : 'Optimal') : (isHi ? 'उत्तम' : 'Good')}{' '}
+                        {item.score}%
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Special Auspicious Yogas Chips */}
+                  {item.specialYogas.length > 0 && (
+                    <View style={styles.yogasRow}>
+                      {item.specialYogas.map((y) => (
+                        <View key={y} style={styles.yogaPill}>
+                          <Text style={styles.yogaPillText}>✨ {cleanBilingualTitle(y, isHi)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Recommended Time Windows (Highlighted Box) */}
+                  {item.windows.length > 0 && (
+                    <View style={styles.windowsContainer}>
+                      <View style={styles.windowHeaderRow}>
+                        <Ionicons name="time" size={13} color="#047857" />
+                        <Text style={styles.windowLabel}>
+                          {isHi ? 'सर्वोत्तम समय खिड़की:' : 'Recommended Time Window:'}
+                        </Text>
+                      </View>
+                      {item.windows.slice(0, 2).map((w, idx) => (
+                        <View key={idx} style={styles.windowItem}>
+                          <Text style={styles.windowName}>
+                            {cleanBilingualTitle(w.label, isHi)}
+                          </Text>
+                          <Text style={styles.windowTime}>
+                            {new Date(w.startTime).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}{' '}
+                            -{' '}
+                            {new Date(w.endTime).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Avoid Windows Warning Callout */}
+                  {item.avoidWindows.length > 0 && (
+                    <View style={styles.avoidContainer}>
+                      <Ionicons name="alert-circle" size={13} color="#b91c1c" />
+                      <Text style={styles.avoidLabel}>{isHi ? 'त्याज्य काल:' : 'Avoid:'}</Text>
+                      <Text style={styles.avoidText} numberOfLines={1}>
+                        {item.avoidWindows
+                          .map((a) => cleanBilingualTitle(a.label, isHi))
+                          .join(', ')}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Expand/Collapse Shastric Details */}
+                  <TouchableOpacity
+                    style={styles.expandToggleRow}
+                    onPress={() => toggleExpand(item.isoDate)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.expandToggleText}>
+                      {isExpanded
+                        ? isHi ? 'संक्षिप्त करें' : 'Hide astrological breakdown'
+                        : isHi ? 'विस्तृत शास्त्रीय विश्लेषण देखें' : 'View astrological breakdown'}
+                    </Text>
+                    <Ionicons
+                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      color={Palette.primary}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Collapsible Details */}
+                  {isExpanded && (
+                    <View style={styles.expandedDetailsBox}>
+                      <Text style={styles.expandedDetailTitle}>
+                        {isHi ? 'पञ्चाङ्ग शुद्धि:' : 'Panchang Purity:'}
+                      </Text>
+                      <Text style={styles.expandedDetailText}>
+                        • {isHi ? 'तिथि:' : 'Tithi:'} {item.panchangSummary.tithiName} (
+                        {item.panchangSummary.tithiPaksha} Paksha)
+                      </Text>
+                      <Text style={styles.expandedDetailText}>
+                        • {isHi ? 'नक्षत्र:' : 'Nakshatra:'} {item.panchangSummary.nakshatraName}
+                      </Text>
+                      <Text style={styles.expandedDetailText}>
+                        • {isHi ? 'सौर वार:' : 'Weekday:'} {item.panchangSummary.varaName}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })
+          )}
         </>
       )}
     </ScrollView>
@@ -249,63 +344,140 @@ export default function MuhurtaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8f8fa',
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.dockClearance,
   },
+
+  // Category Selector
   categoryContainer: {
-    marginBottom: 12,
+    marginBottom: Spacing.md,
     backgroundColor: 'transparent',
   },
   categoryPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f4f4f5',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    marginRight: 8,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: Radius.xl,
+    marginRight: Spacing.sm,
     gap: 6,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   categoryPillSelected: {
-    backgroundColor: '#d97706',
+    backgroundColor: '#18181b',
+    borderColor: '#18181b',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
   categoryIcon: {
     fontSize: 16,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#3f3f46',
   },
   categoryTextSelected: {
     color: '#ffffff',
   },
-  filterRow: {
+
+  // Active Category Banner
+  categoryBanner: {
+    backgroundColor: '#fffbeb',
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Palette.primaryBorder,
+    marginBottom: Spacing.md,
+  },
+  bannerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 4,
     backgroundColor: 'transparent',
-    gap: 8,
   },
-  segmentedGroup: {
+  bannerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+  cityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Palette.primaryBorder,
+  },
+  cityBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#92400e',
+  },
+  bannerDesc: {
+    fontSize: 12,
+    color: '#78350f',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  scriptureBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.sm,
+  },
+  scriptureBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+
+  // Filters Strip
+  filterSection: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+    backgroundColor: 'transparent',
+  },
+  segmentedFilter: {
+    flex: 1,
     flexDirection: 'row',
     backgroundColor: '#f4f4f5',
-    borderRadius: 12,
+    borderRadius: Radius.md,
     padding: 3,
   },
   segmentBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 7,
+    borderRadius: Radius.sm,
   },
   segmentBtnActive: {
     backgroundColor: '#ffffff',
     shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
     shadowRadius: 2,
-    elevation: 1,
+    elevation: 2,
   },
   segmentText: {
     fontSize: 11,
@@ -314,147 +486,237 @@ const styles = StyleSheet.create({
   },
   segmentTextActive: {
     color: '#18181b',
+    fontWeight: '700',
   },
-  resultsHeader: {
-    marginBottom: 12,
+
+  // Results Summary Bar
+  resultsSummaryBar: {
+    marginBottom: Spacing.md,
     backgroundColor: 'transparent',
   },
-  resultsCount: {
+  resultsCountText: {
     fontSize: 13,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#18181b',
   },
-  scriptureRef: {
-    fontSize: 10,
-    color: '#a1a1aa',
-    marginTop: 2,
-  },
+
+  // Empty State
   emptyCard: {
-    backgroundColor: '#f4f4f5',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-  },
-  emptyIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: '#71717a',
-    textAlign: 'center',
-  },
-  evalCard: {
     backgroundColor: '#ffffff',
+    borderRadius: Radius.xl,
+    padding: Spacing.xxl,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e4e4e7',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
+    marginTop: Spacing.md,
   },
-  evalHeader: {
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#f4f4f5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#18181b',
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: '#71717a',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: Spacing.lg,
+  },
+  expandDaysBtn: {
+    backgroundColor: Palette.primary,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
+  },
+  expandDaysBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Evaluation Cards
+  evalCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  evalHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     backgroundColor: 'transparent',
     marginBottom: 8,
   },
-  evalDate: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  evalDateText: {
+    fontSize: 15,
+    fontWeight: '800',
     color: '#18181b',
   },
-  evalLimbSummary: {
-    fontSize: 11,
+  evalLimbSummaryText: {
+    fontSize: 12,
     color: '#71717a',
     marginTop: 2,
+    fontWeight: '500',
   },
   suitabilityBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: Radius.md,
   },
   badgeOptimal: {
     backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
   },
   badgeGood: {
-    backgroundColor: '#eef2ff',
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
   },
-  suitabilityText: {
-    fontSize: 10,
-    fontWeight: 'bold',
+  suitabilityBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   suitTextOptimal: {
-    color: '#059669',
+    color: '#047857',
   },
   suitTextGood: {
-    color: '#4f46e5',
+    color: '#b45309',
   },
+
+  // Yogas Row
   yogasRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginVertical: 6,
+    marginBottom: 10,
     backgroundColor: 'transparent',
   },
   yogaPill: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#fffbeb',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#fef3c7',
   },
-  yogaText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#92400e',
+  yogaPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#b45309',
   },
+
+  // Windows
   windowsContainer: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#f4f4f5',
+    backgroundColor: '#f0fdf4',
+    borderRadius: Radius.md,
+    padding: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  windowHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 6,
     backgroundColor: 'transparent',
   },
   windowLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#71717a',
-    textTransform: 'uppercase',
-    marginBottom: 4,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
   },
   windowItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 3,
+    alignItems: 'center',
     backgroundColor: 'transparent',
+    paddingVertical: 2,
   },
   windowName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#18181b',
+    color: '#15803d',
   },
   windowTime: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#d97706',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#166534',
   },
+
+  // Avoid Container
   avoidContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 6,
-    padding: 6,
     backgroundColor: '#fef2f2',
-    borderRadius: 8,
+    padding: 8,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    marginBottom: 8,
   },
   avoidLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#dc2626',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#b91c1c',
   },
   avoidText: {
     fontSize: 11,
     color: '#991b1b',
     flex: 1,
+  },
+
+  // Expand Toggle
+  expandToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#f4f4f5',
+    backgroundColor: 'transparent',
+  },
+  expandToggleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Palette.primary,
+  },
+  expandedDetailsBox: {
+    marginTop: 8,
+    backgroundColor: '#f8fafc',
+    padding: 10,
+    borderRadius: Radius.sm,
+    gap: 3,
+  },
+  expandedDetailTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 2,
+  },
+  expandedDetailText: {
+    fontSize: 11,
+    color: '#64748b',
   },
 });

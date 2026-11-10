@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-import { Text, View } from '@/components/Themed';
+import { StyleSheet, ScrollView, TextInput, TouchableOpacity, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getFestivalTimeline } from '@/src/core/festivals/timeline';
-import { FestivalCategory, FestivalTimelineItem, FestivalTimelineResponse } from '@/src/core/festivals/types';
+import {
+  FestivalCategory,
+  FestivalTimelineItem,
+  FestivalTimelineResponse,
+} from '@/src/core/festivals/types';
 import { PRESET_CITIES } from '@/src/core/panchang';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle, cleanPujaMuhurta } from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
+import { Palette, Radius, Spacing } from '@/constants/Colors';
 
 export default function FestivalsScreen() {
   const { language } = useLanguage();
@@ -16,6 +20,7 @@ export default function FestivalsScreen() {
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<FestivalCategory>('all');
+  const [expandedFestivalId, setExpandedFestivalId] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<FestivalTimelineResponse>(() => ({
     year: new Date().getFullYear(),
     totalCount: 0,
@@ -63,24 +68,35 @@ export default function FestivalsScreen() {
     setSelectedCategory(c);
   };
 
-  const categories: { id: FestivalCategory; labelEn: string; labelHi: string }[] = [
-    { id: 'all', labelEn: 'All', labelHi: 'सभी' },
-    { id: 'major', labelEn: 'Major Festivals', labelHi: 'प्रमुख पर्व' },
-    { id: 'vrat', labelEn: 'Ekadashi Vrats', labelHi: 'एकादशी व्रत' },
-    { id: 'jayanti', labelEn: 'Jayantis', labelHi: 'जयन्तियां' },
-    { id: 'sankranti', labelEn: 'Sankranti', labelHi: 'संक्रान्ति' },
+  const toggleExpand = (id: string) => {
+    setExpandedFestivalId((prev) => (prev === id ? null : id));
+  };
+
+  const categories: { id: FestivalCategory; labelEn: string; labelHi: string; icon: string }[] = [
+    { id: 'all', labelEn: 'All', labelHi: 'सभी', icon: '✨' },
+    { id: 'major', labelEn: 'Major Festivals', labelHi: 'प्रमुख पर्व', icon: '🪔' },
+    { id: 'vrat', labelEn: 'Vrats', labelHi: 'व्रत', icon: '🌾' },
+    { id: 'jayanti', labelEn: 'Jayantis', labelHi: 'जयन्तियां', icon: '🕉️' },
+    { id: 'sankranti', labelEn: 'Sankranti', labelHi: 'संक्रान्ति', icon: '☀️' },
   ];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Year & Search Bar */}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* Top Year Switcher & Search Bar */}
       <View style={styles.topControls}>
+        {/* Year Pills */}
         <View style={styles.yearRow}>
           {[2025, 2026, 2027].map((y) => (
             <TouchableOpacity
               key={y}
               style={[styles.yearBtn, year === y && styles.yearBtnActive]}
               onPress={() => handleYearSelect(y)}
+              activeOpacity={0.8}
             >
               <Text style={[styles.yearText, year === y && styles.yearTextActive]}>
                 {y}
@@ -89,9 +105,9 @@ export default function FestivalsScreen() {
           ))}
         </View>
 
-        {/* Search Input */}
+        {/* Search Bar */}
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={16} color="#a1a1aa" />
+          <Ionicons name="search" size={18} color="#71717a" />
           <TextInput
             style={styles.searchInput}
             value={searchQuery}
@@ -100,10 +116,11 @@ export default function FestivalsScreen() {
               isHi ? 'पर्व, व्रत अथवा देवता खोजें...' : 'Search festivals, fasts, deities...'
             }
             placeholderTextColor="#a1a1aa"
+            returnKeyType="search"
           />
           {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={16} color="#a1a1aa" />
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={18} color="#71717a" />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -111,7 +128,7 @@ export default function FestivalsScreen() {
 
       {/* Category Filter Chips */}
       <View style={styles.categoryChips}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 2 }}>
           {categories.map((c) => {
             const isSelected = selectedCategory === c.id;
             return (
@@ -119,7 +136,9 @@ export default function FestivalsScreen() {
                 key={c.id}
                 style={[styles.chip, isSelected && styles.chipActive]}
                 onPress={() => handleCategorySelect(c.id)}
+                activeOpacity={0.8}
               >
+                <Text style={styles.chipIcon}>{c.icon}</Text>
                 <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
                   {isHi ? c.labelHi : c.labelEn}
                 </Text>
@@ -139,7 +158,7 @@ export default function FestivalsScreen() {
         />
       ) : (
         <>
-          {/* Summary */}
+          {/* Summary Row */}
           <View style={styles.summaryBar}>
             <Text style={styles.summaryText}>
               {isHi
@@ -148,71 +167,177 @@ export default function FestivalsScreen() {
             </Text>
           </View>
 
-          {/* Timeline List */}
-      {timeline.festivals.map((f: FestivalTimelineItem) => {
-        const isToday = f.timeStatus === 'today';
-        const isTomorrow = f.daysRemaining === 1;
-
-        return (
-          <View key={f.id} style={[styles.festCard, isToday && styles.festCardToday]}>
-            <View style={styles.festHeader}>
-              <View style={{ backgroundColor: 'transparent', flex: 1 }}>
-                <Text style={styles.festDate}>
-                  📅 {isHi ? (f.formattedDateDevanagari || f.formattedDate) : f.formattedDate}
-                </Text>
-                <Text style={styles.festMasa}>
-                  {isHi
-                    ? `${f.masaNameDevanagari || f.masaName} • ${f.paksha === 'Shukla' ? 'शुक्ल' : 'कृष्ण'} ${f.tithiNameDevanagari || f.tithiName}`
-                    : `${f.masaName} • ${f.paksha} ${f.tithiName}`}
-                </Text>
+          {/* Empty Search State */}
+          {timeline.festivals.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIconCircle}>
+                <Text style={{ fontSize: 30 }}>🔍</Text>
               </View>
+              <Text style={styles.emptyTitle}>
+                {isHi ? 'कोई पर्व नहीं मिला' : 'No festivals found'}
+              </Text>
+              <Text style={styles.emptyDesc}>
+                {searchQuery
+                  ? isHi
+                    ? `'${searchQuery}' से मिलता-जुलता कोई पर्व अथवा व्रत उपलब्ध नहीं है।`
+                    : `No results match '${searchQuery}'. Try another query.`
+                  : isHi
+                  ? 'चयनित श्रेणी में इस वर्ष कोई पर्व उपलब्ध नहीं है।'
+                  : 'No festivals available in this category for this year.'}
+              </Text>
+              {searchQuery ? (
+                <TouchableOpacity
+                  style={styles.clearSearchBtn}
+                  onPress={() => setSearchQuery('')}
+                >
+                  <Text style={styles.clearSearchBtnText}>
+                    {isHi ? 'खोज साफ़ करें' : 'Clear Search'}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : (
+            timeline.festivals.map((f: FestivalTimelineItem) => {
+              const isToday = f.timeStatus === 'today';
+              const isTomorrow = f.daysRemaining === 1;
+              const isExpanded = expandedFestivalId === f.id;
 
-              {f.daysRemaining >= 0 && (
+              // Parse date for prominent badge
+              const dateParts = f.date.split('-');
+              const dayNumber = dateParts[2] || '1';
+              const monthIndex = parseInt(dateParts[1] || '1', 10) - 1;
+              const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+              const monthNamesHi = ['जन', 'फ़र', 'मार्च', 'अप्रै', 'मई', 'जून', 'जुलाई', 'अग', 'सित', 'अक्टू', 'नव', 'दिस'];
+              const monthName = isHi ? monthNamesHi[monthIndex] : monthNamesEn[monthIndex];
+
+              return (
                 <View
+                  key={f.id}
                   style={[
-                    styles.countdownBadge,
-                    isToday ? styles.badgeToday : styles.badgeUpcoming,
+                    styles.festCard,
+                    isToday && styles.festCardToday,
                   ]}
                 >
-                  <Text style={styles.countdownText}>
-                    {isToday
-                      ? (isHi ? 'आज' : 'Today')
-                      : isTomorrow
-                      ? (isHi ? 'कल' : 'Tomorrow')
-                      : (isHi ? `${f.daysRemaining} दिन शेष` : `In ${f.daysRemaining} days`)}
-                  </Text>
+                  {/* Card Header & Body */}
+                  <View style={styles.festMainRow}>
+                    {/* Left Date Block */}
+                    <View style={[styles.dateBlock, isToday && styles.dateBlockToday]}>
+                      <Text style={[styles.dateDayNumber, isToday && styles.dateDayNumberToday]}>
+                        {dayNumber}
+                      </Text>
+                      <Text style={[styles.dateMonthName, isToday && styles.dateMonthNameToday]}>
+                        {monthName}
+                      </Text>
+                    </View>
+
+                    {/* Middle Info */}
+                    <View style={styles.festInfo}>
+                      <View style={styles.categoryRow}>
+                        <View style={styles.categoryBadge}>
+                          <Text style={styles.categoryBadgeText}>
+                            {f.category === 'Vrat'
+                              ? isHi ? 'व्रत' : 'Vrat'
+                              : f.category === 'Sankranti'
+                              ? isHi ? 'संक्रान्ति' : 'Sankranti'
+                              : f.category === 'Jayanti'
+                              ? isHi ? 'जयन्ती' : 'Jayanti'
+                              : isHi ? 'प्रमुख पर्व' : 'Major Festival'}
+                          </Text>
+                        </View>
+
+                        {/* Status Badge */}
+                        {isToday ? (
+                          <View style={styles.statusBadgeToday}>
+                            <Text style={styles.statusBadgeTodayText}>
+                              {isHi ? '● आज' : '● Today'}
+                            </Text>
+                          </View>
+                        ) : isTomorrow ? (
+                          <View style={styles.statusBadgeTomorrow}>
+                            <Text style={styles.statusBadgeTomorrowText}>
+                              {isHi ? 'कल' : 'Tomorrow'}
+                            </Text>
+                          </View>
+                        ) : f.daysRemaining !== null && f.daysRemaining > 0 && f.daysRemaining <= 30 ? (
+                          <View style={styles.statusBadgeUpcoming}>
+                            <Text style={styles.statusBadgeUpcomingText}>
+                              {f.daysRemaining} {isHi ? 'दिन शेष' : 'days left'}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+
+                      <Text style={styles.festNameTitle}>
+                        {isHi ? f.nameDevanagari : f.name}
+                      </Text>
+
+                      <Text style={styles.festTithiSub}>
+                        {isHi ? f.dayOfWeekDevanagari : f.dayOfWeek} • {isHi ? f.masaNameDevanagari : f.masaName} • {isHi ? f.tithiNameDevanagari : f.tithiName}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Puja Muhurta Highlight Box */}
+                  {f.pujaMuhurta ? (
+                    <View style={styles.pujaBox}>
+                      <Ionicons name="flame" size={13} color="#047857" />
+                      <Text style={styles.pujaLabel}>
+                        {isHi ? 'पूजा मुहूर्त:' : 'Puja Muhurta:'}{' '}
+                        <Text style={styles.pujaVal}>{cleanPujaMuhurta(f.pujaMuhurta, isHi)}</Text>
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {/* Expand / Collapse Details Button */}
+                  {(f.significance || (f.rituals && f.rituals.length > 0)) && (
+                    <TouchableOpacity
+                      style={styles.expandRow}
+                      onPress={() => toggleExpand(f.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.expandRowText}>
+                        {isExpanded
+                          ? isHi ? 'संक्षिप्त करें' : 'Hide details'
+                          : isHi ? 'माहात्म्य व पूजा विधि' : 'View significance & rituals'}
+                      </Text>
+                      <Ionicons
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={14}
+                        color={Palette.primary}
+                      />
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Expanded Content */}
+                  {isExpanded && (
+                    <View style={styles.expandedContentBox}>
+                      {f.significance ? (
+                        <View style={styles.significanceBox}>
+                          <Text style={styles.significanceHeading}>
+                            {isHi ? '📜 शास्त्रीय माहात्म्य:' : '📜 Scriptural Significance:'}
+                          </Text>
+                          <Text style={styles.significanceText}>{f.significance}</Text>
+                        </View>
+                      ) : null}
+
+                      {f.rituals && f.rituals.length > 0 ? (
+                        <View style={styles.rulesBox}>
+                          <Text style={styles.rulesHeading}>
+                            {isHi ? '🪔 पूजा विधान व अनुष्ठान:' : '🪔 Rituals & Worship:'}
+                          </Text>
+                          {f.rituals.map((r, rIdx) => (
+                            <Text key={rIdx} style={styles.rulesText}>
+                              • {r}
+                            </Text>
+                          ))}
+                        </View>
+                      ) : null}
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-
-            <Text style={styles.festName}>
-              {isHi ? f.nameDevanagari : f.name}
-            </Text>
-
-            {f.pujaMuhurta && (
-              <View style={styles.pujaBox}>
-                <Ionicons name="time" size={14} color="#d97706" />
-                <Text style={styles.pujaText}>
-                  {isHi ? 'पूजा मुहूर्त:' : 'Puja Muhurta:'}{' '}
-                  {cleanPujaMuhurta(f.pujaMuhurta, isHi)}
-                </Text>
-              </View>
-            )}
-
-            <Text style={styles.festSignificance} numberOfLines={2}>
-              {f.significance}
-            </Text>
-
-            {f.deity && (
-              <View style={styles.deityPill}>
-                <Text style={styles.deityText}>
-                  🙏 {isHi ? 'आराध्य:' : 'Deity:'} {cleanBilingualTitle(f.deity, isHi)}
-                </Text>
-              </View>
-            )}
-          </View>
-        );
-      })}
+              );
+            })
+          )}
         </>
       )}
     </ScrollView>
@@ -222,164 +347,364 @@ export default function FestivalsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8f8fa',
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.dockClearance,
   },
+
+  // Top Controls
   topControls: {
-    marginBottom: 12,
+    marginBottom: Spacing.md,
     backgroundColor: 'transparent',
+    gap: Spacing.sm,
   },
   yearRow: {
     flexDirection: 'row',
     backgroundColor: '#f4f4f5',
-    borderRadius: 14,
+    borderRadius: Radius.md,
     padding: 3,
-    marginBottom: 10,
   },
   yearBtn: {
     flex: 1,
     paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: Radius.sm,
   },
   yearBtnActive: {
-    backgroundColor: '#d97706',
+    backgroundColor: '#18181b',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   yearText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#71717a',
   },
   yearTextActive: {
     color: '#ffffff',
   },
+
+  // Search Bar
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f4f4f5',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
     gap: 8,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   searchInput: {
     flex: 1,
     fontSize: 13,
     color: '#18181b',
+    padding: 0,
   },
+
+  // Category Chips
   categoryChips: {
-    marginBottom: 12,
+    marginBottom: Spacing.md,
     backgroundColor: 'transparent',
   },
   chip: {
-    backgroundColor: '#f4f4f5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginRight: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 7,
+    borderRadius: Radius.xl,
+    marginRight: Spacing.sm,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
   },
   chipActive: {
-    backgroundColor: '#d97706',
+    backgroundColor: '#18181b',
+    borderColor: '#18181b',
+  },
+  chipIcon: {
+    fontSize: 13,
   },
   chipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#71717a',
+    color: '#52525b',
   },
   chipTextActive: {
     color: '#ffffff',
+    fontWeight: '700',
   },
+
+  // Summary
   summaryBar: {
-    marginBottom: 12,
+    marginBottom: Spacing.md,
     backgroundColor: 'transparent',
   },
   summaryText: {
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '600',
     color: '#71717a',
   },
-  festCard: {
+
+  // Empty Card
+  emptyCard: {
     backgroundColor: '#ffffff',
+    borderRadius: Radius.xl,
+    padding: Spacing.xxl,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e4e4e7',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
+    marginTop: Spacing.md,
+  },
+  emptyIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#f4f4f5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#18181b',
+    marginBottom: 4,
+  },
+  emptyDesc: {
+    fontSize: 12,
+    color: '#71717a',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: Spacing.lg,
+  },
+  clearSearchBtn: {
+    backgroundColor: Palette.primary,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: 10,
+    borderRadius: Radius.lg,
+  },
+  clearSearchBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Festival Card
+  festCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   festCardToday: {
-    borderColor: '#f59e0b',
-    backgroundColor: '#fffbeb',
+    borderColor: Palette.primary,
+    borderWidth: 1.5,
+    backgroundColor: '#fffdfa',
   },
-  festHeader: {
+  festMainRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    gap: Spacing.md,
     backgroundColor: 'transparent',
-    marginBottom: 6,
   },
-  festDate: {
-    fontSize: 12,
-    fontWeight: 'bold',
+
+  // Left Date Block
+  dateBlock: {
+    width: 50,
+    height: 52,
+    borderRadius: Radius.md,
+    backgroundColor: '#f4f4f5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateBlockToday: {
+    backgroundColor: Palette.primary,
+  },
+  dateDayNumber: {
+    fontSize: 18,
+    fontWeight: '800',
     color: '#18181b',
+    lineHeight: 22,
   },
-  festMasa: {
-    fontSize: 11,
+  dateDayNumberToday: {
+    color: '#ffffff',
+  },
+  dateMonthName: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#71717a',
+    textTransform: 'uppercase',
+  },
+  dateMonthNameToday: {
+    color: '#ffffff',
+  },
+
+  // Middle Info
+  festInfo: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+    backgroundColor: 'transparent',
+  },
+  categoryBadge: {
+    backgroundColor: '#f4f4f5',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
+  },
+  categoryBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#71717a',
+  },
+  statusBadgeToday: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
+  },
+  statusBadgeTodayText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#b45309',
+  },
+  statusBadgeTomorrow: {
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
+  },
+  statusBadgeTomorrowText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1d4ed8',
+  },
+  statusBadgeUpcoming: {
+    backgroundColor: '#f4f4f5',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
+  },
+  statusBadgeUpcomingText: {
+    fontSize: 10,
+    color: '#71717a',
+    fontWeight: '600',
+  },
+  festNameTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#18181b',
+    letterSpacing: -0.2,
+  },
+  festTithiSub: {
+    fontSize: 12,
     color: '#71717a',
     marginTop: 2,
   },
-  countdownBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  badgeToday: {
-    backgroundColor: '#10b981',
-  },
-  badgeUpcoming: {
-    backgroundColor: '#e0e7ff',
-  },
-  countdownText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#1e1b4b',
-  },
-  festName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#18181b',
-    marginBottom: 6,
-  },
+
+  // Puja Box
   pujaBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fef3c7',
-    padding: 8,
-    borderRadius: 10,
     gap: 6,
-    marginBottom: 6,
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
   },
-  pujaText: {
+  pujaLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#92400e',
-    flex: 1,
+    color: '#166534',
   },
-  festSignificance: {
-    fontSize: 12,
-    color: '#52525b',
-    lineHeight: 18,
-    marginBottom: 8,
+  pujaVal: {
+    fontWeight: '800',
+    color: '#15803d',
   },
-  deityPill: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#f4f4f5',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+
+  // Expand Row
+  expandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingTop: 8,
+    marginTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#f4f4f5',
+    backgroundColor: 'transparent',
   },
-  deityText: {
+  expandRowText: {
     fontSize: 11,
-    color: '#52525b',
+    fontWeight: '600',
+    color: Palette.primary,
+  },
+
+  // Expanded Content Box
+  expandedContentBox: {
+    marginTop: 8,
+    backgroundColor: '#f8fafc',
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    gap: Spacing.sm,
+  },
+  significanceBox: {
+    backgroundColor: '#ffffff',
+    padding: 8,
+    borderRadius: Radius.sm,
+  },
+  significanceHeading: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#b45309',
+    marginBottom: 2,
+  },
+  significanceText: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#475569',
+  },
+  rulesBox: {
+    backgroundColor: '#ffffff',
+    padding: 8,
+    borderRadius: Radius.sm,
+  },
+  rulesHeading: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
+    marginBottom: 2,
+  },
+  rulesText: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#475569',
   },
 });
