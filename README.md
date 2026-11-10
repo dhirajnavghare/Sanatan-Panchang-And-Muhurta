@@ -79,6 +79,8 @@ sanatan.cc.react.native/
 │       ├── prayers/       # Sacred text stotras & chalisas database
 │       ├── temples/       # 31 pilgrimage sanctuaries database
 │       ├── devatas/       # Vedic deities database
+│       ├── vrat-katha/    # Sacred fast stories, fasting rules & parana guidance
+│       ├── calendar/      # iCalendar (.ics) export generator
 │       └── i18n/          # LanguageContext, translations & formatters
 ├── constants/
 │   └── Colors.ts          # Spiritual amber/saffron and temple dark themes
@@ -88,4 +90,4 @@ sanatan.cc.react.native/
 ---
 
 ## 📜 License
-This project is dedicated to the public domain under the **Creative Commons CC0 1.0 Universal / Unlicense**.
+This project is dedicated to the public domain under the **Creative Commons CC0 1.0 Universal** legal code, fully following [sanatan.cc License](https://github.com/dhirajnavghare/sanatan.cc/blob/main/LICENSE).

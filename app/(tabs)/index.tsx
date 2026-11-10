@@ -14,15 +14,50 @@ import { Ionicons } from '@expo/vector-icons';
 import { calculatePanchang, PRESET_CITIES, GeoLocation, PanchangData } from '@/src/core/panchang';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanPlanetLord, cleanDeityName } from '@/src/core/i18n/formatters';
+import { LoadingIndicator } from '@/components/LoadingIndicator';
 
 export default function PanchangScreen() {
   const { language, calendarSystem } = useLanguage();
   const isHi = language === 'hi';
 
-  const [currentDate] = useState<Date>(() => new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [location, setLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
   const [isLocating, setIsLocating] = useState(false);
   const [isCityModalVisible, setIsCityModalVisible] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  const handlePrevDay = () => {
+    setIsCalculating(true);
+    setTimeout(() => {
+      setCurrentDate((prev) => new Date(prev.getTime() - 86400000));
+      setIsCalculating(false);
+    }, 120);
+  };
+
+  const handleNextDay = () => {
+    setIsCalculating(true);
+    setTimeout(() => {
+      setCurrentDate((prev) => new Date(prev.getTime() + 86400000));
+      setIsCalculating(false);
+    }, 120);
+  };
+
+  const handleToday = () => {
+    setIsCalculating(true);
+    setTimeout(() => {
+      setCurrentDate(new Date());
+      setIsCalculating(false);
+    }, 120);
+  };
+
+  const handleSelectCity = (city: GeoLocation) => {
+    setIsCityModalVisible(false);
+    setIsCalculating(true);
+    setTimeout(() => {
+      setLocation(city);
+      setIsCalculating(false);
+    }, 120);
+  };
 
   // 100% On-Device Offline Calculation (< 1ms execution time)
   const panchang: PanchangData = useMemo(() => {
@@ -56,6 +91,7 @@ export default function PanchangScreen() {
   const handleGpsDetect = async () => {
     try {
       setIsLocating(true);
+      setIsCalculating(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
@@ -65,6 +101,7 @@ export default function PanchangScreen() {
             : 'Location permission is required to detect coordinates for astronomical sunrise.'
         );
         setIsLocating(false);
+        setIsCalculating(false);
         return;
       }
 
@@ -80,8 +117,10 @@ export default function PanchangScreen() {
         timezone: detectedTz,
       });
       setIsLocating(false);
+      setIsCalculating(false);
     } catch {
       setIsLocating(false);
+      setIsCalculating(false);
       Alert.alert(
         isHi ? 'स्थान त्रुटि' : 'Location Error',
         isHi ? 'जीपीएस स्थान प्राप्त नहीं हो सका।' : 'Could not detect GPS location.'
@@ -120,8 +159,50 @@ export default function PanchangScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Hero Cosmic Card */}
-      <View style={styles.heroCard}>
+      {/* Date Navigation Bar */}
+      <View style={styles.dateNavBar}>
+        <TouchableOpacity
+          style={styles.dateNavBtn}
+          onPress={handlePrevDay}
+          disabled={isCalculating}
+        >
+          <Ionicons name="chevron-back" size={16} color="#d97706" />
+          <Text style={styles.dateNavBtnText}>{isHi ? 'पूर्व दिन' : 'Prev Day'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.dateNavCenter}
+          onPress={handleToday}
+          disabled={isCalculating}
+        >
+          <Ionicons name="calendar-outline" size={14} color="#d97706" />
+          <Text style={styles.dateNavCenterText}>
+            {currentDate.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.dateNavBtn}
+          onPress={handleNextDay}
+          disabled={isCalculating}
+        >
+          <Text style={styles.dateNavBtnText}>{isHi ? 'पर दिन' : 'Next Day'}</Text>
+          <Ionicons name="chevron-forward" size={16} color="#d97706" />
+        </TouchableOpacity>
+      </View>
+
+      {isCalculating ? (
+        <LoadingIndicator
+          message={isHi ? 'पञ्चाङ्ग गणना जारी है...' : 'Calculating Daily Panchang...'}
+        />
+      ) : (
+        <>
+          {/* Hero Cosmic Card */}
+          <View style={styles.heroCard}>
         <View style={styles.heroHeader}>
           <Text style={styles.heroSub}>
             {activeMasa} • {isHi ? `${panchang.tithi.current.pakshaDevanagari} पक्ष` : `${panchang.tithi.current.paksha} Paksha`}
@@ -325,6 +406,8 @@ export default function PanchangScreen() {
           </Text>
         </View>
       </View>
+        </>
+      )}
 
       {/* City Selection Modal */}
       <Modal visible={isCityModalVisible} animationType="slide" transparent>
@@ -346,10 +429,7 @@ export default function PanchangScreen() {
                     styles.cityRow,
                     item.name === location.name && styles.cityRowSelected,
                   ]}
-                  onPress={() => {
-                    setLocation(item);
-                    setIsCityModalVisible(false);
-                  }}
+                  onPress={() => handleSelectCity(item)}
                 >
                   <Text
                     style={[
@@ -416,6 +496,47 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  dateNavBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f4f4f5',
+    padding: 6,
+    borderRadius: 14,
+    marginBottom: 16,
+  },
+  dateNavBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 4,
+  },
+  dateNavBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#d97706',
+  },
+  dateNavCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  dateNavCenterText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#18181b',
   },
   heroCard: {
     backgroundColor: '#16173d',

@@ -8,6 +8,7 @@ import { MuhurtaCategoryId, MuhurtaDayEvaluation } from '@/src/core/muhurta-find
 import { PRESET_CITIES } from '@/src/core/panchang';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle } from '@/src/core/i18n/formatters';
+import { LoadingIndicator } from '@/components/LoadingIndicator';
 
 export default function MuhurtaScreen() {
   const { language } = useLanguage();
@@ -16,6 +17,34 @@ export default function MuhurtaScreen() {
   const [selectedCategory, setSelectedCategory] = useState<MuhurtaCategoryId>('griha_pravesh');
   const [daysCount, setDaysCount] = useState<30 | 60 | 90>(60);
   const [suitabilityFilter, setSuitabilityFilter] = useState<'All' | 'Good' | 'Optimal'>('Good');
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  const handleCategorySelect = (id: MuhurtaCategoryId) => {
+    if (id === selectedCategory) return;
+    setIsCalculating(true);
+    setTimeout(() => {
+      setSelectedCategory(id);
+      setIsCalculating(false);
+    }, 120);
+  };
+
+  const handleDaysSelect = (d: 30 | 60 | 90) => {
+    if (d === daysCount) return;
+    setIsCalculating(true);
+    setTimeout(() => {
+      setDaysCount(d);
+      setIsCalculating(false);
+    }, 120);
+  };
+
+  const handleSuitabilitySelect = (s: 'All' | 'Good' | 'Optimal') => {
+    if (s === suitabilityFilter) return;
+    setIsCalculating(true);
+    setTimeout(() => {
+      setSuitabilityFilter(s);
+      setIsCalculating(false);
+    }, 120);
+  };
 
   // 100% On-Device Offline Calculation (< 10ms execution time for 90 days!)
   const evaluations: MuhurtaDayEvaluation[] = useMemo(() => {
@@ -50,7 +79,7 @@ export default function MuhurtaScreen() {
             return (
               <TouchableOpacity
                 style={[styles.categoryPill, isSelected && styles.categoryPillSelected]}
-                onPress={() => setSelectedCategory(item.id)}
+                onPress={() => handleCategorySelect(item.id)}
               >
                 <Text style={styles.categoryIcon}>{item.icon}</Text>
                 <Text
@@ -71,7 +100,7 @@ export default function MuhurtaScreen() {
             <TouchableOpacity
               key={d}
               style={[styles.segmentBtn, daysCount === d && styles.segmentBtnActive]}
-              onPress={() => setDaysCount(d)}
+              onPress={() => handleDaysSelect(d)}
             >
               <Text style={[styles.segmentText, daysCount === d && styles.segmentTextActive]}>
                 {d} {isHi ? 'दिन' : 'Days'}
@@ -85,7 +114,7 @@ export default function MuhurtaScreen() {
             <TouchableOpacity
               key={s}
               style={[styles.segmentBtn, suitabilityFilter === s && styles.segmentBtnActive]}
-              onPress={() => setSuitabilityFilter(s)}
+              onPress={() => handleSuitabilitySelect(s)}
             >
               <Text style={[styles.segmentText, suitabilityFilter === s && styles.segmentTextActive]}>
                 {s === 'Optimal' ? (isHi ? 'श्रेष्ठ' : 'Optimal') : (isHi ? 'उत्तम' : 'Good')}
@@ -94,6 +123,17 @@ export default function MuhurtaScreen() {
           ))}
         </View>
       </View>
+
+      {isCalculating ? (
+        <LoadingIndicator
+          message={
+            isHi
+              ? 'शास्त्रसम्मत शुभ मुहूर्त की खगोलीय गणना जारी है...'
+              : 'Calculating Auspicious Muhurtas...'
+          }
+        />
+      ) : (
+        <>
 
       {/* Results Header */}
       <View style={styles.resultsHeader}>
@@ -195,6 +235,8 @@ export default function MuhurtaScreen() {
             </View>
           );
         })
+      )}
+        </>
       )}
     </ScrollView>
   );

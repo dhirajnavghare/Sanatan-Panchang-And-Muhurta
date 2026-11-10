@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PRAYERS_DATA } from '@/src/core/prayers/data';
 import { PrayerRecord } from '@/src/core/prayers/types';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
+import { LoadingIndicator } from '@/components/LoadingIndicator';
 
 export default function PrayersScreen() {
   const { language } = useLanguage();
@@ -13,6 +14,7 @@ export default function PrayersScreen() {
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRecord>(PRAYERS_DATA[0]);
   const [japaCount, setJapaCount] = useState<number>(0);
   const [fontSizeOffset, setFontSizeOffset] = useState<number>(0);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   const targetCount = selectedPrayer.recommendedCounts[0] || 1;
 
@@ -22,6 +24,16 @@ export default function PrayersScreen() {
 
   const handleResetJapa = () => {
     setJapaCount(0);
+  };
+
+  const handlePrayerSelect = (p: PrayerRecord) => {
+    if (p.id === selectedPrayer.id) return;
+    setIsCalculating(true);
+    setTimeout(() => {
+      setSelectedPrayer(p);
+      setJapaCount(0);
+      setIsCalculating(false);
+    }, 120);
   };
 
   return (
@@ -35,10 +47,7 @@ export default function PrayersScreen() {
               <TouchableOpacity
                 key={p.id}
                 style={[styles.prayerPill, isSelected && styles.prayerPillSelected]}
-                onPress={() => {
-                  setSelectedPrayer(p);
-                  setJapaCount(0);
-                }}
+                onPress={() => handlePrayerSelect(p)}
               >
                 <Text
                   style={[styles.prayerPillText, isSelected && styles.prayerPillTextSelected]}
@@ -51,7 +60,17 @@ export default function PrayersScreen() {
         </ScrollView>
       </View>
 
-      {/* Japa Counter Card */}
+      {isCalculating ? (
+        <LoadingIndicator
+          message={
+            isHi
+              ? 'स्तोत्र एवं पवित्र मन्त्र लोड हो रहे हैं...'
+              : 'Loading Sacred Prayer & Verses...'
+          }
+        />
+      ) : (
+        <>
+          {/* Japa Counter Card */}
       <View style={styles.japaCard}>
         <View style={styles.japaTop}>
           <View style={{ backgroundColor: 'transparent' }}>
@@ -158,6 +177,8 @@ export default function PrayersScreen() {
           {isHi ? selectedPrayer.phalaShrutiDevanagari : selectedPrayer.phalaShruti}
         </Text>
       </View>
+        </>
+      )}
     </ScrollView>
   );
 }

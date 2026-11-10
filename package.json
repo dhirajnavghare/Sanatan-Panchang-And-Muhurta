@@ -1,6 +1,7 @@
 {
   "name": "sanatan.cc.react.native",
   "version": "1.0.0",
+  "license": "CC0-1.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

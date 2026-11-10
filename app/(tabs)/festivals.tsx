@@ -7,6 +7,7 @@ import { FestivalCategory, FestivalTimelineItem } from '@/src/core/festivals/typ
 import { PRESET_CITIES } from '@/src/core/panchang';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle, cleanPujaMuhurta } from '@/src/core/i18n/formatters';
+import { LoadingIndicator } from '@/components/LoadingIndicator';
 
 export default function FestivalsScreen() {
   const { language } = useLanguage();
@@ -15,6 +16,25 @@ export default function FestivalsScreen() {
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<FestivalCategory>('all');
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  const handleYearSelect = (y: number) => {
+    if (y === year) return;
+    setIsCalculating(true);
+    setTimeout(() => {
+      setYear(y);
+      setIsCalculating(false);
+    }, 120);
+  };
+
+  const handleCategorySelect = (c: FestivalCategory) => {
+    if (c === selectedCategory) return;
+    setIsCalculating(true);
+    setTimeout(() => {
+      setSelectedCategory(c);
+      setIsCalculating(false);
+    }, 120);
+  };
 
   // 100% On-Device Offline Calculation (< 5ms)
   const timeline = useMemo(() => {
@@ -41,7 +61,7 @@ export default function FestivalsScreen() {
             <TouchableOpacity
               key={y}
               style={[styles.yearBtn, year === y && styles.yearBtnActive]}
-              onPress={() => setYear(y)}
+              onPress={() => handleYearSelect(y)}
             >
               <Text style={[styles.yearText, year === y && styles.yearTextActive]}>
                 {y}
@@ -79,7 +99,7 @@ export default function FestivalsScreen() {
               <TouchableOpacity
                 key={c.id}
                 style={[styles.chip, isSelected && styles.chipActive]}
-                onPress={() => setSelectedCategory(c.id)}
+                onPress={() => handleCategorySelect(c.id)}
               >
                 <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
                   {isHi ? c.labelHi : c.labelEn}
@@ -90,16 +110,26 @@ export default function FestivalsScreen() {
         </ScrollView>
       </View>
 
-      {/* Summary */}
-      <View style={styles.summaryBar}>
-        <Text style={styles.summaryText}>
-          {isHi
-            ? `वर्ष ${year} में कुल ${timeline.totalCount} पर्व एवं व्रत (${timeline.festivals.length} प्रदर्शित)`
-            : `Total ${timeline.totalCount} events in ${year} (${timeline.festivals.length} listed)`}
-        </Text>
-      </View>
+      {isCalculating ? (
+        <LoadingIndicator
+          message={
+            isHi
+              ? 'पर्व एवं व्रत तालिका लोड हो रही है...'
+              : 'Loading Festival Calendar...'
+          }
+        />
+      ) : (
+        <>
+          {/* Summary */}
+          <View style={styles.summaryBar}>
+            <Text style={styles.summaryText}>
+              {isHi
+                ? `वर्ष ${year} में कुल ${timeline.totalCount} पर्व एवं व्रत (${timeline.festivals.length} प्रदर्शित)`
+                : `Total ${timeline.totalCount} events in ${year} (${timeline.festivals.length} listed)`}
+            </Text>
+          </View>
 
-      {/* Timeline List */}
+          {/* Timeline List */}
       {timeline.festivals.map((f: FestivalTimelineItem) => {
         const isToday = f.timeStatus === 'today';
         const isTomorrow = f.daysRemaining === 1;
@@ -164,6 +194,8 @@ export default function FestivalsScreen() {
           </View>
         );
       })}
+        </>
+      )}
     </ScrollView>
   );
 }
