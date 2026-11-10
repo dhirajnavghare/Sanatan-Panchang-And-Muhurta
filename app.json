@@ -43,7 +43,8 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Sanatan to detect your local coordinates for precise Sunrise, Sunset, and Tithi timings."
+          "locationWhenInUsePermission": "Allow Sanatan to detect your local coordinates for precise astronomical Sunrise, Sunset, and Tithi timings.",
+          "isAndroidBackgroundLocationEnabled": false
         }
       ]
     ],
