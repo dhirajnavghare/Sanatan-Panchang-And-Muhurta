@@ -35,7 +35,8 @@ export function calculatePanchang(
   dateInput: Date | string,
   location: GeoLocation,
   ayanamsaSystem: AyanamsaSystem = 'Lahiri',
-  currentTime?: Date
+  currentTime?: Date,
+  options: { includeUpcomingFestivals?: boolean; includeFestivals?: boolean } = {}
 ): PanchangData {
   const { year, month, day, isoDate } = parseCivilDate(dateInput, location.timezone);
   const civilDateAnchor = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
@@ -128,9 +129,9 @@ export function calculatePanchang(
     currentTime
   );
 
-  // 7. Festivals & Upcoming Vrats
-  const festivals = calculateFestivals(isoDate, location);
-  const upcomingFestivals = calculateUpcomingFestivals(isoDate, location, 6);
+  // 7. Festivals & Upcoming Vrats (opt-in to keep core computation fast)
+  const festivals = options.includeFestivals ? calculateFestivals(isoDate, location) : [];
+  const upcomingFestivals = options.includeUpcomingFestivals ? calculateUpcomingFestivals(isoDate, location, 6) : [];
 
   // 8. Astronomical Details
   const sunPos = getSunPosition(sunriseJd);

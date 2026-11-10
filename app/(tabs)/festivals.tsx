@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Ionicons } from '@expo/vector-icons';
 import { getFestivalTimeline } from '@/src/core/festivals/timeline';
-import { FestivalCategory, FestivalTimelineItem } from '@/src/core/festivals/types';
+import { FestivalCategory, FestivalTimelineItem, FestivalTimelineResponse } from '@/src/core/festivals/types';
 import { PRESET_CITIES } from '@/src/core/panchang';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle, cleanPujaMuhurta } from '@/src/core/i18n/formatters';
@@ -16,33 +16,52 @@ export default function FestivalsScreen() {
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<FestivalCategory>('all');
-  const [isCalculating, setIsCalculating] = useState(false);
+  const [timeline, setTimeline] = useState<FestivalTimelineResponse>(() => ({
+    year: new Date().getFullYear(),
+    totalCount: 0,
+    location: PRESET_CITIES[0],
+    categories: [],
+    months: [],
+    festivals: [],
+  }));
+  const [isCalculating, setIsCalculating] = useState(true);
+
+  // Defer timeline generation off the critical render path
+  useEffect(() => {
+    let isMounted = true;
+    setIsCalculating(true);
+    const timer = setTimeout(() => {
+      try {
+        const res = getFestivalTimeline(
+          { year, category: selectedCategory, searchQuery },
+          PRESET_CITIES[0]
+        );
+        if (isMounted) {
+          setTimeline(res);
+          setIsCalculating(false);
+        }
+      } catch {
+        if (isMounted) {
+          setIsCalculating(false);
+        }
+      }
+    }, 40);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [year, selectedCategory, searchQuery]);
 
   const handleYearSelect = (y: number) => {
     if (y === year) return;
-    setIsCalculating(true);
-    setTimeout(() => {
-      setYear(y);
-      setIsCalculating(false);
-    }, 120);
+    setYear(y);
   };
 
   const handleCategorySelect = (c: FestivalCategory) => {
     if (c === selectedCategory) return;
-    setIsCalculating(true);
-    setTimeout(() => {
-      setSelectedCategory(c);
-      setIsCalculating(false);
-    }, 120);
+    setSelectedCategory(c);
   };
-
-  // 100% On-Device Offline Calculation (< 5ms)
-  const timeline = useMemo(() => {
-    return getFestivalTimeline(
-      { year, category: selectedCategory, searchQuery },
-      PRESET_CITIES[0]
-    );
-  }, [year, selectedCategory, searchQuery]);
 
   const categories: { id: FestivalCategory; labelEn: string; labelHi: string }[] = [
     { id: 'all', labelEn: 'All', labelHi: 'सभी' },

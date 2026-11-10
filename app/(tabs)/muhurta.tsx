@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,49 +17,53 @@ export default function MuhurtaScreen() {
   const [selectedCategory, setSelectedCategory] = useState<MuhurtaCategoryId>('griha_pravesh');
   const [daysCount, setDaysCount] = useState<30 | 60 | 90>(60);
   const [suitabilityFilter, setSuitabilityFilter] = useState<'All' | 'Good' | 'Optimal'>('Good');
-  const [isCalculating, setIsCalculating] = useState(false);
+  const [evaluations, setEvaluations] = useState<MuhurtaDayEvaluation[]>([]);
+  const [isCalculating, setIsCalculating] = useState(true);
+
+  // Defer heavy astrological search off the critical render path
+  useEffect(() => {
+    let isMounted = true;
+    setIsCalculating(true);
+    const timer = setTimeout(() => {
+      try {
+        const all = findMuhurtas(
+          { category: selectedCategory, daysCount, minimumSuitability: suitabilityFilter },
+          PRESET_CITIES[0],
+          new Date(),
+          'Lahiri'
+        );
+        if (isMounted) {
+          setEvaluations(all);
+          setIsCalculating(false);
+        }
+      } catch {
+        if (isMounted) {
+          setEvaluations([]);
+          setIsCalculating(false);
+        }
+      }
+    }, 40);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [selectedCategory, daysCount, suitabilityFilter]);
 
   const handleCategorySelect = (id: MuhurtaCategoryId) => {
     if (id === selectedCategory) return;
-    setIsCalculating(true);
-    setTimeout(() => {
-      setSelectedCategory(id);
-      setIsCalculating(false);
-    }, 120);
+    setSelectedCategory(id);
   };
 
   const handleDaysSelect = (d: 30 | 60 | 90) => {
     if (d === daysCount) return;
-    setIsCalculating(true);
-    setTimeout(() => {
-      setDaysCount(d);
-      setIsCalculating(false);
-    }, 120);
+    setDaysCount(d);
   };
 
   const handleSuitabilitySelect = (s: 'All' | 'Good' | 'Optimal') => {
     if (s === suitabilityFilter) return;
-    setIsCalculating(true);
-    setTimeout(() => {
-      setSuitabilityFilter(s);
-      setIsCalculating(false);
-    }, 120);
+    setSuitabilityFilter(s);
   };
-
-  // 100% On-Device Offline Calculation (< 10ms execution time for 90 days!)
-  const evaluations: MuhurtaDayEvaluation[] = useMemo(() => {
-    try {
-      const all = findMuhurtas(
-        { category: selectedCategory, daysCount, minimumSuitability: suitabilityFilter },
-        PRESET_CITIES[0],
-        new Date(),
-        'Lahiri'
-      );
-      return all;
-    } catch {
-      return [];
-    }
-  }, [selectedCategory, daysCount, suitabilityFilter]);
 
   const activeCategoryMeta = useMemo(() => {
     return MUHURTA_CATEGORIES.find((c) => c.id === selectedCategory) || MUHURTA_CATEGORIES[0];
