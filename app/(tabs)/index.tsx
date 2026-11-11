@@ -544,6 +544,7 @@ export default function PanchangScreen() {
               return (
                 <TouchableOpacity
                   key={index}
+                  testID={isSelected ? 'day-pill-selected' : `day-pill-${index}`}
                   style={[styles.dayPill, isSelected && styles.dayPillSelected]}
                   onPress={() => handleSelectDate(d)}
                   activeOpacity={0.8}
@@ -1329,11 +1330,13 @@ export default function PanchangScreen() {
               </ScrollView>
 
               <TouchableOpacity
-                style={styles.doneBtn}
+                testID="sadhana-save-btn"
+                style={styles.sadhanaDoneBtn}
                 onPress={() => setIsSadhanaModalVisible(false)}
+                activeOpacity={0.8}
               >
-                <Text style={styles.doneBtnText}>
-                  {isHi ? 'साधना सहेजें' : 'Save Sadhana'} ({completedHabits.length}/5)
+                <Text style={styles.sadhanaDoneBtnText}>
+                  ✓ {isHi ? 'साधना सहेजें' : 'Save Sadhana'} ({completedHabits.length}/5)
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1785,13 +1788,13 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   dayPillSelected: {
-    backgroundColor: '#18181b', // Inverted dark pill matching screenshot
-    borderColor: '#18181b',
-    shadowColor: '#18181b',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: '#b45309', // Sacred Kesariya / Amber active day pill
+    borderColor: '#92400e',
+    shadowColor: '#b45309',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   dayDot: {
     width: 5,
@@ -2157,8 +2160,8 @@ const styles = StyleSheet.create({
     borderColor: '#e4e4e7',
   },
   plannerFilterTabActive: {
-    backgroundColor: '#18181b',
-    borderColor: '#18181b',
+    backgroundColor: '#b45309',
+    borderColor: '#92400e',
   },
   plannerFilterTabText: {
     fontSize: 11,
@@ -2528,16 +2531,43 @@ const styles = StyleSheet.create({
   },
   doneBtn: {
     flex: 1,
-    backgroundColor: '#18181b',
+    minHeight: 48,
+    backgroundColor: '#b45309', // Sacred Kesariya / Amber instead of jet black
     paddingVertical: 13,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#b45309',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   doneBtnText: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
+  },
+  sadhanaDoneBtn: {
+    width: '100%',
+    minHeight: 52,
+    backgroundColor: '#047857', // Sacred emerald green matching completed habits
+    paddingVertical: 14,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    shadowColor: '#047857',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  sadhanaDoneBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 
   // Habits List in Modal

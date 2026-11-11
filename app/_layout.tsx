@@ -34,12 +34,12 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
-  // Safety fallback: ensure splash screen hides and app renders within 800ms even if fonts stall
+  // Safety fallback: allow ample time for mobile font engine before forcing ready
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsReady(true);
       SplashScreen.hideAsync().catch(() => {});
-    }, 800);
+    }, 3500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -50,7 +50,7 @@ export default function RootLayout() {
     });
   }, []);
 
-  if (!isReady && !loaded && !error) {
+  if (!loaded && !error && !isReady) {
     return null;
   }
 

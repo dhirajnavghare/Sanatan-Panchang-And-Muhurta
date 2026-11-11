@@ -263,8 +263,8 @@ export function getCurrentSpiritualPeriod(now: Date = new Date(), sunrise?: Date
   if (timeInMins < 720) { // Before 12:00 PM
     return {
       periodKey: 'pratah',
-      greetingHi: 'शुभ प्रभात, साधक',
-      greetingEn: 'Good Morning, Sadhak',
+      greetingHi: 'शुभ प्रभात',
+      greetingEn: 'Good Morning',
       focusTitleHi: 'प्रातः संध्या व सूर्य अर्घ्य',
       focusTitleEn: 'Surya Arghya & Pratah Sadhana',
       suggestedActionHi: 'ताम्बे के लोटे से सूर्य देव को अर्घ्य दें और १०८ बार गायत्री जप करें।',
