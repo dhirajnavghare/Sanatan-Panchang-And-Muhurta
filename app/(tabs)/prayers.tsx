@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Share, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PRAYERS_DATA } from '@/src/core/prayers/data';
@@ -6,34 +6,32 @@ import { PrayerRecord } from '@/src/core/prayers/types';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
+import { JapaMalaView } from '@/src/components/JapaMalaView';
+import { playTempleBell, playShankhNaad, triggerHaptic } from '@/src/services/sacredAudio';
+import { loadUserProfile, UserSacredProfile, DEFAULT_USER_PROFILE } from '@/src/services/userProfile';
 
 export default function PrayersScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
 
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRecord>(PRAYERS_DATA[0]);
-  const [japaCount, setJapaCount] = useState<number>(0);
-  const [targetCount, setTargetCount] = useState<number>(
-    selectedPrayer.recommendedCounts[0] || 1
-  );
   const [fontSizeOffset, setFontSizeOffset] = useState<number>(0);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
+
+  useEffect(() => {
+    loadUserProfile().then(setUserProfile);
+  }, []);
 
   const prayerIcons: Record<string, string> = {
-    'gayatri': '☀️',
-    'maha-mrityunjaya': '🔱',
     'hanuman-chalisa': '🚩',
-    'sankat-mochan': '🪔',
-    'shiva-tandava': '🌀',
-    'vishnu-sahasranama': '📿',
-  };
-
-  const handleIncrementJapa = () => {
-    setJapaCount((prev) => prev + 1);
-  };
-
-  const handleResetJapa = () => {
-    setJapaCount(0);
+    'shiv-tandav-stotram': '🔱',
+    'shri-suktam': '🪷',
+    'sankat-mochan-hanuman-ashtak': '🪔',
+    'aditya-hridaya-stotram': '☀️',
+    'ganesh-chalisa': '🐘',
+    'om-jai-jagdish-hare': '🐚',
+    'pratahsmarana-slokas': '🌅',
   };
 
   const handlePrayerSelect = (p: PrayerRecord) => {
@@ -41,8 +39,6 @@ export default function PrayersScreen() {
     setIsCalculating(true);
     setTimeout(() => {
       setSelectedPrayer(p);
-      setJapaCount(0);
-      setTargetCount(p.recommendedCounts[0] || 1);
       setIsCalculating(false);
     }, 100);
   };
@@ -56,8 +52,6 @@ export default function PrayersScreen() {
       // ignore
     }
   };
-
-  const progressPercent = Math.min(100, Math.round((japaCount / targetCount) * 100));
 
   return (
     <ScrollView
@@ -100,77 +94,41 @@ export default function PrayersScreen() {
         />
       ) : (
         <>
-          {/* Tactile Sacred Japa Mala Counter Card */}
-          <View style={styles.japaCard}>
-            <View style={styles.japaTopHeader}>
-              <View>
-                <Text style={styles.japaLabel}>
-                  {isHi ? '📿 दैनिक जप सङ्कल्प माला' : '📿 Sacred Japa Mala Counter'}
-                </Text>
-                <Text style={styles.japaTargetSub}>
-                  {isHi ? `लक्ष्य: ${targetCount} आवृत्ति` : `Target: ${targetCount} Chants`}
-                </Text>
-              </View>
+          {/* Sacred Temple Sound Bar */}
+          <View style={styles.soundBar}>
+            <TouchableOpacity
+              style={styles.soundBtn}
+              onPress={async () => {
+                await triggerHaptic('tap', userProfile.hapticsEnabled);
+                playTempleBell(0.7);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.soundBtnIcon}>🔔</Text>
+              <Text style={styles.soundBtnText}>{isHi ? 'मन्दिर घंटी नाद' : 'Ring Mandir Bell'}</Text>
+            </TouchableOpacity>
 
-              {/* Target Quick Selectors */}
-              <View style={styles.targetPillsRow}>
-                {[1, 11, 21, 108].map((cnt) => (
-                  <TouchableOpacity
-                    key={cnt}
-                    style={[
-                      styles.targetChip,
-                      targetCount === cnt && styles.targetChipActive,
-                    ]}
-                    onPress={() => setTargetCount(cnt)}
-                  >
-                    <Text
-                      style={[
-                        styles.targetChipText,
-                        targetCount === cnt && styles.targetChipTextActive,
-                      ]}
-                    >
-                      {cnt === 108 ? (isHi ? '१०८ माला' : '108 Mala') : cnt}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Central Tap Area with Bead Visual */}
-            <View style={styles.centralBeadArea}>
-              <TouchableOpacity
-                style={styles.counterBeadCircle}
-                onPress={handleIncrementJapa}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.counterLargeNumber}>{japaCount}</Text>
-                <Text style={styles.counterTapHint}>
-                  {isHi ? '+१ जप' : '+1 CHANT'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Progress Bar */}
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressBar, { width: `${progressPercent}%` }]} />
-              </View>
-
-              <View style={styles.progressLabelRow}>
-                <Text style={styles.progressLabelText}>
-                  {japaCount} / {targetCount} ({progressPercent}%)
-                </Text>
-                {japaCount > 0 && (
-                  <TouchableOpacity
-                    style={styles.resetBtn}
-                    onPress={handleResetJapa}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Ionicons name="refresh" size={14} color="#71717a" />
-                    <Text style={styles.resetBtnText}>{isHi ? 'पुनः प्रारम्भ' : 'Reset'}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
+            <TouchableOpacity
+              style={styles.soundBtn}
+              onPress={async () => {
+                await triggerHaptic('tap', userProfile.hapticsEnabled);
+                playShankhNaad(0.7);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.soundBtnIcon}>🐚</Text>
+              <Text style={styles.soundBtnText}>{isHi ? 'पवित्र शंख नाद' : 'Auspicious Shankha'}</Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Tactile 108-Bead Interactive Japa Mala */}
+          <JapaMalaView
+            mantraTitle={isHi ? selectedPrayer.titleDevanagari : selectedPrayer.title}
+            mantraDevanagari={selectedPrayer.verses[0]?.sanskrit || selectedPrayer.titleDevanagari}
+            mantraMeaning={isHi ? selectedPrayer.verses[0]?.hindiMeaning : selectedPrayer.verses[0]?.englishMeaning}
+            audioEnabled={userProfile.audioEnabled}
+            hapticsEnabled={userProfile.hapticsEnabled}
+          />
 
           {/* Reader Controls Bar: Font Size & Header */}
           <View style={styles.readerControlsCard}>
@@ -530,6 +488,37 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
     fontWeight: '500',
+  },
+  soundBar: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 6,
+  },
+  soundBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#ffffff',
+    borderRadius: Radius.lg,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  soundBtnIcon: {
+    fontSize: 16,
+  },
+  soundBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400e',
   },
 
   // Verses

@@ -189,7 +189,12 @@ export const SACRED_DAILY_VERSES: ShastricVerse[] = [
 /**
  * Generates the authentic Vedic Daily Sankalpa based on astronomical Panchang coordinates.
  */
-export function generateDailySankalpa(panchang: PanchangData, cityName: string): {
+export function generateDailySankalpa(
+  panchang: PanchangData,
+  cityName: string,
+  userName?: string,
+  gotra?: string
+): {
   sanskrit: string;
   hindi: string;
   english: string;
@@ -203,11 +208,18 @@ export function generateDailySankalpa(panchang: PanchangData, cityName: string):
   const ritu = panchang.samvat.rituDevanagari || 'शरद्/हेमन्त';
   const ayana = panchang.samvat.ayanaDevanagari || 'उत्तरायण';
 
-  const sanskrit = `ॐ विष्णुर्विष्णुर्विष्णुः। श्रीमद्भगवतो महापुरुषस्य विष्णोराज्ञया प्रवर्तमानस्य अद्य श्रीब्रह्मणो द्वितीये परार्धे श्रीश्वेतवाराहकल्पे वैवस्वतमन्वन्तरे अष्टाविंशतितमे कलियुगे कलिप्रथमचरणे जम्बूद्वीपे भरतखण्डे भारतवर्षे ${cityName} क्षेत्रे, श्रीविक्रमादित्य संवत्सरे ${samvat}, श्रीसूर्य ${ayana}े, ${ritu} ऋतौ, ${masa} मासे, ${paksha} पक्षे, ${tithiName} तिथौ, ${vara} वासरे, ${nakshatra} नक्षत्रे, मम आत्मनः श्रुतिस्मृतिपुराणोक्त पुण्यफलप्राप्त्यर्थं, सकल पापक्षयपूर्वकं धर्मार्थकाममोक्ष चतुर्विध पुरुषार्थ सिद्ध्यर्थं, श्रीपरमेश्वर प्रीत्यर्थं प्रातः/दैनिक नित्यकर्म सङ्कल्पम् अहं करिष्ये।`;
+  const cleanGotra = gotra ? gotra.replace(/\s*\(.*?\)/, '').trim() : '';
+  const cleanName = userName ? userName.trim() : '';
 
-  const hindi = `परमेश्वर श्रीविष्णु की आज्ञा से, श्वेतवाराह कल्प, वैवस्वत मन्वन्तर, कलियुग के प्रथम चरण में, भारतवर्ष के '${cityName}' पावन क्षेत्र में, विक्रम संवत् ${samvat}, ${ayana}, ${ritu} ऋतु, ${masa} मास, ${paksha} पक्ष, ${tithiName} तिथि, ${vara}वार तथा ${nakshatra} नक्षत्र में — मैं अपने समस्त पापों के क्षय तथा धर्म, अर्थ, काम, मोक्ष की सिद्धि एवं परमेश्वर की प्रसन्नता हेतु आज का दैनिक नित्यकर्म संकल्प करता हूँ।`;
+  const personalSanskrit = `${cleanGotra ? cleanGotra + ' गोत्रोत्पन्नः ' : ''}${cleanName ? cleanName + ' नामधेयः ' : ''}`;
+  const personalHindi = `${cleanGotra ? cleanGotra + ' गोत्र में उत्पन्न ' : ''}${cleanName ? cleanName + ' नाम ' : ''}`;
+  const personalEnglish = `${cleanGotra ? 'of ' + cleanGotra + ' Gotra, ' : ''}${cleanName ? 'I, ' + cleanName + ', ' : 'I '}`;
 
-  const english = `By the sanction of Supreme Being Sri Vishnu, in the Svetavaraha Kalpa, Vaivaswata Manvantara, 28th Kaliyuga, in Bharatavarsha at '${cityName}', during Vikram Samvat ${samvat}, ${panchang.samvat.ayana || 'Uttarayana'}, ${panchang.masa.purnimantaName} Masa, ${panchang.tithi.current.paksha} Paksha, ${panchang.tithi.current.name} Tithi, on ${panchang.vara.name} under ${panchang.nakshatra.current.name} Nakshatra — I undertake this sacred daily Nitya Karma for spiritual purity and cosmic harmony.`;
+  const sanskrit = `ॐ विष्णुर्विष्णुर्विष्णुः। श्रीमद्भगवतो महापुरुषस्य विष्णोराज्ञया प्रवर्तमानस्य अद्य श्रीब्रह्मणो द्वितीये परार्धे श्रीश्वेतवाराहकल्पे वैवस्वतमन्वन्तरे अष्टाविंशतितमे कलियुगे कलिप्रथमचरणे जम्बूद्वीपे भरतखण्डे भारतवर्षे ${cityName} क्षेत्रे, श्रीविक्रमादित्य संवत्सरे ${samvat}, श्रीसूर्य ${ayana}े, ${ritu} ऋतौ, ${masa} मासे, ${paksha} पक्षे, ${tithiName} तिथौ, ${vara} वासरे, ${nakshatra} नक्षत्रे, ${personalSanskrit}मम आत्मनः श्रुतिस्मृतिपुराणोक्त पुण्यफलप्राप्त्यर्थं, सकल पापक्षयपूर्वकं धर्मार्थकाममोक्ष चतुर्विध पुरुषार्थ सिद्ध्यर्थं, श्रीपरमेश्वर प्रीत्यर्थं प्रातः/दैनिक नित्यकर्म सङ्कल्पम् अहं करिष्ये।`;
+
+  const hindi = `परमेश्वर श्रीविष्णु की आज्ञा से, श्वेतवाराह कल्प, वैवस्वत मन्वन्तर, कलियुग के प्रथम चरण में, भारतवर्ष के '${cityName}' पावन क्षेत्र में, विक्रम संवत् ${samvat}, ${ayana}, ${ritu} ऋतु, ${masa} मास, ${paksha} पक्ष, ${tithiName} तिथि, ${vara}वार तथा ${nakshatra} नक्षत्र में — ${personalHindi}मैं अपने समस्त पापों के क्षय तथा धर्म, अर्थ, काम, मोक्ष की सिद्धि एवं परमेश्वर की प्रसन्नता हेतु आज का दैनिक नित्यकर्म संकल्प करता हूँ।`;
+
+  const english = `By the sanction of Supreme Being Sri Vishnu, in the Svetavaraha Kalpa, Vaivaswata Manvantara, 28th Kaliyuga, in Bharatavarsha at '${cityName}', during Vikram Samvat ${samvat}, ${panchang.samvat.ayana || 'Uttarayana'}, ${panchang.masa.purnimantaName} Masa, ${panchang.tithi.current.paksha} Paksha, ${panchang.tithi.current.name} Tithi, on ${panchang.vara.name} under ${panchang.nakshatra.current.name} Nakshatra — ${personalEnglish}undertake this sacred daily Nitya Karma for spiritual purity and cosmic harmony.`;
 
   return { sanskrit, hindi, english };
 }

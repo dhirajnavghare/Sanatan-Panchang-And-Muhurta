@@ -54,6 +54,14 @@ import {
   DayPlansMap,
   LiveCosmicStatus,
 } from '@/src/services/dayplanner';
+import {
+  loadUserProfile,
+  UserSacredProfile,
+  DEFAULT_USER_PROFILE,
+} from '@/src/services/userProfile';
+import { playTempleBell, triggerHaptic } from '@/src/services/sacredAudio';
+import { scheduleDailySacredReminders } from '@/src/services/sacredNotifications';
+import { DailyPanchangCardModal } from '@/src/components/DailyPanchangCardModal';
 
 export default function PanchangScreen() {
   const insets = useSafeAreaInsets();
@@ -65,6 +73,10 @@ export default function PanchangScreen() {
   const [isLocating, setIsLocating] = useState(false);
   const [isCityModalVisible, setIsCityModalVisible] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+
+  // Sacred Profile & Audio
+  const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
+  const [isShareCardModalVisible, setIsShareCardModalVisible] = useState(false);
 
   // Modals for deep Hindu daily routine
   const [isSankalpaModalVisible, setIsSankalpaModalVisible] = useState(false);
@@ -142,9 +154,18 @@ export default function PanchangScreen() {
     return WEEKDAY_DEVATAS[day] || WEEKDAY_DEVATAS[0];
   }, [currentDate]);
 
+  useEffect(() => {
+    loadUserProfile().then((p) => {
+      setUserProfile(p);
+      if (panchang) {
+        scheduleDailySacredReminders(panchang, p);
+      }
+    });
+  }, [panchang]);
+
   const dailySankalpa = useMemo(() => {
-    return generateDailySankalpa(panchang, location.name);
-  }, [panchang, location.name]);
+    return generateDailySankalpa(panchang, location.name, userProfile.name, userProfile.gotra);
+  }, [panchang, location.name, userProfile.name, userProfile.gotra]);
 
   // Live Cosmic Status (Real-time pulse of right now)
   const liveStatus: LiveCosmicStatus = useMemo(() => {
@@ -351,7 +372,9 @@ export default function PanchangScreen() {
 
             <View style={styles.greetingContainer}>
               <Text style={styles.greetingTitle}>
-                {isHi ? spiritualPeriod.greetingHi : spiritualPeriod.greetingEn}
+                {isHi
+                  ? `${spiritualPeriod.greetingHi}${userProfile.name ? `, ${userProfile.name}` : ''}`
+                  : `${spiritualPeriod.greetingEn}${userProfile.name ? `, ${userProfile.name}` : ''}`}
               </Text>
               <Text style={styles.greetingSubtitle} numberOfLines={1}>
                 {isHi ? 'आज ' : 'Today '}
@@ -365,15 +388,30 @@ export default function PanchangScreen() {
             </View>
 
             <View style={styles.headerActionsGroup}>
-              {/* Viral 1-Tap WhatsApp Daily Share Button */}
+              {/* Sacred Temple Brass Bell Chime */}
+              <TouchableOpacity
+                style={styles.bellActionBtn}
+                onPress={async () => {
+                  await triggerHaptic('tap', userProfile.hapticsEnabled);
+                  playTempleBell(0.8);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 16 }}>🔔</Text>
+              </TouchableOpacity>
+
+              {/* Viral 1-Tap WhatsApp Daily Share Card Button */}
               <TouchableOpacity
                 style={styles.whatsAppShareBtn}
-                onPress={handleShareWhatsAppPanchang}
+                onPress={async () => {
+                  await triggerHaptic('tap', userProfile.hapticsEnabled);
+                  setIsShareCardModalVisible(true);
+                }}
                 activeOpacity={0.8}
               >
                 <Ionicons name="logo-whatsapp" size={16} color="#ffffff" />
                 <Text style={styles.whatsAppShareBtnText}>
-                  {isHi ? 'पञ्चाङ्ग साझा' : 'Share'}
+                  {isHi ? 'शेयर कार्ड' : 'Share'}
                 </Text>
               </TouchableOpacity>
 
@@ -619,7 +657,7 @@ export default function PanchangScreen() {
                     <View style={styles.trainerAvatar}>
                       <Text style={{ fontSize: 13 }}>📜</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
                       <Text style={styles.tallFooterRole}>
                         {isHi ? 'वैदिक संकल्प' : 'Daily Sankalpa'}
                       </Text>
@@ -711,7 +749,7 @@ export default function PanchangScreen() {
               <View style={styles.sunStripRow}>
                 <View style={styles.sunItem}>
                   <Text style={styles.sunItemEmoji}>🌅</Text>
-                  <View>
+                  <View style={{ backgroundColor: 'transparent' }}>
                     <Text style={styles.sunItemLabel}>{isHi ? 'सूर्योदय' : 'Sunrise'}</Text>
                     <Text style={styles.sunItemVal}>{formatTime(panchang.sunTimes.sunrise)}</Text>
                   </View>
@@ -721,7 +759,7 @@ export default function PanchangScreen() {
 
                 <View style={styles.sunItem}>
                   <Text style={styles.sunItemEmoji}>🌇</Text>
-                  <View>
+                  <View style={{ backgroundColor: 'transparent' }}>
                     <Text style={styles.sunItemLabel}>{isHi ? 'सूर्यास्त' : 'Sunset'}</Text>
                     <Text style={styles.sunItemVal}>{formatTime(panchang.sunTimes.sunset)}</Text>
                   </View>
@@ -731,7 +769,7 @@ export default function PanchangScreen() {
 
                 <View style={styles.sunItem}>
                   <Text style={styles.sunItemEmoji}>🌙</Text>
-                  <View>
+                  <View style={{ backgroundColor: 'transparent' }}>
                     <Text style={styles.sunItemLabel}>{isHi ? 'चन्द्रमा' : 'Moon'}</Text>
                     <Text style={styles.sunItemVal}>
                       {panchang.moonTimes.moonrise
@@ -749,7 +787,7 @@ export default function PanchangScreen() {
               {/* ======================================================= */}
               <View style={styles.plannerSection}>
                 <View style={styles.plannerHeaderRow}>
-                  <View style={{ flex: 1, paddingRight: 8 }}>
+                  <View style={{ flex: 1, paddingRight: 8, backgroundColor: 'transparent' }}>
                     <Text style={styles.plannerSectionTitle}>
                       {isHi ? 'मुहूर्तानुसार दिन योजनाकार' : 'Muhurta Day Planner'}
                     </Text>
@@ -1180,6 +1218,11 @@ export default function PanchangScreen() {
                   <Text style={styles.sankalpaPillDate}>
                     संवत् {panchang.samvat.vikramSamvat} • {activeMasa}
                   </Text>
+                  {userProfile.gotra ? (
+                    <Text style={[styles.sankalpaPillDate, { color: '#b45309', fontWeight: '700' }]}>
+                      गोत्र: {userProfile.gotra} {userProfile.name ? `• यजमान: ${userProfile.name}` : ''}
+                    </Text>
+                  ) : null}
                 </View>
 
                 <Text style={styles.sankalpaSanskrit}>{dailySankalpa.sanskrit}</Text>
@@ -1224,7 +1267,7 @@ export default function PanchangScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <View>
+                <View style={{ backgroundColor: 'transparent' }}>
                   <Text style={styles.modalTitle}>
                     {isHi ? 'दैनिक नित्यकर्म साधना' : 'Daily Sadhana Checklist'}
                   </Text>
@@ -1255,7 +1298,7 @@ export default function PanchangScreen() {
                         />
                       </View>
 
-                      <View style={{ flex: 1 }}>
+                      <View style={{ flex: 1, backgroundColor: 'transparent' }}>
                         <Text style={[styles.habitTitle, isDone && styles.habitTitleDone]}>
                           {isHi ? habit.titleHi : habit.titleEn}
                         </Text>
@@ -1339,7 +1382,7 @@ export default function PanchangScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <View>
+                <View style={{ backgroundColor: 'transparent' }}>
                   <Text style={styles.modalTitle}>
                     {isHi ? 'तीर्थ अथवा नगर चुनें' : 'Select City or Tirtha'}
                   </Text>
@@ -1399,6 +1442,16 @@ export default function PanchangScreen() {
             </View>
           </View>
         </Modal>
+
+        {/* Viral WhatsApp 1-Tap Daily Panchang Card Generator Modal */}
+        <DailyPanchangCardModal
+          visible={isShareCardModalVisible}
+          onClose={() => setIsShareCardModalVisible(false)}
+          panchang={panchang}
+          cityName={location.name}
+          devataInfo={weekdayDevata}
+          verse={selectedVerse}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -1466,6 +1519,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     backgroundColor: 'transparent',
+  },
+  bellActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fffbeb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
   },
   whatsAppShareBtn: {
     flexDirection: 'row',

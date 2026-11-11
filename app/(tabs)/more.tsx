@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Linking, Modal, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -11,12 +11,32 @@ import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle } from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
+import {
+  loadUserProfile,
+  saveUserProfile,
+  UserSacredProfile,
+  DEFAULT_USER_PROFILE,
+} from '@/src/services/userProfile';
+import { SacredProfileEditorModal } from '@/src/components/SacredProfileEditorModal';
+import { triggerHaptic } from '@/src/services/sacredAudio';
 
 type MoreSection = 'temples' | 'devatas' | 'vrat_katha';
 
 export default function MoreScreen() {
   const { language, setLanguage, calendarSystem, setCalendarSystem } = useLanguage();
   const isHi = language === 'hi';
+
+  const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  useEffect(() => {
+    loadUserProfile().then(setUserProfile);
+  }, []);
+
+  const handleSaveProfile = async (updated: UserSacredProfile) => {
+    setUserProfile(updated);
+    await saveUserProfile(updated);
+  };
 
   const [activeSection, setActiveSection] = useState<MoreSection>('temples');
   const [isCalculating, setIsCalculating] = useState(false);
@@ -97,6 +117,37 @@ export default function MoreScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Sacred Devotee Profile Banner */}
+      <View style={styles.profileBanner}>
+        <View style={styles.profileAvatarBox}>
+          <Text style={styles.profileAvatarEmoji}>🕉️</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.profileGreeting}>
+            {isHi ? 'श्री' : 'Sri'} {userProfile.name} {isHi ? 'जी' : ''}
+          </Text>
+          <Text style={styles.profileGotraText}>
+            {userProfile.gotra ? `${isHi ? 'गोत्र:' : 'Gotra:'} ${userProfile.gotra}` : ''} • {userProfile.ishtaDevata}
+          </Text>
+          {userProfile.kuldeviOrDevata ? (
+            <Text style={styles.profileKuldeviText}>
+              {isHi ? 'कुलदेवी:' : 'Family Deity:'} {userProfile.kuldeviOrDevata}
+            </Text>
+          ) : null}
+        </View>
+        <TouchableOpacity
+          style={styles.editProfilePill}
+          onPress={async () => {
+            await triggerHaptic('tap', userProfile.hapticsEnabled);
+            setIsProfileModalOpen(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="create-outline" size={15} color="#b45309" />
+          <Text style={styles.editProfilePillText}>{isHi ? 'बदलें' : 'Edit'}</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Settings Section */}
       <View style={styles.settingsCard}>
         <Text style={styles.cardHeader}>
@@ -598,6 +649,14 @@ export default function MoreScreen() {
           </View>
         </View>
       </Modal>
+
+      <SacredProfileEditorModal
+        visible={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        profile={userProfile}
+        onSave={handleSaveProfile}
+        isHi={isHi}
+      />
     </ScrollView>
   );
 }
@@ -610,6 +669,67 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.lg,
     paddingBottom: Spacing.dockClearance,
+  },
+  profileBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffdf5',
+    borderRadius: Radius.lg,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#fde68a',
+    marginBottom: Spacing.md,
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 12,
+  },
+  profileAvatarBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+  },
+  profileAvatarEmoji: {
+    fontSize: 22,
+  },
+  profileGreeting: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#18181b',
+  },
+  profileGotraText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#b45309',
+    marginTop: 2,
+  },
+  profileKuldeviText: {
+    fontSize: 11,
+    color: '#71717a',
+    marginTop: 1,
+  },
+  editProfilePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fffbeb',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+  },
+  editProfilePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#b45309',
   },
   settingsCard: {
     backgroundColor: '#ffffff',
