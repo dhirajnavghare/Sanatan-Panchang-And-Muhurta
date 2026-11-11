@@ -2,15 +2,19 @@ import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors, { Palette } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const { language } = useLanguage();
   const isHi = language === 'hi';
   const isDark = colorScheme === 'dark';
+
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 8);
 
   return (
     <Tabs
@@ -23,8 +27,8 @@ export default function TabLayout() {
           backgroundColor: isDark ? '#16161c' : '#ffffff',
           borderTopWidth: 1,
           borderTopColor: isDark ? '#27272a' : '#e4e4e7',
-          height: Platform.OS === 'ios' ? 84 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          height: Platform.OS === 'ios' ? 56 + bottomInset : 58 + bottomInset,
+          paddingBottom: bottomInset,
           paddingTop: 6,
           elevation: 8,
           shadowColor: '#000000',
@@ -50,7 +54,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: isHi ? 'पञ्चाङ्ग' : 'Panchang',
-          headerShown: false, // Custom header on Home screen
+          headerShown: false, // Custom rich header on Home screen
           tabBarIcon: ({ focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
               <Ionicons
