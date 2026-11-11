@@ -94,6 +94,7 @@ export default function FestivalsScreen() {
           {[2025, 2026, 2027].map((y) => (
             <TouchableOpacity
               key={y}
+              testID={`year-btn-${y}`}
               style={[styles.yearBtn, year === y && styles.yearBtnActive]}
               onPress={() => handleYearSelect(y)}
               activeOpacity={0.8}
@@ -109,6 +110,7 @@ export default function FestivalsScreen() {
         <View style={styles.searchBar}>
           <Ionicons name="search" size={18} color="#71717a" />
           <TextInput
+            testID="festival-search-input"
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -119,7 +121,11 @@ export default function FestivalsScreen() {
             returnKeyType="search"
           />
           {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity
+              testID="clear-search-icon"
+              onPress={() => setSearchQuery('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               <Ionicons name="close-circle" size={18} color="#71717a" />
             </TouchableOpacity>
           ) : null}
@@ -134,6 +140,7 @@ export default function FestivalsScreen() {
             return (
               <TouchableOpacity
                 key={c.id}
+                testID={`category-chip-${c.id}`}
                 style={[styles.chip, isSelected && styles.chipActive]}
                 onPress={() => handleCategorySelect(c.id)}
                 activeOpacity={0.8}
@@ -291,6 +298,7 @@ export default function FestivalsScreen() {
                   {/* Expand / Collapse Details Button */}
                   {(f.significance || (f.rituals && f.rituals.length > 0)) && (
                     <TouchableOpacity
+                      testID={`fest-expand-${f.id}`}
                       style={styles.expandRow}
                       onPress={() => toggleExpand(f.id)}
                       activeOpacity={0.7}

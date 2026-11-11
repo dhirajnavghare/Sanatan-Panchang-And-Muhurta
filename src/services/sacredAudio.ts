@@ -18,6 +18,15 @@ function getWebAudioContext(): any {
   return webAudioCtx;
 }
 
+// Mandir brass bell harmonic frequencies (Fundamental D5 ~587Hz with characteristic bell overtones)
+export const TEMPLE_BELL_HARMONICS = [
+  { freq: 587.33, gain: 0.6, decay: 1.8 }, // Fundamental bell chime
+  { freq: 1174.66, gain: 0.35, decay: 1.4 }, // 1st octave overtone
+  { freq: 1762.0, gain: 0.2, decay: 0.9 }, // 3rd harmonic
+  { freq: 2349.32, gain: 0.15, decay: 0.6 }, // Bell shimmer
+  { freq: 2936.65, gain: 0.08, decay: 0.4 }, // High sparkle
+];
+
 /**
  * Synthesizes a resonant, authentic brass Mandir Bell (घंटी नाद)
  * using acoustic harmonic overtones and exponential natural decay.
@@ -32,16 +41,7 @@ export function playTempleBell(volume: number = 0.5): void {
     masterGain.gain.setValueAtTime(volume, now);
     masterGain.connect(ctx.destination);
 
-    // Mandir brass bell harmonic frequencies (Fundamental D5 ~587Hz with characteristic bell overtones)
-    const bellHarmonics = [
-      { freq: 587.33, gain: 0.6, decay: 1.8 }, // Fundamental bell chime
-      { freq: 1174.66, gain: 0.35, decay: 1.4 }, // 1st octave overtone
-      { freq: 1762.0, gain: 0.2, decay: 0.9 }, // 3rd harmonic
-      { freq: 2349.32, gain: 0.15, decay: 0.6 }, // Bell shimmer
-      { freq: 2936.65, gain: 0.08, decay: 0.4 }, // High sparkle
-    ];
-
-    bellHarmonics.forEach((h) => {
+    TEMPLE_BELL_HARMONICS.forEach((h) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 

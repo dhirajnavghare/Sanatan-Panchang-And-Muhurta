@@ -68,6 +68,7 @@ export default function PrayersScreen() {
             return (
               <TouchableOpacity
                 key={p.id}
+                testID={`prayer-pill-${p.id}`}
                 style={[styles.prayerPill, isSelected && styles.prayerPillSelected]}
                 onPress={() => handlePrayerSelect(p)}
                 activeOpacity={0.8}
@@ -97,6 +98,7 @@ export default function PrayersScreen() {
           {/* Sacred Temple Sound Bar */}
           <View style={styles.soundBar}>
             <TouchableOpacity
+              testID="prayers-bell-btn"
               style={styles.soundBtn}
               onPress={async () => {
                 await triggerHaptic('tap', userProfile.hapticsEnabled);
@@ -109,6 +111,7 @@ export default function PrayersScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="prayers-shankh-btn"
               style={styles.soundBtn}
               onPress={async () => {
                 await triggerHaptic('tap', userProfile.hapticsEnabled);
@@ -146,18 +149,21 @@ export default function PrayersScreen() {
             {/* Font Size Buttons */}
             <View style={styles.fontControls}>
               <TouchableOpacity
+                testID="font-size-decrease"
                 style={[styles.fontSizeBtn, fontSizeOffset === -2 && styles.fontSizeBtnActive]}
                 onPress={() => setFontSizeOffset(-2)}
               >
                 <Text style={styles.fontSizeText}>A-</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="font-size-reset"
                 style={[styles.fontSizeBtn, fontSizeOffset === 0 && styles.fontSizeBtnActive]}
                 onPress={() => setFontSizeOffset(0)}
               >
                 <Text style={styles.fontSizeText}>A</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="font-size-increase"
                 style={[styles.fontSizeBtn, fontSizeOffset === 3 && styles.fontSizeBtnActive]}
                 onPress={() => setFontSizeOffset(3)}
               >
@@ -191,6 +197,7 @@ export default function PrayersScreen() {
                 </View>
 
                 <TouchableOpacity
+                  testID={`verse-share-${verse.verseNumber}`}
                   style={styles.verseShareBtn}
                   onPress={() =>
                     handleShareVerse(

@@ -136,6 +136,7 @@ export default function MoreScreen() {
           ) : null}
         </View>
         <TouchableOpacity
+          testID="more-edit-profile-btn"
           style={styles.editProfilePill}
           onPress={async () => {
             await triggerHaptic('tap', userProfile.hapticsEnabled);
@@ -165,6 +166,7 @@ export default function MoreScreen() {
 
           <View style={styles.toggleGroup}>
             <TouchableOpacity
+              testID="lang-toggle-hi"
               style={[styles.toggleBtn, language === 'hi' && styles.toggleBtnActive]}
               onPress={() => handleLanguageSelect('hi')}
             >
@@ -173,6 +175,7 @@ export default function MoreScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              testID="lang-toggle-en"
               style={[styles.toggleBtn, language === 'en' && styles.toggleBtnActive]}
               onPress={() => handleLanguageSelect('en')}
             >
@@ -198,6 +201,7 @@ export default function MoreScreen() {
 
           <View style={styles.toggleGroup}>
             <TouchableOpacity
+              testID="cal-toggle-purnimanta"
               style={[styles.toggleBtn, calendarSystem === 'purnimanta' && styles.toggleBtnActive]}
               onPress={() => handleCalendarSystemSelect('purnimanta')}
             >
@@ -211,6 +215,7 @@ export default function MoreScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              testID="cal-toggle-amanta"
               style={[styles.toggleBtn, calendarSystem === 'amanta' && styles.toggleBtnActive]}
               onPress={() => handleCalendarSystemSelect('amanta')}
             >
@@ -238,6 +243,7 @@ export default function MoreScreen() {
           return (
             <TouchableOpacity
               key={tab.id}
+              testID={`more-tab-${tab.id}`}
               style={[styles.featureTab, isActive && styles.featureTabActive]}
               onPress={() => handleSectionSelect(tab.id)}
             >
@@ -275,6 +281,7 @@ export default function MoreScreen() {
                 ].map((c) => (
                   <TouchableOpacity
                     key={c.id}
+                    testID={`circuit-pill-${c.id}`}
                     style={[styles.circuitPill, circuitFilter === c.id && styles.circuitPillActive]}
                     onPress={() => handleCircuitSelect(c.id as typeof circuitFilter)}
                   >
@@ -348,6 +355,7 @@ export default function MoreScreen() {
             ].map((t) => (
               <TouchableOpacity
                 key={t.id}
+                testID={`tradition-pill-${t.id}`}
                 style={[styles.circuitPill, devataTradition === t.id && styles.circuitPillActive]}
                 onPress={() => handleDevataTraditionSelect(t.id)}
               >
@@ -361,6 +369,7 @@ export default function MoreScreen() {
           {filteredDeities.map((deity: DeityRecord) => (
             <TouchableOpacity
               key={deity.id}
+              testID={`deity-card-${deity.id}`}
               style={styles.card}
               onPress={() => setSelectedDeityModal(deity)}
               activeOpacity={0.8}
@@ -433,6 +442,7 @@ export default function MoreScreen() {
               return (
                 <TouchableOpacity
                   key={vrat.id}
+                  testID={`vrat-pill-${vrat.id}`}
                   style={[styles.circuitPill, isSelected && styles.circuitPillActive]}
                   onPress={() => handleVratSelect(vrat.id)}
                 >
@@ -574,7 +584,10 @@ export default function MoreScreen() {
                       {isHi ? selectedDeityModal.subtitleDevanagari : selectedDeityModal.subtitle}
                     </Text>
                   </View>
-                  <TouchableOpacity onPress={() => setSelectedDeityModal(null)}>
+                  <TouchableOpacity
+                    testID="deity-modal-close-btn"
+                    onPress={() => setSelectedDeityModal(null)}
+                  >
                     <Ionicons name="close-circle" size={26} color="#71717a" />
                   </TouchableOpacity>
                 </View>

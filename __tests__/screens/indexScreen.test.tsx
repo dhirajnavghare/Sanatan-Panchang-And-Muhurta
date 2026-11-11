@@ -1,0 +1,113 @@
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react-native';
+import PanchangScreen from '../../app/(tabs)/index';
+import { LanguageProvider } from '../../src/core/i18n/LanguageContext';
+import * as sacredAudio from '../../src/services/sacredAudio';
+
+describe('Home Screen (Panchang / Index) - Complete UI Interaction Tests', () => {
+  const renderScreen = async () => {
+    return await render(
+      <LanguageProvider>
+        <PanchangScreen />
+      </LanguageProvider>
+    );
+  };
+
+  beforeEach(() => {
+    jest.spyOn(sacredAudio, 'playTempleBell').mockImplementation(() => {});
+    jest.spyOn(sacredAudio, 'triggerHaptic').mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    cleanup();
+    jest.clearAllMocks();
+  });
+
+  it('should render the rich Hindu header with bell and share buttons', async () => {
+    await renderScreen();
+
+    expect(screen.getByTestId('header-bell-btn')).toBeTruthy();
+    expect(screen.getByTestId('header-share-btn')).toBeTruthy();
+    expect(screen.getByTestId('header-city-btn')).toBeTruthy();
+    expect(screen.getByTestId('hero-challenge-card')).toBeTruthy();
+  });
+
+  it('should chime the Mandir Brass Bell when user clicks the bell icon button', async () => {
+    await renderScreen();
+
+    const bellBtn = screen.getByTestId('header-bell-btn');
+    await act(async () => {
+      fireEvent.press(bellBtn);
+    });
+
+    expect(sacredAudio.playTempleBell).toHaveBeenCalled();
+    expect(sacredAudio.triggerHaptic).toHaveBeenCalledWith('tap', expect.any(Boolean));
+  });
+
+  it('should open the Viral WhatsApp Card Generator Modal when user clicks share card button', async () => {
+    await renderScreen();
+
+    const shareBtn = screen.getByTestId('header-share-btn');
+    await act(async () => {
+      fireEvent.press(shareBtn);
+    });
+
+    // Modal elements are now visible
+    expect(screen.getByText('दैनिक पञ्चाङ्ग शेयर कार्ड')).toBeTruthy();
+  });
+
+  it('should open the City Selector Modal when user clicks the city search button', async () => {
+    await renderScreen();
+
+    const cityBtn = screen.getByTestId('header-city-btn');
+    await act(async () => {
+      fireEvent.press(cityBtn);
+    });
+
+    // City modal header is now visible
+    expect(screen.getByText('तीर्थ अथवा नगर चुनें')).toBeTruthy();
+  });
+
+  it('should open the Daily Sadhana Checklist modal when user taps the Hero Challenge card', async () => {
+    await renderScreen();
+
+    const heroCard = screen.getByTestId('hero-challenge-card');
+    await act(async () => {
+      fireEvent.press(heroCard);
+    });
+
+    expect(screen.getByText('दैनिक नित्यकर्म साधना')).toBeTruthy();
+  });
+
+  it('should open the Vedic Sankalpa modal when user taps the Bento Muhurta card', async () => {
+    await renderScreen();
+
+    const tallCard = screen.getByTestId('bento-tall-card');
+    await act(async () => {
+      fireEvent.press(tallCard);
+    });
+
+    expect(screen.getByText('दैनिक वैदिक सङ्कल्प')).toBeTruthy();
+  });
+
+  it('should switch day planner tabs when user clicks filter options', async () => {
+    await renderScreen();
+
+    const allTab = screen.getByTestId('planner-tab-all');
+    await act(async () => {
+      fireEvent.press(allTab);
+    });
+
+    const plannedTab = screen.getByTestId('planner-tab-planned');
+    await act(async () => {
+      fireEvent.press(plannedTab);
+    });
+
+    const coreTab = screen.getByTestId('planner-tab-core');
+    await act(async () => {
+      fireEvent.press(coreTab);
+    });
+
+    expect(coreTab).toBeTruthy();
+  });
+});

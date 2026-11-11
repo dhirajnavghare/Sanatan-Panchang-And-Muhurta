@@ -93,7 +93,12 @@ export function DailyPanchangCardModal({
               <Text style={styles.modalTitle}>दैनिक पञ्चाङ्ग शेयर कार्ड</Text>
               <Text style={styles.modalSubtitle}>WhatsApp स्टेटस व परिवार ग्रुप्स के लिए</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              testID="share-card-close-btn"
+              onPress={onClose}
+              style={styles.closeBtn}
+              activeOpacity={0.7}
+            >
               <Ionicons name="close" size={22} color="#71717a" />
             </TouchableOpacity>
           </View>
@@ -180,6 +185,7 @@ export function DailyPanchangCardModal({
             {/* Action Buttons */}
             <View style={styles.actionRow}>
               <TouchableOpacity
+                testID="share-image-btn"
                 style={styles.shareBtnPrimary}
                 onPress={handleShareImage}
                 activeOpacity={0.8}
@@ -196,6 +202,7 @@ export function DailyPanchangCardModal({
               </TouchableOpacity>
 
               <TouchableOpacity
+                testID="share-text-btn"
                 style={styles.shareBtnSecondary}
                 onPress={handleShareText}
                 activeOpacity={0.8}

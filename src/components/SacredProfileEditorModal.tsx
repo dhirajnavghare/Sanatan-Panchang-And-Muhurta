@@ -85,7 +85,12 @@ export function SacredProfileEditorModal({
                 {isHi ? 'दैनिक सङ्कल्प व पूजा हेतु आपकी जानकारी' : 'Used for personalized Sankalpa & alerts'}
               </Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              testID="profile-close-btn"
+              onPress={onClose}
+              style={styles.closeBtn}
+              activeOpacity={0.7}
+            >
               <Ionicons name="close" size={22} color="#71717a" />
             </TouchableOpacity>
           </View>
@@ -97,6 +102,7 @@ export function SacredProfileEditorModal({
                 {isHi ? 'आपका शुभ नाम (सङ्कल्प हेतु):' : 'Your Sacred Name (for Sankalpa):'}
               </Text>
               <TextInput
+                testID="profile-name-input"
                 style={styles.textInput}
                 value={name}
                 onChangeText={setName}
@@ -111,6 +117,7 @@ export function SacredProfileEditorModal({
                 {isHi ? 'आपका गोत्र (ऋषि परम्परा):' : 'Your Gotra (Ancestral Lineage):'}
               </Text>
               <TextInput
+                testID="profile-gotra-input"
                 style={styles.textInput}
                 value={gotra}
                 onChangeText={setGotra}
@@ -290,7 +297,12 @@ export function SacredProfileEditorModal({
             </View>
 
             {/* Save Button */}
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
+            <TouchableOpacity
+              testID="profile-save-btn"
+              style={styles.saveBtn}
+              onPress={handleSave}
+              activeOpacity={0.8}
+            >
               <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
               <Text style={styles.saveBtnText}>
                 {isHi ? 'धार्मिक प्रोफाइल सहेजें' : 'Save Sacred Profile'}

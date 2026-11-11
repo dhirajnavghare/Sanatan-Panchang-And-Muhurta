@@ -60,7 +60,12 @@ export function JapaMalaView({
           <Text style={styles.sacredBadge}>📿 पवित्र १०८ जप माला</Text>
           <Text style={styles.mantraTitleText}>{mantraTitle}</Text>
         </View>
-        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.7}>
+        <TouchableOpacity
+          testID="japa-reset-btn"
+          style={styles.resetBtn}
+          onPress={handleReset}
+          activeOpacity={0.7}
+        >
           <Ionicons name="refresh" size={16} color="#71717a" />
           <Text style={styles.resetBtnText}>रीसेट</Text>
         </TouchableOpacity>
@@ -75,6 +80,7 @@ export function JapaMalaView({
       {/* Center Bead Counter & Interactive Visual */}
       <View style={styles.counterCenter}>
         <TouchableOpacity
+          testID="bead-touch-zone"
           style={styles.beadTouchZone}
           onPress={handleBeadClick}
           activeOpacity={0.85}
@@ -82,7 +88,7 @@ export function JapaMalaView({
           {/* Outer Ornamental Ring */}
           <View style={styles.outerRing}>
             <View style={styles.innerBeadCircle}>
-              <Text style={styles.beadNumber}>{currentBead}</Text>
+              <Text testID="central-bead-number" style={styles.beadNumber}>{currentBead}</Text>
               <Text style={styles.beadTotal}>/ १०८ मनके</Text>
               <Text style={styles.tapPrompt}>यहाँ स्पर्श कर जपें</Text>
             </View>
@@ -126,6 +132,7 @@ export function JapaMalaView({
             return (
               <TouchableOpacity
                 key={count}
+                testID={`target-pill-${count}`}
                 style={[styles.targetPill, isTarget && styles.targetPillActive]}
                 onPress={async () => {
                   if (hapticsEnabled) await triggerHaptic('tap');

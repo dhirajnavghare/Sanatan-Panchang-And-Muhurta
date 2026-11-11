@@ -390,6 +390,7 @@ export default function PanchangScreen() {
             <View style={styles.headerActionsGroup}>
               {/* Sacred Temple Brass Bell Chime */}
               <TouchableOpacity
+                testID="header-bell-btn"
                 style={styles.bellActionBtn}
                 onPress={async () => {
                   await triggerHaptic('tap', userProfile.hapticsEnabled);
@@ -402,6 +403,7 @@ export default function PanchangScreen() {
 
               {/* Viral 1-Tap WhatsApp Daily Share Card Button */}
               <TouchableOpacity
+                testID="header-share-btn"
                 style={styles.whatsAppShareBtn}
                 onPress={async () => {
                   await triggerHaptic('tap', userProfile.hapticsEnabled);
@@ -417,6 +419,7 @@ export default function PanchangScreen() {
 
               {/* City selector search button */}
               <TouchableOpacity
+                testID="header-city-btn"
                 style={styles.cityActionBtn}
                 onPress={() => setIsCityModalVisible(true)}
                 activeOpacity={0.7}
@@ -473,6 +476,7 @@ export default function PanchangScreen() {
           {/* DAILY SADHANA CHALLENGE (HERO CARD - Lavender Pastel)     */}
           {/* ========================================================= */}
           <TouchableOpacity
+            testID="hero-challenge-card"
             style={styles.heroChallengeCard}
             activeOpacity={0.92}
             onPress={() => setIsSadhanaModalVisible(true)}
@@ -593,6 +597,7 @@ export default function PanchangScreen() {
               <View style={styles.bentoContainer}>
                 {/* LEFT TALL CARD: Auspicious Muhurta & Sankalpa */}
                 <TouchableOpacity
+                  testID="bento-tall-card"
                   style={[styles.bentoTallCard, { backgroundColor: '#fed7aa' }]}
                   activeOpacity={0.9}
                   onPress={() => setIsSankalpaModalVisible(true)}
@@ -810,6 +815,7 @@ export default function PanchangScreen() {
                 {/* Filter Tabs: Core vs All 24h vs Planned */}
                 <View style={styles.plannerFilterRow}>
                   <TouchableOpacity
+                    testID="planner-tab-core"
                     style={[
                       styles.plannerFilterTab,
                       plannerFilter === 'core' && styles.plannerFilterTabActive,
@@ -827,6 +833,7 @@ export default function PanchangScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
+                    testID="planner-tab-all"
                     style={[
                       styles.plannerFilterTab,
                       plannerFilter === 'all' && styles.plannerFilterTabActive,
@@ -844,6 +851,7 @@ export default function PanchangScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
+                    testID="planner-tab-planned"
                     style={[
                       styles.plannerFilterTab,
                       plannerFilter === 'planned' && styles.plannerFilterTabActive,

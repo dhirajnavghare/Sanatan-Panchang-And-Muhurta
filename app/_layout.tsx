@@ -7,6 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { LanguageProvider } from '@/src/core/i18n/LanguageContext';
+import { runStartupDiagnostics } from '@/src/services/startupDiagnostics';
 
 export {
   ErrorBoundary,
@@ -40,6 +41,13 @@ export default function RootLayout() {
       SplashScreen.hideAsync().catch(() => {});
     }, 800);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Automated System Health & Invariant Verification at Startup
+  useEffect(() => {
+    runStartupDiagnostics().catch((err) => {
+      console.warn('[Sanatan Diagnostics] Diagnostics run failure:', err);
+    });
   }, []);
 
   if (!isReady && !loaded && !error) {
