@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { LanguageProvider } from '@/src/core/i18n/LanguageContext';
@@ -21,6 +22,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    ...Ionicons.font,
   });
   const [isReady, setIsReady] = useState(false);
 

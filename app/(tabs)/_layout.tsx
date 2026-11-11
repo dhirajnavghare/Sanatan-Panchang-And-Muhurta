@@ -23,6 +23,9 @@ export default function TabLayout() {
         tabBarActiveTintColor: Palette.primary,
         tabBarInactiveTintColor: isDark ? '#a1a1aa' : '#71717a',
         tabBarLabelStyle: styles.tabLabel,
+        tabBarIconStyle: {
+          marginTop: 2,
+        },
         tabBarStyle: {
           backgroundColor: isDark ? '#16161c' : '#ffffff',
           borderTopWidth: 1,
@@ -56,13 +59,11 @@ export default function TabLayout() {
           title: isHi ? 'पञ्चाङ्ग' : 'Panchang',
           headerShown: false, // Custom rich header on Home screen
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <Ionicons
-                name={focused ? 'calendar' : 'calendar-outline'}
-                size={21}
-                color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'calendar' : 'calendar-outline'}
+              size={23}
+              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+            />
           ),
         }}
       />
@@ -72,13 +73,11 @@ export default function TabLayout() {
           title: isHi ? 'मुहूर्त' : 'Muhurta',
           headerTitle: isHi ? 'शुभ मुहूर्त शोधक' : 'Shubh Muhurta Finder',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <Ionicons
-                name={focused ? 'sparkles' : 'sparkles-outline'}
-                size={21}
-                color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'sparkles' : 'sparkles-outline'}
+              size={23}
+              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+            />
           ),
         }}
       />
@@ -88,13 +87,11 @@ export default function TabLayout() {
           title: isHi ? 'पर्व-व्रत' : 'Festivals',
           headerTitle: isHi ? 'पर्व एवं व्रत पञ्चिका' : 'Festivals & Vrats',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <Ionicons
-                name={focused ? 'flame' : 'flame-outline'}
-                size={21}
-                color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'flame' : 'flame-outline'}
+              size={23}
+              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+            />
           ),
         }}
       />
@@ -104,13 +101,11 @@ export default function TabLayout() {
           title: isHi ? 'स्तोत्र-जप' : 'Prayers',
           headerTitle: isHi ? 'स्तोत्र, मन्त्र एवं जप माला' : 'Sacred Prayers & Japa',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <Ionicons
-                name={focused ? 'book' : 'book-outline'}
-                size={21}
-                color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'book' : 'book-outline'}
+              size={23}
+              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+            />
           ),
         }}
       />
@@ -120,13 +115,11 @@ export default function TabLayout() {
           title: isHi ? 'तीर्थ-अन्य' : 'More',
           headerTitle: isHi ? 'तीर्थ, देव एवं सेटिंग्स' : 'Temples & Settings',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <Ionicons
-                name={focused ? 'person' : 'person-outline'}
-                size={21}
-                color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'person' : 'person-outline'}
+              size={23}
+              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+            />
           ),
         }}
       />
@@ -136,18 +129,8 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabLabel: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     marginTop: 2,
-  },
-  iconContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconContainerActive: {
-    backgroundColor: '#fffbeb', // Subtle warm saffron tint pill
   },
 });
