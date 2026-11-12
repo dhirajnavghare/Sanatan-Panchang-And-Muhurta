@@ -98,16 +98,20 @@ describe('User Profile, Sacred Audio & Notifications Tests', () => {
           abhijitMuhurta: {
             name: 'Abhijit',
             nameDevanagari: 'अभिजित',
-            startTime: futureDate.toISOString(),
-            endTime: futureDateEnd.toISOString(),
+            startTime: futureDate,
+            endTime: futureDateEnd,
             isAuspicious: true,
+            quality: 'Shubh' as const,
           },
         },
       };
 
       const mockDayPlans = {
         abhijit_muhurta: {
-          todos: [{ id: '1', text: 'नया अनुबंध हस्ताक्षर', isCompleted: false }],
+          taskText: '',
+          isCompleted: false,
+          updatedAt: Date.now(),
+          todos: [{ id: '1', text: 'नया अनुबंध हस्ताक्षर', isCompleted: false, createdAt: Date.now() }],
         },
       };
 

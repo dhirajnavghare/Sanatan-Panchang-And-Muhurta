@@ -96,16 +96,16 @@ const TOUR_SLIDES: TourSlide[] = [
   },
   {
     emoji: '🌟',
-    badge: '5 Sacred Tabs',
-    badgeHi: '५ पवित्र अनुभाग',
-    title: 'Your 5 Daily Sacred Tabs',
-    titleHi: 'आपके ५ दैनिक सहायक अनुभाग',
+    badge: '6 Sacred Tabs',
+    badgeHi: '६ पवित्र अनुभाग',
+    title: 'Your 6 Sacred Companion Tabs',
+    titleHi: 'आपके ६ दैनिक सहायक अनुभाग',
     subtitle: 'The comprehensive daily companion for every Sanatani',
     subtitleHi: 'हर सनातनी का संपूर्ण एवं प्रामाणिक डिजिटल साथी',
     description:
-      '• दिनचर्या (Dinacharya): Your daily Muhurta Planner & To-Do workspace\n• मुहूर्त (Muhurta): 12+ categories Shubh Muhurta Finder\n• पर्व-व्रत (Festivals): Full Ekadashi, Vrat & Festival almanac\n• स्तोत्र-जप (Prayers): 108-bead Japa Mala counter & Stotras\n• तीर्थ-अन्य (More): Jyotirlinga, Char Dham guides & Settings',
+      '• दिनचर्या (Dinacharya): Your daily Muhurta Planner & To-Do workspace\n• मुहूर्त (Muhurta): 12+ categories Shubh Muhurta Finder\n• पर्व-व्रत (Festivals): Full Ekadashi, Vrat & Festival almanac\n• स्तोत्र-जप (Prayers): 108-bead Japa Mala counter & Stotras\n• तीर्थ (More): Jyotirlinga, Char Dham & Divine Deities\n• सेटिंग्स (Settings): Personalized Alerts, Gotra Profile & Language',
     descriptionHi:
-      '• दिनचर्या: आपका दैनिक मुहूर्त प्लानर व टू-डू कार्य योजना\n• मुहूर्त: विवाह, गृह प्रवेश आदि १२+ श्रेणियों का मुहूर्त शोधक\n• पर्व-व्रत: सम्पूर्ण एकादशी, पूर्णिमा व त्योहार पञ्चिका\n• स्तोत्र-जप: १०८ मनकों की जप माला, चालीसा व स्तोत्र संग्रह\n• तीर्थ-अन्य: ज्योतिर्लिंग, चार धाम दर्शन व प्रोफाइल सेटिंग्स',
+      '• दिनचर्या: आपका दैनिक मुहूर्त प्लानर व टू-डू कार्य योजना\n• मुहूर्त: विवाह, गृह प्रवेश आदि १२+ श्रेणियों का मुहूर्त शोधक\n• पर्व-व्रत: सम्पूर्ण एकादशी, पूर्णिमा व त्योहार पञ्चिका\n• स्तोत्र-जप: १०८ मनकों की जप माला, चालीसा व स्तोत्र संग्रह\n• तीर्थ: ज्योतिर्लिंग, चार धाम व देवी-देवता दर्शन\n• सेटिंग्स: फोन नोटिफिकेशन, गोत्र प्रोफाइल व भाषा सेटिंग्स',
     highlight: '🚩 Authentic mathematical ephemeris with zero approximations',
     highlightHi: '🚩 नासा व प्राचीन भारतीय सिद्धान्तों पर आधारित पूर्णतः सटीक',
   },

@@ -112,12 +112,26 @@ export default function TabLayout() {
       <Tabs.Screen
         name="more"
         options={{
-          title: isHi ? 'तीर्थ-अन्य' : 'More',
-          headerTitle: isHi ? 'तीर्थ, देव एवं सेटिंग्स' : 'Temples & Settings',
+          title: isHi ? 'तीर्थ' : 'More',
+          headerTitle: isHi ? 'तीर्थ, देव एवं व्रत कथा' : 'Temples, Deities & Kathas',
           tabBarIcon: ({ focused }) => (
             <Ionicons
-              name={focused ? 'person' : 'person-outline'}
-              size={23}
+              name={focused ? 'library' : 'library-outline'}
+              size={22}
+              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: isHi ? 'सेटिंग्स' : 'Settings',
+          headerTitle: isHi ? 'ऍप सेटिंग्स एवं प्राथमिकताएं' : 'App Settings & Preferences',
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name={focused ? 'settings' : 'settings-outline'}
+              size={22}
               color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
             />
           ),
@@ -129,7 +143,7 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     marginTop: 2,
   },

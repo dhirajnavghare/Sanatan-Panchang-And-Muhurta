@@ -87,7 +87,7 @@ describe('App Tour Modal Component & Service Tests', () => {
       await act(async () => {
         fireEvent.press(screen.getByTestId('tour-next-btn'));
       });
-      expect(screen.getByText('आपके ५ दैनिक सहायक अनुभाग')).toBeTruthy();
+      expect(screen.getByText(/दैनिक सहायक अनुभाग/)).toBeTruthy();
       expect(screen.getByText(/चरण 5 \/ 5/i)).toBeTruthy();
       expect(screen.getByTestId('tour-finish-btn')).toBeTruthy();
     });
