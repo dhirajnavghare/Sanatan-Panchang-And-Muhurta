@@ -93,7 +93,7 @@ export interface Translations {
 export const TRANSLATIONS: Record<Language, Translations> = {
   en: {
     navHome: 'Home',
-    navPanchang: 'Panchang',
+    navPanchang: 'Dinacharya',
     navMuhurta: 'Muhurta',
     navFestivals: 'Festivals',
     navDeities: 'Deities',
@@ -172,7 +172,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
   },
   hi: {
     navHome: 'मुखपृष्ठ',
-    navPanchang: 'पञ्चाङ्ग',
+    navPanchang: 'दिनचर्या',
     navMuhurta: 'शुभ मुहूर्त',
     navFestivals: 'व्रत-त्योहार',
     navDeities: 'देवी-देवता',

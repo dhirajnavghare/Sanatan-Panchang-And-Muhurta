@@ -56,11 +56,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: isHi ? 'पञ्चाङ्ग' : 'Panchang',
+          title: isHi ? 'दिनचर्या' : 'Dinacharya',
           headerShown: false, // Custom rich header on Home screen
           tabBarIcon: ({ focused }) => (
             <Ionicons
-              name={focused ? 'calendar' : 'calendar-outline'}
+              name={focused ? 'today' : 'today-outline'}
               size={23}
               color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
             />
