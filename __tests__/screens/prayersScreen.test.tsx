@@ -125,4 +125,36 @@ describe('Prayers Screen - Comprehensive UI & Clicks Tests', () => {
     const centralBead = screen.getByTestId('central-bead-number');
     expect(centralBead.props.children).toBe(1);
   });
+
+  it('should render the Sacred Chanting loop player and allow selecting target loops', async () => {
+    await renderScreen();
+
+    // Verify loop buttons render
+    expect(screen.getByTestId('loop-btn-1')).toBeTruthy();
+    expect(screen.getByTestId('loop-btn-7')).toBeTruthy();
+    expect(screen.getByTestId('loop-btn-11')).toBeTruthy();
+    expect(screen.getByTestId('loop-btn-21')).toBeTruthy();
+    expect(screen.getByTestId('loop-btn-108')).toBeTruthy();
+
+    // Select 11 loops
+    const loop11Btn = screen.getByTestId('loop-btn-11');
+    await act(async () => {
+      fireEvent.press(loop11Btn);
+    });
+
+    // Play/Pause button
+    const playBtn = screen.getByTestId('chant-play-toggle-btn');
+    expect(playBtn).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(playBtn);
+    });
+
+    // Reset button
+    const resetBtn = screen.getByTestId('chant-reset-btn');
+    expect(resetBtn).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(resetBtn);
+    });
+  });
 });

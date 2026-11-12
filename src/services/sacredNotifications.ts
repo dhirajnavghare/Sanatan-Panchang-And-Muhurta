@@ -95,7 +95,8 @@ export async function scheduleDailySacredReminders(
   dayPlans?: DayPlansMap,
   timezone: string = 'Asia/Kolkata',
   daysAhead: number = 7,
-  location?: GeoLocation
+  location?: GeoLocation,
+  language: 'hi' | 'en' = 'hi'
 ): Promise<void> {
   if (Platform.OS === 'web' || !profile.notificationsEnabled) {
     if (Platform.OS !== 'web') {
@@ -122,6 +123,7 @@ export async function scheduleDailySacredReminders(
     const nowMs = now.getTime();
     const targetLocation: GeoLocation = location || panchang.location || PRESET_CITIES[0];
     const resolvedTz = targetLocation.timezone || timezone || 'Asia/Kolkata';
+    const isHi = language === 'hi';
 
     const formatTime = (d: Date | string | null, tz: string = resolvedTz): string => {
       if (!d) return '';
@@ -148,7 +150,8 @@ export async function scheduleDailySacredReminders(
         ? [{ text: plan.taskText }]
         : [];
       if (pendingTodos.length === 0) return '';
-      return `\n🎯 आपके कार्य: ${pendingTodos.map((t, idx) => `${idx + 1}. ${t.text}`).join(' • ')}`;
+      const prefix = isHi ? '\n🎯 आपके कार्य: ' : '\n🎯 Your tasks: ';
+      return `${prefix}${pendingTodos.map((t, idx) => `${idx + 1}. ${t.text}`).join(' • ')}`;
     };
 
     // Schedule rolling multi-day notifications (Today + upcoming days) completely offline!
@@ -176,8 +179,12 @@ export async function scheduleDailySacredReminders(
           const taskText = getSlotTaskText('abhijit_muhurta', activePlans);
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: `🌟 अभिजित मुहूर्त सक्रिय है (${timeWindow})`,
-              body: `भगवान विष्णु का परम प्रिय विजय काल • समस्त शुभ कार्य, महत्वपूर्ण निर्णय व आरम्भ हेतु सर्वोत्तम।${taskText}`,
+              title: isHi
+                ? `🌟 अभिजित मुहूर्त सक्रिय है (${timeWindow})`
+                : `🌟 Supreme Victory Hour • Abhijit Muhurta (${timeWindow})`,
+              body: isHi
+                ? `भगवान विष्णु का परम प्रिय विजय काल • समस्त शुभ कार्य, महत्वपूर्ण निर्णय व आरम्भ हेतु सर्वोत्तम।${taskText}`
+                : `Auspicious hour of Lord Vishnu • Supreme for vital launches & agreements.${taskText}`,
               sound: true,
               data: { type: 'abhijit', slotId: 'abhijit_muhurta', dayOffset },
             },
@@ -202,8 +209,12 @@ export async function scheduleDailySacredReminders(
           const taskText = getSlotTaskText('brahma_muhurta', activePlans);
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: `🕊️ ब्रह्म मुहूर्त (अमृत वेला) आरम्भ 🌅 (${timeWindow})`,
-              body: `सृष्टि की शुद्धतम सात्विक ऊर्जा • आत्म-चिंतन, ध्यान, मन्त्र जप व प्राणायाम से दिन का आरम्भ करें।${taskText}`,
+              title: isHi
+                ? `🕊️ ब्रह्म मुहूर्त (अमृत वेला) आरम्भ 🌅 (${timeWindow})`
+                : `🕊️ Brahma Muhurta (Ambrosial Dawn) Active 🌅 (${timeWindow})`,
+              body: isHi
+                ? `सृष्टि की शुद्धतम सात्विक ऊर्जा • आत्म-चिंतन, ध्यान, मन्त्र जप व प्राणायाम से दिन का आरम्भ करें।${taskText}`
+                : `Purest spiritual vibration • Supreme for meditation, mantra chanting & study.${taskText}`,
               sound: true,
               data: { type: 'brahma', slotId: 'brahma_muhurta', dayOffset },
             },
@@ -229,8 +240,12 @@ export async function scheduleDailySacredReminders(
           const taskText = getSlotTaskText('rahu_kaal', activePlans);
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: `⚠️ राहु काल चेतावनी (10 मिनट में शुरू)`,
-              body: `आज राहु काल ${timeWindow} तक रहेगा। नया उद्यम आरम्भ, धन निवेश या यात्रा टालें • केवल नियमित कार्य जारी रखें।${taskText}`,
+              title: isHi
+                ? `⚠️ राहु काल चेतावनी (10 मिनट में शुरू)`
+                : `⚠️ Rahu Kaal Caution (Starts in 10 mins)`,
+              body: isHi
+                ? `आज राहु काल ${timeWindow} तक रहेगा। नया उद्यम आरम्भ, धन निवेश या यात्रा टालें • केवल नियमित कार्य जारी रखें।${taskText}`
+                : `Rahu Kaal active from ${timeWindow}. Avoid starting new ventures, contracts or travel • Continue routine chores.${taskText}`,
               sound: true,
               data: { type: 'rahu', slotId: 'rahu_kaal', dayOffset },
             },
@@ -252,8 +267,12 @@ export async function scheduleDailySacredReminders(
           const taskText = getSlotTaskText('godhuli_sandhya', activePlans);
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: `🪔 गोधूलि वेला व सायं दीप प्रज्वलन (${formatTime(sunset)})`,
-              body: `गोधूलि वेला आरम्भ हो चुकी है। घर के मन्दिर व तुलसी जी के समीप घी का दीप प्रज्वलित करें, हनुमान चालीसा व आरती करें।${taskText}`,
+              title: isHi
+                ? `🪔 गोधूलि वेला व सायं दीप प्रज्वलन (${formatTime(sunset)})`
+                : `🪔 Godhuli Sandhya & Evening Deepam (${formatTime(sunset)})`,
+              body: isHi
+                ? `गोधूलि वेला आरम्भ हो चुकी है। घर के मन्दिर व तुलसी जी के समीप घी का दीप प्रज्वलित करें, हनुमान चालीसा व आरती करें।${taskText}`
+                : `Twilight hour is here. Light ghee lamp at home shrine and Tulsi ji, recite Hanuman Chalisa & Aarti.${taskText}`,
               sound: true,
               data: { type: 'deepam', slotId: 'godhuli_sandhya', dayOffset },
             },
@@ -280,8 +299,12 @@ export async function scheduleDailySacredReminders(
               const taskText = getSlotTaskText(`choghadiya_day_${idx}`, activePlans);
               await Notifications.scheduleNotificationAsync({
                 content: {
-                  title: `✨ ${ch.nameDevanagari} चौघड़िया आरम्भ (${timeWindow})`,
-                  body: `${ch.quality === 'Amrit' ? 'सर्वश्रेष्ठ अमृत वेला: व्यापार, नवीन कार्य आरम्भ, क्रय-विक्रय व विद्याभ्यास करें।' : 'शुभ काल: धार्मिक कार्य, महत्वपूर्ण बैठक व शुभ कार्यों हेतु श्रेष्ठ समय।'}${taskText}`,
+                  title: isHi
+                    ? `✨ ${ch.nameDevanagari} चौघड़िया आरम्भ (${timeWindow})`
+                    : `✨ ${ch.name} Choghadiya (${ch.quality}) Active (${timeWindow})`,
+                  body: isHi
+                    ? `${ch.quality === 'Amrit' ? 'सर्वश्रेष्ठ अमृत वेला: व्यापार, नवीन कार्य आरम्भ, क्रय-विक्रय व विद्याभ्यास करें।' : 'शुभ काल: धार्मिक कार्य, महत्वपूर्ण बैठक व शुभ कार्यों हेतु श्रेष्ठ समय।'}${taskText}`
+                    : `${ch.quality === 'Amrit' ? 'Ambrosial nectar window: Great for business, launches, purchases & learning.' : 'Auspicious window: Ideal for spiritual practices, meetings & sacred works.'}${taskText}`,
                   sound: true,
                   data: { type: 'choghadiya', choghadiyaName: ch.name, dayOffset },
                 },
@@ -315,10 +338,12 @@ export async function scheduleDailySacredReminders(
               if (pendingTodos.length > 0 && slot.startTime.getTime() > nowMs) {
                 const secondsUntil = Math.max(10, Math.floor((slot.startTime.getTime() - nowMs) / 1000));
                 const timeWindow = `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`;
+                const slotTitle = isHi ? slot.titleHi : slot.title;
+                const header = isHi ? '🎯 आपके नियोजित कार्य:' : '🎯 Your scheduled tasks:';
                 await Notifications.scheduleNotificationAsync({
                   content: {
-                    title: `📝 ${slot.titleHi} (${timeWindow})`,
-                    body: `🎯 आपके नियोजित कार्य: ${pendingTodos.map((t, idx) => `${idx + 1}. ${t.text}`).join(' • ')}`,
+                    title: `📝 ${slotTitle} (${timeWindow})`,
+                    body: `${header} ${pendingTodos.map((t, idx) => `${idx + 1}. ${t.text}`).join(' • ')}`,
                     sound: true,
                     data: { type: 'todo', slotId: slot.id, dayOffset },
                   },
@@ -344,8 +369,10 @@ export async function scheduleDailySacredReminders(
             const secondsUntil = Math.max(10, Math.floor((eveningReminder.getTime() - nowMs) / 1000));
             await Notifications.scheduleNotificationAsync({
               content: {
-                title: 'कल पवित्र एकादशी व्रत है 🌸',
-                body: 'कल श्री हरि विष्णु को समर्पित एकादशी है। अन्न का त्याग कर सात्विक व्रत का सङ्कल्प करें।',
+                title: isHi ? 'कल पवित्र एकादशी व्रत है 🌸' : 'Tomorrow is Sacred Ekadashi Vrat 🌸',
+                body: isHi
+                  ? 'कल श्री हरि विष्णु को समर्पित एकादशी है। अन्न का त्याग कर सात्विक व्रत का सङ्कल्प करें।'
+                  : 'Dedicated to Lord Sri Hari Vishnu. Prepare for fasting, prayer, and devotion.',
                 sound: true,
                 data: { type: 'ekadashi', dayOffset },
               },

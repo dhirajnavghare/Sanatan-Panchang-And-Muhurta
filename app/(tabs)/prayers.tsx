@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Share, Text, View } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, ScrollView, TouchableOpacity, Share, Text, View, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PRAYERS_DATA } from '@/src/core/prayers/data';
 import { PrayerRecord } from '@/src/core/prayers/types';
@@ -19,8 +19,81 @@ export default function PrayersScreen() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
 
+  // Sacred Chanting Loop Player State
+  const [isPlayingChant, setIsPlayingChant] = useState(false);
+  const [targetLoops, setTargetLoops] = useState<number>(1);
+  const [completedLoops, setCompletedLoops] = useState<number>(0);
+  const [activeVerseIndex, setActiveVerseIndex] = useState<number | null>(null);
+  const chantTimerRef = useRef<any>(null);
+
   useEffect(() => {
     loadUserProfile().then(setUserProfile);
+  }, []);
+
+  const stopChanting = () => {
+    if (chantTimerRef.current) {
+      clearInterval(chantTimerRef.current);
+      chantTimerRef.current = null;
+    }
+    setIsPlayingChant(false);
+    setActiveVerseIndex(null);
+  };
+
+  const handleToggleChant = async () => {
+    await triggerHaptic('tap', userProfile.hapticsEnabled);
+    if (isPlayingChant) {
+      stopChanting();
+      return;
+    }
+
+    if (userProfile.audioEnabled) {
+      playTempleBell(0.8);
+    }
+    setIsPlayingChant(true);
+    let currentIdx = activeVerseIndex !== null ? activeVerseIndex : 0;
+    setActiveVerseIndex(currentIdx);
+
+    const totalVerses = selectedPrayer.verses.length;
+    chantTimerRef.current = setInterval(async () => {
+      currentIdx++;
+      if (currentIdx >= totalVerses) {
+        currentIdx = 0;
+        setCompletedLoops((prev) => {
+          const nextVal = prev + 1;
+          if (userProfile.audioEnabled) {
+            playTempleBell(0.85);
+          }
+          triggerHaptic('quarter', userProfile.hapticsEnabled);
+          if (nextVal >= targetLoops) {
+            stopChanting();
+            triggerHaptic('malaComplete', userProfile.hapticsEnabled);
+            Alert.alert(
+              isHi ? 'पाठ सम्पन्न 🙏' : 'Chanting Completed 🙏',
+              isHi
+                ? `${selectedPrayer.titleDevanagari} के ${targetLoops} पाठ सफलतापूर्वक सम्पन्न हुए।`
+                : `Successfully completed ${targetLoops} sacred rounds of ${selectedPrayer.title}.`
+            );
+            return 0;
+          }
+          return nextVal;
+        });
+      }
+      setActiveVerseIndex(currentIdx);
+    }, 3500);
+  };
+
+  const handleResetChant = async () => {
+    await triggerHaptic('tap', userProfile.hapticsEnabled);
+    stopChanting();
+    setCompletedLoops(0);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (chantTimerRef.current) {
+        clearInterval(chantTimerRef.current);
+      }
+    };
   }, []);
 
   const prayerIcons: Record<string, string> = {
@@ -36,6 +109,8 @@ export default function PrayersScreen() {
 
   const handlePrayerSelect = (p: PrayerRecord) => {
     if (p.id === selectedPrayer.id) return;
+    stopChanting();
+    setCompletedLoops(0);
     setIsCalculating(true);
     setTimeout(() => {
       setSelectedPrayer(p);
@@ -133,6 +208,82 @@ export default function PrayersScreen() {
             hapticsEnabled={userProfile.hapticsEnabled}
           />
 
+          {/* Interactive Sacred Chanting & Japa Loop Player */}
+          <View style={styles.chantPlayerCard}>
+            <View style={styles.chantPlayerHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.chantPlayerTag}>
+                  {isHi ? '📿 नित्य पाठ एवं जप आवर्तन' : '📿 Sacred Chanting & Japa Loop'}
+                </Text>
+                <Text style={styles.chantPlayerTitle}>
+                  {isHi ? selectedPrayer.titleDevanagari : selectedPrayer.title}
+                </Text>
+              </View>
+
+              <View style={styles.loopCounterBadge}>
+                <Text style={styles.loopCounterText}>
+                  {isHi ? `पाठ ${completedLoops}/${targetLoops}` : `Round ${completedLoops}/${targetLoops}`}
+                </Text>
+              </View>
+            </View>
+
+            {/* Loop Target Selector */}
+            <View style={styles.loopSelectorRow}>
+              <Text style={styles.loopSelectorLabel}>
+                {isHi ? 'आवर्तन (Loops):' : 'Target Loops:'}
+              </Text>
+              {[1, 7, 11, 21, 108].map((num) => (
+                <TouchableOpacity
+                  key={num}
+                  testID={`loop-btn-${num}`}
+                  style={[styles.loopBtn, targetLoops === num && styles.loopBtnActive]}
+                  onPress={async () => {
+                    await triggerHaptic('tap', userProfile.hapticsEnabled);
+                    setTargetLoops(num);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.loopBtnText, targetLoops === num && styles.loopBtnTextActive]}>
+                    {num}x
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Chanting Action Buttons */}
+            <View style={styles.chantActionRow}>
+              <TouchableOpacity
+                testID="chant-play-toggle-btn"
+                style={[styles.chantPlayBtn, isPlayingChant && styles.chantPlayBtnActive]}
+                onPress={handleToggleChant}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={isPlayingChant ? 'pause' : 'play'}
+                  size={18}
+                  color="#ffffff"
+                />
+                <Text style={styles.chantPlayBtnText}>
+                  {isPlayingChant
+                    ? (isHi ? 'विराम (Pause)' : 'Pause Chanting')
+                    : (isHi ? `पाठ प्रारंभ करें (${targetLoops} बार)` : `Start Chanting (${targetLoops}x)`)}
+                </Text>
+              </TouchableOpacity>
+
+              {(isPlayingChant || completedLoops > 0) && (
+                <TouchableOpacity
+                  testID="chant-reset-btn"
+                  style={styles.chantResetBtn}
+                  onPress={handleResetChant}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="refresh" size={16} color="#71717a" />
+                  <Text style={styles.chantResetBtnText}>{isHi ? 'रीसेट' : 'Reset'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
           {/* Reader Controls Bar: Font Size & Header */}
           <View style={styles.readerControlsCard}>
             <View style={{ flex: 1 }}>
@@ -180,37 +331,48 @@ export default function PrayersScreen() {
           </View>
 
           {/* Verses List */}
-          {selectedPrayer.verses.map((verse) => (
-            <View key={verse.verseNumber} style={styles.verseCard}>
-              <View style={styles.verseHeaderRow}>
-                <View style={styles.verseTypeBadge}>
-                  <Text style={styles.verseTypeBadgeText}>
-                    {isHi
-                      ? verse.verseType === 'doha'
-                        ? 'दोहा'
-                        : verse.verseType === 'chaupai'
-                        ? 'चौपाई'
-                        : 'श्लोक'
-                      : verse.verseType.toUpperCase()}{' '}
-                    #{verse.verseNumber}
-                  </Text>
-                </View>
+          {selectedPrayer.verses.map((verse, index) => {
+            const isChantingActive = activeVerseIndex === index;
+            return (
+              <View
+                key={verse.verseNumber}
+                style={[styles.verseCard, isChantingActive && styles.verseCardActive]}
+              >
+                <View style={styles.verseHeaderRow}>
+                  <View style={[styles.verseTypeBadge, isChantingActive && styles.verseTypeBadgeActive]}>
+                    <Text
+                      style={[
+                        styles.verseTypeBadgeText,
+                        isChantingActive && styles.verseTypeBadgeTextActive,
+                      ]}
+                    >
+                      {isChantingActive ? (isHi ? '✨ सक्रिय पाठ • ' : '✨ Chanting • ') : ''}
+                      {isHi
+                        ? verse.verseType === 'doha'
+                          ? 'दोहा'
+                          : verse.verseType === 'chaupai'
+                          ? 'चौपाई'
+                          : 'श्लोक'
+                        : verse.verseType.toUpperCase()}{' '}
+                      #{verse.verseNumber}
+                    </Text>
+                  </View>
 
-                <TouchableOpacity
-                  testID={`verse-share-${verse.verseNumber}`}
-                  style={styles.verseShareBtn}
-                  onPress={() =>
-                    handleShareVerse(
-                      verse.sanskrit,
-                      isHi ? verse.hindiMeaning : verse.englishMeaning,
-                      verse.verseNumber
-                    )
-                  }
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="share-outline" size={15} color="#71717a" />
-                </TouchableOpacity>
-              </View>
+                  <TouchableOpacity
+                    testID={`verse-share-${verse.verseNumber}`}
+                    style={styles.verseShareBtn}
+                    onPress={() =>
+                      handleShareVerse(
+                        verse.sanskrit,
+                        isHi ? verse.hindiMeaning : verse.englishMeaning,
+                        verse.verseNumber
+                      )
+                    }
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="share-outline" size={15} color="#71717a" />
+                  </TouchableOpacity>
+                </View>
 
               {/* Sanskrit Text */}
               <Text
@@ -249,7 +411,8 @@ export default function PrayersScreen() {
                 </Text>
               </View>
             </View>
-          ))}
+          );
+        })}
 
           {/* Phala-shruti */}
           <View style={styles.phalaCard}>
@@ -542,6 +705,15 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
+  verseCardActive: {
+    backgroundColor: '#fffbeb',
+    borderColor: '#f59e0b',
+    borderWidth: 1.5,
+    shadowColor: '#d97706',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
   verseHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -555,10 +727,139 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: Radius.xs,
   },
+  verseTypeBadgeActive: {
+    backgroundColor: '#fef3c7',
+  },
   verseTypeBadgeText: {
     fontSize: 10,
     fontWeight: '700',
     color: '#71717a',
+  },
+  verseTypeBadgeTextActive: {
+    color: '#b45309',
+    fontWeight: '800',
+  },
+
+  // Sacred Chanting Loop Player
+  chantPlayerCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1.5,
+    borderColor: '#fed7aa',
+    shadowColor: '#ea580c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  chantPlayerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  chantPlayerTag: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ea580c',
+  },
+  chantPlayerTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#18181b',
+    marginTop: 2,
+  },
+  loopCounterBadge: {
+    backgroundColor: '#ffedd5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+  },
+  loopCounterText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#c2410c',
+  },
+  loopSelectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+    flexWrap: 'wrap',
+  },
+  loopSelectorLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#71717a',
+    marginRight: 2,
+  },
+  loopBtn: {
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: '#f4f4f5',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+  },
+  loopBtnActive: {
+    backgroundColor: '#ea580c',
+    borderColor: '#c2410c',
+  },
+  loopBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#52525b',
+  },
+  loopBtnTextActive: {
+    color: '#ffffff',
+  },
+  chantActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  chantPlayBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#ea580c',
+    paddingVertical: 11,
+    borderRadius: Radius.md,
+    shadowColor: '#ea580c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  chantPlayBtnActive: {
+    backgroundColor: '#b45309',
+  },
+  chantPlayBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  chantResetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: Radius.md,
+    backgroundColor: '#f4f4f5',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+  },
+  chantResetBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#52525b',
   },
   verseShareBtn: {
     padding: 2,
