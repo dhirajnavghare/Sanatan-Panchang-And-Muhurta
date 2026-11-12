@@ -157,4 +157,63 @@ describe('More Screen - Comprehensive UI & Clicks Tests', () => {
       expect(vratPills[1]).toBeTruthy();
     }
   });
+
+  it('should open the App Tour Walkthrough Modal when user clicks replay tour button', async () => {
+    await renderScreen();
+
+    const replayTourBtn = screen.getByTestId('more-replay-tour-btn');
+    await act(async () => {
+      fireEvent.press(replayTourBtn);
+    });
+
+    expect(screen.getByTestId('app-tour-modal')).toBeTruthy();
+    expect(screen.getByTestId('tour-next-btn')).toBeTruthy();
+  });
+
+  it('should toggle master notification switch and configure specific alert categories', async () => {
+    await renderScreen();
+
+    const masterSwitch = screen.getByTestId('notif-master-switch');
+    expect(masterSwitch).toBeTruthy();
+
+    const abhijitSwitch = screen.getByTestId('notif-toggle-abhijit');
+    const todoSwitch = screen.getByTestId('notif-toggle-todo');
+    const brahmaSwitch = screen.getByTestId('notif-toggle-brahma');
+    const rahuSwitch = screen.getByTestId('notif-toggle-rahu');
+    const choghadiyaSwitch = screen.getByTestId('notif-toggle-choghadiya');
+    const deepamSwitch = screen.getByTestId('notif-toggle-deepam');
+    const ekadashiSwitch = screen.getByTestId('notif-toggle-ekadashi');
+
+    expect(abhijitSwitch).toBeTruthy();
+    expect(todoSwitch).toBeTruthy();
+    expect(brahmaSwitch).toBeTruthy();
+    expect(rahuSwitch).toBeTruthy();
+    expect(choghadiyaSwitch).toBeTruthy();
+    expect(deepamSwitch).toBeTruthy();
+    expect(ekadashiSwitch).toBeTruthy();
+
+    // Toggle Abhijit alert switch
+    await act(async () => {
+      fireEvent(abhijitSwitch, 'valueChange', false);
+      await new Promise((r) => setTimeout(r, 60));
+    });
+
+    // Toggle To-Do alert switch
+    await act(async () => {
+      fireEvent(todoSwitch, 'valueChange', false);
+      await new Promise((r) => setTimeout(r, 60));
+    });
+  });
+
+  it('should trigger send test notification button without crashing', async () => {
+    await renderScreen();
+
+    const testBtn = screen.getByTestId('notif-send-test-btn');
+    expect(testBtn).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(testBtn);
+      await new Promise((r) => setTimeout(r, 60));
+    });
+  });
 });

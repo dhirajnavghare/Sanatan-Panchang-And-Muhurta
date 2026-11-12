@@ -66,6 +66,8 @@ import {
 import { playTempleBell, triggerHaptic } from '@/src/services/sacredAudio';
 import { scheduleDailySacredReminders } from '@/src/services/sacredNotifications';
 import { DailyPanchangCardModal } from '@/src/components/DailyPanchangCardModal';
+import { AppTourModal } from '@/src/components/AppTourModal';
+import { hasSeenAppTour, markAppTourCompleted } from '@/src/services/appTour';
 
 export default function PanchangScreen() {
   const insets = useSafeAreaInsets();
@@ -81,6 +83,22 @@ export default function PanchangScreen() {
   // Sacred Profile & Audio
   const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
   const [isShareCardModalVisible, setIsShareCardModalVisible] = useState(false);
+
+  // First-Time App Tour state
+  const [isTourModalVisible, setIsTourModalVisible] = useState(false);
+
+  useEffect(() => {
+    hasSeenAppTour().then((seen) => {
+      if (!seen) {
+        setIsTourModalVisible(true);
+      }
+    });
+  }, []);
+
+  const handleCloseTour = async () => {
+    setIsTourModalVisible(false);
+    await markAppTourCompleted();
+  };
 
   // Modals for deep Hindu daily routine
   const [isSankalpaModalVisible, setIsSankalpaModalVisible] = useState(false);
@@ -162,10 +180,10 @@ export default function PanchangScreen() {
     loadUserProfile().then((p) => {
       setUserProfile(p);
       if (panchang) {
-        scheduleDailySacredReminders(panchang, p);
+        scheduleDailySacredReminders(panchang, p, dayPlans, location.timezone);
       }
     });
-  }, [panchang]);
+  }, [panchang, dayPlans, location.timezone]);
 
   const dailySankalpa = useMemo(() => {
     return generateDailySankalpa(panchang, location.name, userProfile.name, userProfile.gotra);
@@ -1399,6 +1417,13 @@ export default function PanchangScreen() {
           cityName={location.name}
           devataInfo={weekdayDevata}
           verse={selectedVerse}
+        />
+
+        {/* First-Time User App Tour Walkthrough Modal */}
+        <AppTourModal
+          visible={isTourModalVisible}
+          onClose={handleCloseTour}
+          isHi={isHi}
         />
       </View>
     </KeyboardAvoidingView>

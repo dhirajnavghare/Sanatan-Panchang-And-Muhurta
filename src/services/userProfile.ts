@@ -1,5 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export interface UserNotificationPreferences {
+  abhijitAlert: boolean; // 🌟 Abhijit Muhurta & Supreme Auspicious Windows
+  brahmaMuhurtaAlert: boolean; // 🕊️ Brahma Muhurta (Amrit Vela)
+  rahuKaalAlert: boolean; // ⚠️ Rahu Kaal Caution Warnings
+  sandhyaDeepamAlert: boolean; // 🪔 Godhuli & Evening Sandhya Deepam
+  choghadiyaAlert: boolean; // ✨ Amrit & Shubh Choghadiya Shifts
+  todoTasksAlert: boolean; // 📝 Planned To-Do Task Reminders
+  ekadashiAlert: boolean; // 🌸 Ekadashi Fasting Alerts
+  pradoshAlert: boolean; // 🔱 Pradosha Vrat Alerts
+  chandrodayaAlert: boolean; // 🌙 Moonrise Alerts
+}
+
 export interface UserSacredProfile {
   name: string;
   gotra: string;
@@ -9,14 +21,7 @@ export interface UserSacredProfile {
   audioEnabled: boolean;
   hapticsEnabled: boolean;
   notificationsEnabled: boolean;
-  notifications: {
-    brahmaMuhurtaAlert: boolean;
-    rahuKaalAlert: boolean;
-    ekadashiAlert: boolean;
-    pradoshAlert: boolean;
-    sandhyaDeepamAlert: boolean;
-    chandrodayaAlert: boolean;
-  };
+  notifications: UserNotificationPreferences;
 }
 
 export const POPULAR_GOTRAS = [
@@ -66,12 +71,15 @@ export const DEFAULT_USER_PROFILE: UserSacredProfile = {
   hapticsEnabled: true,
   notificationsEnabled: true,
   notifications: {
+    abhijitAlert: true,
     brahmaMuhurtaAlert: true,
     rahuKaalAlert: true,
+    sandhyaDeepamAlert: true,
+    choghadiyaAlert: true,
+    todoTasksAlert: true,
     ekadashiAlert: true,
     pradoshAlert: true,
-    sandhyaDeepamAlert: true,
-    chandrodayaAlert: true,
+    chandrodayaAlert: false,
   },
 };
 

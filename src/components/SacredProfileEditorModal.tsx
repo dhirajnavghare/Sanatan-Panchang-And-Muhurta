@@ -243,7 +243,20 @@ export function SacredProfileEditorModal({
                 <>
                   <View style={styles.toggleRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.toggleTitle}>{isHi ? 'ब्रह्म मुहूर्त जागरण (Brahma Muhurta)' : 'Brahma Muhurta Wakeup'}</Text>
+                      <Text style={styles.toggleTitle}>{isHi ? '🌟 अभिजित मुहूर्त (विजय काल)' : '🌟 Abhijit Muhurta Alert'}</Text>
+                      <Text style={styles.toggleDesc}>{isHi ? 'भगवान विष्णु के विजय काल (11:48 AM - 12:32 PM) का अलर्ट' : 'Midday supreme victory hour notification'}</Text>
+                    </View>
+                    <Switch
+                      value={notifs.abhijitAlert}
+                      onValueChange={(v) => setNotifs({ ...notifs, abhijitAlert: v })}
+                      trackColor={{ false: '#e4e4e7', true: '#fcd34d' }}
+                      thumbColor={notifs.abhijitAlert ? '#d97706' : '#f4f4f5'}
+                    />
+                  </View>
+
+                  <View style={styles.toggleRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.toggleTitle}>{isHi ? '🕊️ ब्रह्म मुहूर्त जागरण (Brahma Muhurta)' : '🕊️ Brahma Muhurta Wakeup'}</Text>
                       <Text style={styles.toggleDesc}>{isHi ? 'सूर्योदय से 96 मिनट पूर्व अमृत वेला सूचना' : '96 mins before sunrise'}</Text>
                     </View>
                     <Switch
@@ -256,8 +269,8 @@ export function SacredProfileEditorModal({
 
                   <View style={styles.toggleRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.toggleTitle}>{isHi ? 'राहु काल पूर्व चेतावनी (15 मिनट पूर्व)' : 'Rahu Kaal Pre-Warning'}</Text>
-                      <Text style={styles.toggleDesc}>{isHi ? 'राहु काल शुरू होने से 15 मिनट पहले सतर्कता' : '15 mins before Rahu Kaal'}</Text>
+                      <Text style={styles.toggleTitle}>{isHi ? '⚠️ राहु काल पूर्व चेतावनी' : '⚠️ Rahu Kaal Pre-Warning'}</Text>
+                      <Text style={styles.toggleDesc}>{isHi ? 'राहु काल शुरू होने से 10 मिनट पहले सतर्कता' : '10 mins before Rahu Kaal'}</Text>
                     </View>
                     <Switch
                       value={notifs.rahuKaalAlert}
@@ -269,7 +282,7 @@ export function SacredProfileEditorModal({
 
                   <View style={styles.toggleRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.toggleTitle}>{isHi ? 'सायं दीप प्रज्वलन (Evening Deepam)' : 'Evening Lamp Lighting'}</Text>
+                      <Text style={styles.toggleTitle}>{isHi ? '🪔 सायं दीप प्रज्वलन (Evening Deepam)' : '🪔 Evening Lamp Lighting'}</Text>
                       <Text style={styles.toggleDesc}>{isHi ? 'सूर्यास्त गोधूलि वेला में दीप जलाने की सूचना' : 'At sunset / Godhuli vela'}</Text>
                     </View>
                     <Switch
@@ -280,9 +293,35 @@ export function SacredProfileEditorModal({
                     />
                   </View>
 
+                  <View style={styles.toggleRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.toggleTitle}>{isHi ? '✨ अमृत व शुभ चौघड़िया' : '✨ Auspicious Choghadiyas'}</Text>
+                      <Text style={styles.toggleDesc}>{isHi ? 'दिन में अमृत व शुभ चौघड़िया आरम्भ होने पर अलर्ट' : 'Alert when Amrit/Shubh hours begin'}</Text>
+                    </View>
+                    <Switch
+                      value={notifs.choghadiyaAlert}
+                      onValueChange={(v) => setNotifs({ ...notifs, choghadiyaAlert: v })}
+                      trackColor={{ false: '#e4e4e7', true: '#fcd34d' }}
+                      thumbColor={notifs.choghadiyaAlert ? '#d97706' : '#f4f4f5'}
+                    />
+                  </View>
+
+                  <View style={styles.toggleRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.toggleTitle}>{isHi ? '📝 नियोजित To-Do कार्य स्मरण' : '📝 Planned To-Do Reminders'}</Text>
+                      <Text style={styles.toggleDesc}>{isHi ? 'मुहूर्त आरम्भ पर आपके द्वारा जोड़े गए कार्यों का अलर्ट' : 'Alert with tasks scheduled in that slot'}</Text>
+                    </View>
+                    <Switch
+                      value={notifs.todoTasksAlert}
+                      onValueChange={(v) => setNotifs({ ...notifs, todoTasksAlert: v })}
+                      trackColor={{ false: '#e4e4e7', true: '#fcd34d' }}
+                      thumbColor={notifs.todoTasksAlert ? '#d97706' : '#f4f4f5'}
+                    />
+                  </View>
+
                   <View style={[styles.toggleRow, { borderBottomWidth: 0 }]}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.toggleTitle}>{isHi ? 'एकादशी एवं व्रत पूर्व सूचना' : 'Ekadashi & Vrat Reminder'}</Text>
+                      <Text style={styles.toggleTitle}>{isHi ? '🌸 एकादशी एवं व्रत पूर्व सूचना' : '🌸 Ekadashi & Vrat Reminder'}</Text>
                       <Text style={styles.toggleDesc}>{isHi ? 'दशमी की शाम को एकादशी व्रत स्मरण' : 'Evening before Ekadashi'}</Text>
                     </View>
                     <Switch

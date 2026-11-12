@@ -11,7 +11,11 @@ import {
   triggerHaptic,
   TEMPLE_BELL_HARMONICS,
 } from '../src/services/sacredAudio';
-import { scheduleDailySacredReminders } from '../src/services/sacredNotifications';
+import {
+  scheduleDailySacredReminders,
+  presentTestNotification,
+} from '../src/services/sacredNotifications';
+import * as Notifications from 'expo-notifications';
 import { calculatePanchang, PRESET_CITIES } from '../src/core/panchang';
 
 describe('User Profile, Sacred Audio & Notifications Tests', () => {
@@ -81,6 +85,70 @@ describe('User Profile, Sacred Audio & Notifications Tests', () => {
       await expect(
         scheduleDailySacredReminders(panchang, profile)
       ).resolves.not.toThrow();
+    });
+
+    it('should schedule notifications for daily sacred events including Abhijit and To-Dos', async () => {
+      const futureDate = new Date(Date.now() + 3600000);
+      const futureDateEnd = new Date(Date.now() + 7200000);
+
+      const customPanchang = {
+        ...panchang,
+        muhurtas: {
+          ...panchang.muhurtas,
+          abhijitMuhurta: {
+            name: 'Abhijit',
+            nameDevanagari: 'अभिजित',
+            startTime: futureDate.toISOString(),
+            endTime: futureDateEnd.toISOString(),
+            isAuspicious: true,
+          },
+        },
+      };
+
+      const mockDayPlans = {
+        abhijit_muhurta: {
+          todos: [{ id: '1', text: 'नया अनुबंध हस्ताक्षर', isCompleted: false }],
+        },
+      };
+
+      const profile = {
+        ...DEFAULT_USER_PROFILE,
+        notificationsEnabled: true,
+        notifications: {
+          ...DEFAULT_USER_PROFILE.notifications,
+          abhijitAlert: true,
+          todoTasksAlert: true,
+        },
+      };
+
+      await scheduleDailySacredReminders(customPanchang, profile, mockDayPlans);
+      expect(Notifications.scheduleNotificationAsync).toHaveBeenCalled();
+    });
+
+    it('should present immediate test notification for cosmic alerts', async () => {
+      const res = await presentTestNotification(
+        '🌟 अभिजित मुहूर्त सक्रिय है',
+        'भगवान विष्णु का परम प्रिय विजय काल'
+      );
+      expect(res).toBe(true);
+      expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.objectContaining({
+            title: '🌟 अभिजित मुहूर्त सक्रिय है',
+          }),
+          trigger: null,
+        })
+      );
+    });
+
+    it('should cancel all notifications when notificationsEnabled is false', async () => {
+      const profile = {
+        ...DEFAULT_USER_PROFILE,
+        notificationsEnabled: false,
+      };
+
+      await scheduleDailySacredReminders(panchang, profile);
+      expect(Notifications.cancelAllScheduledNotificationsAsync).toHaveBeenCalled();
     });
   });
 });
