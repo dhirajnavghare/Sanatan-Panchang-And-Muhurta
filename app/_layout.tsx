@@ -3,9 +3,11 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { LanguageProvider } from '@/src/core/i18n/LanguageContext';
+import { runStartupDiagnostics } from '@/src/services/startupDiagnostics';
 
 export {
   ErrorBoundary,
@@ -21,6 +23,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    ...Ionicons.font,
   });
   const [isReady, setIsReady] = useState(false);
 
@@ -31,16 +34,23 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
-  // Safety fallback: ensure splash screen hides and app renders within 800ms even if fonts stall
+  // Safety fallback: allow ample time for mobile font engine before forcing ready
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsReady(true);
       SplashScreen.hideAsync().catch(() => {});
-    }, 800);
+    }, 3500);
     return () => clearTimeout(timer);
   }, []);
 
-  if (!isReady && !loaded && !error) {
+  // Automated System Health & Invariant Verification at Startup
+  useEffect(() => {
+    runStartupDiagnostics().catch((err) => {
+      console.warn('[Sanatan Diagnostics] Diagnostics run failure:', err);
+    });
+  }, []);
+
+  if (!loaded && !error && !isReady) {
     return null;
   }
 

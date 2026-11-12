@@ -22,11 +22,11 @@ export const WEEKDAY_DEVATAS: Record<number, DailyDevataInfo> = {
     dayNameHi: 'रविवार (भानुवार)',
     deityName: 'Lord Surya Narayana',
     deityNameHi: 'भगवान सूर्य नारायण',
-    mantra: 'Om Suryaya Namah | Om Ghrini Suryaya Adityaya',
+    mantra: 'Om Suryaya Namah | Om Ghrinih Suryaya Namah',
     mantraDevanagari: 'ॐ सूर्याय नमः • ॐ घृणिः सूर्याय नमः',
     significance: 'Source of life, vitality (Tejas), health, eye sight, and spiritual illumination.',
     significanceHi: 'आरोग्य, तेजस्, नेत्र ज्योति, पितृ सुख एवं प्रत्यक्ष देव की उपासना।',
-    prayerId: 'gayatri',
+    prayerId: 'aditya-hridaya-stotram',
     accentColor: '#f59e0b',
     bgPastel: '#fef3c7',
   },
@@ -40,7 +40,7 @@ export const WEEKDAY_DEVATAS: Record<number, DailyDevataInfo> = {
     mantraDevanagari: 'ॐ नमः शिवाय • ॐ त्र्यम्बकं यजामहे',
     significance: 'Governs mind (Chandra), tranquility, freedom from fear and inner peace.',
     significanceHi: 'मानसिक शान्ति, भय मुक्ति, कालजयी चेतना एवं औढरदानी शिव कृपा।',
-    prayerId: 'shiva-tandava',
+    prayerId: 'shiv-tandav-stotram',
     accentColor: '#0ea5e9',
     bgPastel: '#e0f2fe',
   },
@@ -63,12 +63,12 @@ export const WEEKDAY_DEVATAS: Record<number, DailyDevataInfo> = {
     dayName: 'Wednesday (Budhavara)',
     dayNameHi: 'बुधवार (सौम्यवार)',
     deityName: 'Lord Ganesha & Budha Dev',
-    deityNameHi: 'भगवान श्री गणेश एवं बुद्ध देव',
+    deityNameHi: 'भगवान श्री गणेश एवं बुध देव',
     mantra: 'Om Gam Ganapataye Namah',
     mantraDevanagari: 'ॐ गं गणपतये नमः • ॐ वक्रतुण्डाय हुम्',
     significance: 'Wisdom, intellect (Buddhi), communication, business success and removing hurdles.',
     significanceHi: 'बुद्धि, विवेक, विद्या, व्यापार समृद्धि एवं विघ्न विनाशन।',
-    prayerId: 'sankat-mochan',
+    prayerId: 'ganesh-chalisa',
     accentColor: '#10b981',
     bgPastel: '#d1fae5',
   },
@@ -82,7 +82,7 @@ export const WEEKDAY_DEVATAS: Record<number, DailyDevataInfo> = {
     mantraDevanagari: 'ॐ नमो भगवते वासुदेवाय • ॐ बृं बृहस्पतये नमः',
     significance: 'Dharma, knowledge, prosperity, family harmony, spiritual guidance and fortune.',
     significanceHi: 'धर्म, ज्ञान, ऐश्वर्य, सद्गुरु कृपा, सन्तान सुख एवं भाग्य वृद्धि।',
-    prayerId: 'vishnu-sahasranama',
+    prayerId: 'om-jai-jagdish-hare',
     accentColor: '#d97706',
     bgPastel: '#fef9c3',
   },
@@ -96,7 +96,7 @@ export const WEEKDAY_DEVATAS: Record<number, DailyDevataInfo> = {
     mantraDevanagari: 'ॐ श्रीं ह्रीं क्लीं महालक्ष्म्यै नमः',
     significance: 'Abundance, beauty, artistic talent, marital harmony and Shakti empowerment.',
     significanceHi: 'वैभव, अष्टलक्ष्मी कृपा, सौंदर्य, कला, दाम्पत्य सुख एवं शक्ति जागरण।',
-    prayerId: 'gayatri',
+    prayerId: 'shri-suktam',
     accentColor: '#ec4899',
     bgPastel: '#fce7f3',
   },
@@ -110,7 +110,7 @@ export const WEEKDAY_DEVATAS: Record<number, DailyDevataInfo> = {
     mantraDevanagari: 'ॐ शं शनैश्चराय नमः • ॐ प्रां प्रीं प्रौं सः शनये नमः',
     significance: 'Justice, discipline, endurance, relief from Sade Sati and karmic purification.',
     significanceHi: 'कर्मफल न्याय, अनुशासन, धैर्य, साढ़ेसाती शांति एवं आत्मसंयम।',
-    prayerId: 'hanuman-chalisa',
+    prayerId: 'sankat-mochan-hanuman-ashtak',
     accentColor: '#6366f1',
     bgPastel: '#ede9fe',
   },
@@ -189,7 +189,12 @@ export const SACRED_DAILY_VERSES: ShastricVerse[] = [
 /**
  * Generates the authentic Vedic Daily Sankalpa based on astronomical Panchang coordinates.
  */
-export function generateDailySankalpa(panchang: PanchangData, cityName: string): {
+export function generateDailySankalpa(
+  panchang: PanchangData,
+  cityName: string,
+  userName?: string,
+  gotra?: string
+): {
   sanskrit: string;
   hindi: string;
   english: string;
@@ -203,11 +208,18 @@ export function generateDailySankalpa(panchang: PanchangData, cityName: string):
   const ritu = panchang.samvat.rituDevanagari || 'शरद्/हेमन्त';
   const ayana = panchang.samvat.ayanaDevanagari || 'उत्तरायण';
 
-  const sanskrit = `ॐ विष्णुर्विष्णुर्विष्णुः। श्रीमद्भगवतो महापुरुषस्य विष्णोराज्ञया प्रवर्तमानस्य अद्य श्रीब्रह्मणो द्वितीये परार्धे श्रीश्वेतवाराहकल्पे वैवस्वतमन्वन्तरे अष्टाविंशतितमे कलियुगे कलिप्रथमचरणे जम्बूद्वीपे भरतखण्डे भारतवर्षे ${cityName} क्षेत्रे, श्रीविक्रमादित्य संवत्सरे ${samvat}, श्रीसूर्य ${ayana}े, ${ritu} ऋतौ, ${masa} मासे, ${paksha} पक्षे, ${tithiName} तिथौ, ${vara} वासरे, ${nakshatra} नक्षत्रे, मम आत्मनः श्रुतिस्मृतिपुराणोक्त पुण्यफलप्राप्त्यर्थं, सकल पापक्षयपूर्वकं धर्मार्थकाममोक्ष चतुर्विध पुरुषार्थ सिद्ध्यर्थं, श्रीपरमेश्वर प्रीत्यर्थं प्रातः/दैनिक नित्यकर्म सङ्कल्पम् अहं करिष्ये।`;
+  const cleanGotra = gotra ? gotra.replace(/\s*\(.*?\)/, '').trim() : '';
+  const cleanName = userName ? userName.trim() : '';
 
-  const hindi = `परमेश्वर श्रीविष्णु की आज्ञा से, श्वेतवाराह कल्प, वैवस्वत मन्वन्तर, कलियुग के प्रथम चरण में, भारतवर्ष के '${cityName}' पावन क्षेत्र में, विक्रम संवत् ${samvat}, ${ayana}, ${ritu} ऋतु, ${masa} मास, ${paksha} पक्ष, ${tithiName} तिथि, ${vara}वार तथा ${nakshatra} नक्षत्र में — मैं अपने समस्त पापों के क्षय तथा धर्म, अर्थ, काम, मोक्ष की सिद्धि एवं परमेश्वर की प्रसन्नता हेतु आज का दैनिक नित्यकर्म संकल्प करता हूँ।`;
+  const personalSanskrit = `${cleanGotra ? cleanGotra + ' गोत्रोत्पन्नः ' : ''}${cleanName ? cleanName + ' नामधेयः ' : ''}`;
+  const personalHindi = `${cleanGotra ? cleanGotra + ' गोत्र में उत्पन्न ' : ''}${cleanName ? cleanName + ' नाम ' : ''}`;
+  const personalEnglish = `${cleanGotra ? 'of ' + cleanGotra + ' Gotra, ' : ''}${cleanName ? 'I, ' + cleanName + ', ' : 'I '}`;
 
-  const english = `By the sanction of Supreme Being Sri Vishnu, in the Svetavaraha Kalpa, Vaivaswata Manvantara, 28th Kaliyuga, in Bharatavarsha at '${cityName}', during Vikram Samvat ${samvat}, ${panchang.samvat.ayana || 'Uttarayana'}, ${panchang.masa.purnimantaName} Masa, ${panchang.tithi.current.paksha} Paksha, ${panchang.tithi.current.name} Tithi, on ${panchang.vara.name} under ${panchang.nakshatra.current.name} Nakshatra — I undertake this sacred daily Nitya Karma for spiritual purity and cosmic harmony.`;
+  const sanskrit = `ॐ विष्णुर्विष्णुर्विष्णुः। श्रीमद्भगवतो महापुरुषस्य विष्णोराज्ञया प्रवर्तमानस्य अद्य श्रीब्रह्मणो द्वितीये परार्धे श्रीश्वेतवाराहकल्पे वैवस्वतमन्वन्तरे अष्टाविंशतितमे कलियुगे कलिप्रथमचरणे जम्बूद्वीपे भरतखण्डे भारतवर्षे ${cityName} क्षेत्रे, श्रीविक्रमादित्य संवत्सरे ${samvat}, श्रीसूर्य ${ayana}े, ${ritu} ऋतौ, ${masa} मासे, ${paksha} पक्षे, ${tithiName} तिथौ, ${vara} वासरे, ${nakshatra} नक्षत्रे, ${personalSanskrit}मम आत्मनः श्रुतिस्मृतिपुराणोक्त पुण्यफलप्राप्त्यर्थं, सकल पापक्षयपूर्वकं धर्मार्थकाममोक्ष चतुर्विध पुरुषार्थ सिद्ध्यर्थं, श्रीपरमेश्वर प्रीत्यर्थं प्रातः/दैनिक नित्यकर्म सङ्कल्पम् अहं करिष्ये।`;
+
+  const hindi = `परमेश्वर श्रीविष्णु की आज्ञा से, श्वेतवाराह कल्प, वैवस्वत मन्वन्तर, कलियुग के प्रथम चरण में, भारतवर्ष के '${cityName}' पावन क्षेत्र में, विक्रम संवत् ${samvat}, ${ayana}, ${ritu} ऋतु, ${masa} मास, ${paksha} पक्ष, ${tithiName} तिथि, ${vara}वार तथा ${nakshatra} नक्षत्र में — ${personalHindi}मैं अपने समस्त पापों के क्षय तथा धर्म, अर्थ, काम, मोक्ष की सिद्धि एवं परमेश्वर की प्रसन्नता हेतु आज का दैनिक नित्यकर्म संकल्प करता हूँ।`;
+
+  const english = `By the sanction of Supreme Being Sri Vishnu, in the Svetavaraha Kalpa, Vaivaswata Manvantara, 28th Kaliyuga, in Bharatavarsha at '${cityName}', during Vikram Samvat ${samvat}, ${panchang.samvat.ayana || 'Uttarayana'}, ${panchang.masa.purnimantaName} Masa, ${panchang.tithi.current.paksha} Paksha, ${panchang.tithi.current.name} Tithi, on ${panchang.vara.name} under ${panchang.nakshatra.current.name} Nakshatra — ${personalEnglish}undertake this sacred daily Nitya Karma for spiritual purity and cosmic harmony.`;
 
   return { sanskrit, hindi, english };
 }
@@ -251,8 +263,8 @@ export function getCurrentSpiritualPeriod(now: Date = new Date(), sunrise?: Date
   if (timeInMins < 720) { // Before 12:00 PM
     return {
       periodKey: 'pratah',
-      greetingHi: 'शुभ प्रभात, साधक',
-      greetingEn: 'Good Morning, Sadhak',
+      greetingHi: 'शुभ प्रभात',
+      greetingEn: 'Good Morning',
       focusTitleHi: 'प्रातः संध्या व सूर्य अर्घ्य',
       focusTitleEn: 'Surya Arghya & Pratah Sadhana',
       suggestedActionHi: 'ताम्बे के लोटे से सूर्य देव को अर्घ्य दें और १०८ बार गायत्री जप करें।',

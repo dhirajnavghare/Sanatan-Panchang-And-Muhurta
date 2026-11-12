@@ -92,6 +92,7 @@ export default function MuhurtaScreen() {
             const isSelected = item.id === selectedCategory;
             return (
               <TouchableOpacity
+                testID={`category-pill-${item.id}`}
                 style={[styles.categoryPill, isSelected && styles.categoryPillSelected]}
                 onPress={() => handleCategorySelect(item.id)}
                 activeOpacity={0.8}
@@ -132,6 +133,7 @@ export default function MuhurtaScreen() {
           {([30, 60, 90] as const).map((d) => (
             <TouchableOpacity
               key={d}
+              testID={`days-pill-${d}`}
               style={[styles.segmentBtn, daysCount === d && styles.segmentBtnActive]}
               onPress={() => handleDaysSelect(d)}
               activeOpacity={0.8}
@@ -148,6 +150,7 @@ export default function MuhurtaScreen() {
           {(['Good', 'Optimal'] as const).map((s) => (
             <TouchableOpacity
               key={s}
+              testID={`suitability-pill-${s}`}
               style={[styles.segmentBtn, suitabilityFilter === s && styles.segmentBtnActive]}
               onPress={() => handleSuitabilitySelect(s)}
               activeOpacity={0.8}
@@ -297,6 +300,7 @@ export default function MuhurtaScreen() {
 
                   {/* Expand/Collapse Shastric Details */}
                   <TouchableOpacity
+                    testID={`expand-toggle-${item.isoDate}`}
                     style={styles.expandToggleRow}
                     onPress={() => toggleExpand(item.isoDate)}
                     activeOpacity={0.7}

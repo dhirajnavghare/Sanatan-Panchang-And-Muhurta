@@ -48,9 +48,26 @@ import {
   getDayPlans,
   saveSlotPlan,
   toggleSlotCompletion,
+  addTodoToSlot,
+  toggleTodoItem,
+  deleteTodoItem,
+  getLiveCosmicStatus,
+  generateWhatsAppPanchangShare,
   DayPlannerSlot,
   DayPlansMap,
+  LiveCosmicStatus,
+  TodoItem,
 } from '@/src/services/dayplanner';
+import {
+  loadUserProfile,
+  UserSacredProfile,
+  DEFAULT_USER_PROFILE,
+} from '@/src/services/userProfile';
+import { playTempleBell, triggerHaptic } from '@/src/services/sacredAudio';
+import { scheduleDailySacredReminders } from '@/src/services/sacredNotifications';
+import { DailyPanchangCardModal } from '@/src/components/DailyPanchangCardModal';
+import { AppTourModal } from '@/src/components/AppTourModal';
+import { hasSeenAppTour, markAppTourCompleted } from '@/src/services/appTour';
 
 export default function PanchangScreen() {
   const insets = useSafeAreaInsets();
@@ -63,6 +80,26 @@ export default function PanchangScreen() {
   const [isCityModalVisible, setIsCityModalVisible] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
 
+  // Sacred Profile & Audio
+  const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
+  const [isShareCardModalVisible, setIsShareCardModalVisible] = useState(false);
+
+  // First-Time App Tour state
+  const [isTourModalVisible, setIsTourModalVisible] = useState(false);
+
+  useEffect(() => {
+    hasSeenAppTour().then((seen) => {
+      if (!seen) {
+        setIsTourModalVisible(true);
+      }
+    });
+  }, []);
+
+  const handleCloseTour = async () => {
+    setIsTourModalVisible(false);
+    await markAppTourCompleted();
+  };
+
   // Modals for deep Hindu daily routine
   const [isSankalpaModalVisible, setIsSankalpaModalVisible] = useState(false);
   const [isSadhanaModalVisible, setIsSadhanaModalVisible] = useState(false);
@@ -74,9 +111,9 @@ export default function PanchangScreen() {
   const [completedHabits, setCompletedHabits] = useState<string[]>([]);
   const [streakCount, setStreakCount] = useState<number>(1);
 
-  // Day Planner state
+  // Day Planner state: 'core' (default clean), 'all' (24h), 'planned' (my tasks)
   const [dayPlans, setDayPlans] = useState<DayPlansMap>({});
-  const [plannerFilter, setPlannerFilter] = useState<'all' | 'shubh' | 'planned'>('all');
+  const [plannerFilter, setPlannerFilter] = useState<'core' | 'all' | 'planned'>('core');
   const [editingInputs, setEditingInputs] = useState<Record<string, string>>({});
 
   const dateKey = useMemo(() => getDateKey(currentDate), [currentDate]);
@@ -139,46 +176,92 @@ export default function PanchangScreen() {
     return WEEKDAY_DEVATAS[day] || WEEKDAY_DEVATAS[0];
   }, [currentDate]);
 
+  useEffect(() => {
+    loadUserProfile().then((p) => {
+      setUserProfile(p);
+      if (panchang) {
+        scheduleDailySacredReminders(panchang, p, dayPlans, location.timezone);
+      }
+    });
+  }, [panchang, dayPlans, location.timezone]);
+
   const dailySankalpa = useMemo(() => {
-    return generateDailySankalpa(panchang, location.name);
-  }, [panchang, location.name]);
+    return generateDailySankalpa(panchang, location.name, userProfile.name, userProfile.gotra);
+  }, [panchang, location.name, userProfile.name, userProfile.gotra]);
+
+  // Live Cosmic Status (Real-time pulse of right now)
+  const liveStatus: LiveCosmicStatus = useMemo(() => {
+    return getLiveCosmicStatus(panchang, new Date(), location.timezone);
+  }, [panchang, location.timezone]);
 
   // Day Planner Slots
   const plannerSlots = useMemo(() => {
     return buildDayPlannerSlots(panchang, new Date());
   }, [panchang]);
 
-  const filteredSlots = useMemo(() => {
-    if (plannerFilter === 'shubh') {
-      return plannerSlots.filter((s) => s.quality !== 'Ashubh');
-    }
-    if (plannerFilter === 'planned') {
-      return plannerSlots.filter((s) => dayPlans[s.id]?.taskText);
-    }
-    return plannerSlots;
-  }, [plannerSlots, plannerFilter, dayPlans]);
-
   const totalPlannedCount = useMemo(() => {
-    return Object.values(dayPlans).filter((p) => p.taskText).length;
+    return Object.values(dayPlans).reduce((acc, plan) => {
+      const count = plan.todos && plan.todos.length > 0 ? plan.todos.length : plan.taskText ? 1 : 0;
+      return acc + count;
+    }, 0);
   }, [dayPlans]);
 
   const totalCompletedCount = useMemo(() => {
-    return Object.values(dayPlans).filter((p) => p.taskText && p.isCompleted).length;
+    return Object.values(dayPlans).reduce((acc, plan) => {
+      if (plan.todos && plan.todos.length > 0) {
+        return acc + plan.todos.filter((t) => t.isCompleted).length;
+      }
+      return acc + (plan.taskText && plan.isCompleted ? 1 : 0);
+    }, 0);
   }, [dayPlans]);
+
+  const filteredSlots = useMemo(() => {
+    if (plannerFilter === 'core') {
+      return plannerSlots.filter((s) => {
+        const plan = dayPlans[s.id];
+        const hasTasks = (plan?.todos && plan.todos.length > 0) || Boolean(plan?.taskText);
+        return s.isCore || hasTasks;
+      });
+    }
+    if (plannerFilter === 'planned') {
+      return plannerSlots.filter((s) => {
+        const plan = dayPlans[s.id];
+        return (plan?.todos && plan.todos.length > 0) || Boolean(plan?.taskText);
+      });
+    }
+    return plannerSlots;
+  }, [plannerSlots, plannerFilter, dayPlans]);
 
   const handleInputChange = (slotId: string, text: string) => {
     setEditingInputs((prev) => ({ ...prev, [slotId]: text }));
   };
 
-  const handleSavePlan = async (slotId: string, text: string) => {
-    const currentCompleted = dayPlans[slotId]?.isCompleted || false;
-    const updated = await saveSlotPlan(dateKey, slotId, text, currentCompleted);
+  const handleAddTodo = async (slotId: string, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const updated = await addTodoToSlot(dateKey, slotId, trimmed);
     setDayPlans(updated);
+    setEditingInputs((prev) => ({ ...prev, [slotId]: '' }));
   };
 
   const handleApplySuggestion = async (slotId: string, suggestion: string) => {
-    setEditingInputs((prev) => ({ ...prev, [slotId]: suggestion }));
-    const updated = await saveSlotPlan(dateKey, slotId, suggestion, false);
+    const updated = await addTodoToSlot(dateKey, slotId, suggestion);
+    setDayPlans(updated);
+  };
+
+  const handleToggleTodo = async (slotId: string, todoId: string) => {
+    const updated = await toggleTodoItem(dateKey, slotId, todoId);
+    setDayPlans(updated);
+  };
+
+  const handleDeleteTodo = async (slotId: string, todoId: string) => {
+    const updated = await deleteTodoItem(dateKey, slotId, todoId);
+    setDayPlans(updated);
+  };
+
+  const handleSavePlan = async (slotId: string, text: string) => {
+    const currentCompleted = dayPlans[slotId]?.isCompleted || false;
+    const updated = await saveSlotPlan(dateKey, slotId, text, currentCompleted);
     setDayPlans(updated);
   };
 
@@ -286,6 +369,22 @@ export default function PanchangScreen() {
     }
   };
 
+  // 1-Tap Viral WhatsApp Daily Panchang Share
+  const handleShareWhatsAppPanchang = async () => {
+    try {
+      const message = generateWhatsAppPanchangShare(
+        panchang,
+        currentDate,
+        location.name,
+        location.timezone,
+        isHi
+      );
+      await Share.share({ message });
+    } catch {
+      // ignore
+    }
+  };
+
   const handleShareSankalpa = async () => {
     try {
       await Share.share({
@@ -301,381 +400,252 @@ export default function PanchangScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: '#f8f8fa' }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.container}>
         <ScrollView
-        style={styles.container}
-        contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top, 16) }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* ========================================================= */}
-        {/* TOP PROFILE & GREETING BAR (Matching Reference UI)       */}
-        {/* ========================================================= */}
-        <View style={styles.headerBar}>
-          <TouchableOpacity
-            style={styles.avatarContainer}
-            onPress={() => router.navigate('/(tabs)/more' as any)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.avatarInner}>
-              <Text style={styles.avatarGlyph}>🕉️</Text>
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.greetingContainer}>
-            <Text style={styles.greetingTitle}>
-              {isHi ? spiritualPeriod.greetingHi : spiritualPeriod.greetingEn}
-            </Text>
-            <Text style={styles.greetingSubtitle} numberOfLines={1}>
-              {isHi ? 'आज ' : 'Today '}
-              {currentDate.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', {
-                day: 'numeric',
-                month: 'short',
-              })}
-              {' • '}
-              {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.cityActionBtn}
-            onPress={() => setIsCityModalVisible(true)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="search-outline" size={20} color="#18181b" />
-          </TouchableOpacity>
-        </View>
-
-        {/* ========================================================= */}
-        {/* DAILY SADHANA CHALLENGE (HERO CARD - Lavender Pastel)     */}
-        {/* ========================================================= */}
-        <TouchableOpacity
-          style={styles.heroChallengeCard}
-          activeOpacity={0.92}
-          onPress={() => setIsSadhanaModalVisible(true)}
+          style={styles.container}
+          contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top, 16) }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.heroLeftColumn}>
-            <Text style={styles.heroChallengeTitle}>
-              {isHi ? 'दैनिक साधना संकल्प' : 'Daily challenge'}
-            </Text>
-            <Text style={styles.heroChallengeSubtitle} numberOfLines={2}>
-              {isHi ? spiritualPeriod.suggestedActionHi : spiritualPeriod.suggestedActionEn}
-            </Text>
-
-            {/* Micro Habits avatars & count badge */}
-            <View style={styles.habitsRow}>
-              {DAILY_SADHANA_HABITS.slice(0, 3).map((h) => {
-                const isDone = completedHabits.includes(h.id);
-                return (
-                  <View
-                    key={h.id}
-                    style={[styles.habitMiniBubble, isDone && styles.habitMiniBubbleDone]}
-                  >
-                    <Ionicons
-                      name={h.iconName as any}
-                      size={13}
-                      color={isDone ? '#ffffff' : '#4c1d95'}
-                    />
-                  </View>
-                );
-              })}
-              <View style={styles.streakCountBadge}>
-                <Text style={styles.streakCountText}>
-                  {completedHabits.length}/{DAILY_SADHANA_HABITS.length}
-                </Text>
+          {/* ========================================================= */}
+          {/* TOP PROFILE, GREETING & VIRAL SHARE BAR                  */}
+          {/* ========================================================= */}
+          <View style={styles.headerBar}>
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              onPress={() => router.navigate('/(tabs)/more' as any)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.avatarInner}>
+                <Text style={styles.avatarGlyph}>🕉️</Text>
               </View>
-              {streakCount > 0 && (
-                <View style={styles.fireStreakBadge}>
-                  <Text style={styles.fireStreakText}>🔥 {streakCount}d</Text>
-                </View>
-              )}
+            </TouchableOpacity>
+
+            <View style={styles.greetingContainer}>
+              <Text style={styles.greetingTitle}>
+                {isHi
+                  ? `${spiritualPeriod.greetingHi}${userProfile.name ? `, ${userProfile.name}` : ''}`
+                  : `${spiritualPeriod.greetingEn}${userProfile.name ? `, ${userProfile.name}` : ''}`}
+              </Text>
+              <Text style={styles.greetingSubtitle} numberOfLines={1}>
+                {isHi ? 'आज ' : 'Today '}
+                {currentDate.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', {
+                  day: 'numeric',
+                  month: 'short',
+                })}
+                {' • '}
+                {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
+              </Text>
             </View>
-          </View>
 
-          {/* 3D Sacred Radiant Symbol Graphic */}
-          <View style={styles.heroGraphicArea}>
-            <View style={styles.graphicSunOuter}>
-              <View style={styles.graphicSunCore}>
-                <Text style={styles.graphicIcon}>☀️</Text>
-              </View>
-              <View style={styles.floatingGemBadge}>
-                <Text style={styles.floatingGemText}>📿</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        {/* ========================================================= */}
-        {/* HORIZONTAL 7-DAY PILL STRIP (Sun - Sat)                   */}
-        {/* ========================================================= */}
-        <View style={styles.weekStripContainer}>
-          {weekDays.map((d, index) => {
-            const isSelected = d.toDateString() === currentDate.toDateString();
-            const dayNum = d.getDate();
-            const isToday = d.toDateString() === new Date().toDateString();
-
-            return (
+            <View style={styles.headerActionsGroup}>
+              {/* Sacred Temple Brass Bell Chime */}
               <TouchableOpacity
-                key={index}
-                style={[styles.dayPill, isSelected && styles.dayPillSelected]}
-                onPress={() => handleSelectDate(d)}
+                testID="header-bell-btn"
+                style={styles.bellActionBtn}
+                onPress={async () => {
+                  await triggerHaptic('tap', userProfile.hapticsEnabled);
+                  playTempleBell(0.8);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 16 }}>🔔</Text>
+              </TouchableOpacity>
+
+              {/* Viral 1-Tap WhatsApp Daily Share Card Button */}
+              <TouchableOpacity
+                testID="header-share-btn"
+                style={styles.whatsAppShareBtn}
+                onPress={async () => {
+                  await triggerHaptic('tap', userProfile.hapticsEnabled);
+                  setIsShareCardModalVisible(true);
+                }}
                 activeOpacity={0.8}
               >
-                {/* Top Notification Dot */}
+                <Ionicons name="logo-whatsapp" size={16} color="#ffffff" />
+                <Text style={styles.whatsAppShareBtnText}>
+                  {isHi ? 'शेयर कार्ड' : 'Share'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* City selector search button */}
+              <TouchableOpacity
+                testID="header-city-btn"
+                style={styles.cityActionBtn}
+                onPress={() => setIsCityModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="search-outline" size={18} color="#18181b" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ========================================================= */}
+          {/* 1. HORIZONTAL 7-DAY SACRED HORIZON STRIP (Top Level)      */}
+          {/* ========================================================= */}
+          <View style={styles.weekStripContainer}>
+            {weekDays.map((d, index) => {
+              const isSelected = d.toDateString() === currentDate.toDateString();
+              const dayNum = d.getDate();
+              const isToday = d.toDateString() === new Date().toDateString();
+
+              return (
+                <TouchableOpacity
+                  key={index}
+                  testID={isSelected ? 'day-pill-selected' : `day-pill-${index}`}
+                  style={[styles.dayPill, isSelected && styles.dayPillSelected]}
+                  onPress={() => handleSelectDate(d)}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={[
+                      styles.dayDot,
+                      isSelected
+                        ? styles.dayDotSelected
+                        : isToday
+                        ? styles.dayDotToday
+                        : styles.dayDotRegular,
+                    ]}
+                  />
+                  <Text style={[styles.dayNameText, isSelected && styles.dayNameTextSelected]}>
+                    {isHi ? dayNamesHi[d.getDay()] : dayNamesEn[d.getDay()]}
+                  </Text>
+                  <Text style={[styles.dayNumberText, isSelected && styles.dayNumberTextSelected]}>
+                    {dayNum}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* ========================================================= */}
+          {/* 2. LIVE COSMIC COMPASS (Now & Next Instant Guidance)      */}
+          {/* ========================================================= */}
+          <View
+            style={[
+              styles.liveCosmicBanner,
+              {
+                backgroundColor: liveStatus.badgeBg,
+                borderColor: liveStatus.accentColor,
+              },
+            ]}
+          >
+            <View style={styles.liveCosmicTopRow}>
+              <View style={styles.livePulseGroup}>
                 <View
                   style={[
-                    styles.dayDot,
-                    isSelected
-                      ? styles.dayDotSelected
-                      : isToday
-                      ? styles.dayDotToday
-                      : styles.dayDotRegular,
+                    styles.livePulseDot,
+                    { backgroundColor: liveStatus.accentColor },
                   ]}
                 />
-                <Text style={[styles.dayNameText, isSelected && styles.dayNameTextSelected]}>
-                  {isHi ? dayNamesHi[d.getDay()] : dayNamesEn[d.getDay()]}
-                </Text>
-                <Text style={[styles.dayNumberText, isSelected && styles.dayNumberTextSelected]}>
-                  {dayNum}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* ========================================================= */}
-        {/* SECTION HEADING: "Your plan" (आज की दिनचर्या व मुहूर्त) */}
-        {/* ========================================================= */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>{isHi ? 'आज की दिनचर्या' : 'Your plan'}</Text>
-          <TouchableOpacity
-            style={styles.cityLocationPill}
-            onPress={() => setIsCityModalVisible(true)}
-          >
-            <Ionicons name="location-sharp" size={12} color="#d97706" />
-            <Text style={styles.cityLocationText} numberOfLines={1}>
-              {location.name}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {isCalculating ? (
-          <LoadingIndicator
-            message={isHi ? 'पञ्चाङ्ग गणना जारी है...' : 'Computing Auspicious Times...'}
-          />
-        ) : (
-          <>
-            {/* ======================================================= */}
-            {/* BENTO GRID (The Daily Hindu Routine Engine)             */}
-            {/* ======================================================= */}
-            <View style={styles.bentoContainer}>
-              {/* LEFT TALL CARD: Auspicious Muhurta & Sankalpa */}
-              <TouchableOpacity
-                style={[styles.bentoTallCard, { backgroundColor: '#fed7aa' }]}
-                activeOpacity={0.9}
-                onPress={() => setIsSankalpaModalVisible(true)}
-              >
-                <View style={styles.cardTagPill}>
-                  <Text style={styles.cardTagText}>
-                    {panchang.muhurtas.abhijitMuhurta
-                      ? isHi
-                        ? 'अमृत अभिजित'
-                        : 'Abhijit'
-                      : isHi
-                      ? 'शुभ मुहूर्त'
-                      : 'Shubh'}
-                  </Text>
-                </View>
-
-                <Text style={styles.tallCardTitle}>
-                  {panchang.muhurtas.abhijitMuhurta
-                    ? isHi
-                      ? 'अभिजित मुहूर्त'
-                      : 'Abhijit Muhurta'
-                    : isHi
-                    ? `${activeChoghadiya?.nameDevanagari} चौघड़िया`
-                    : `${activeChoghadiya?.name} Choghadiya`}
-                </Text>
-
-                <Text style={styles.tallCardDate}>
-                  {currentDate.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                </Text>
-
-                <Text style={styles.tallCardTime}>
-                  {panchang.muhurtas.abhijitMuhurta
-                    ? `${formatTime(panchang.muhurtas.abhijitMuhurta.startTime)} - ${formatTime(
-                        panchang.muhurtas.abhijitMuhurta.endTime
-                      )}`
-                    : `${formatTime(activeChoghadiya?.startTime)} - ${formatTime(
-                        activeChoghadiya?.endTime
-                      )}`}
-                </Text>
-
-                <Text style={styles.tallCardSubtitle} numberOfLines={2}>
-                  {isHi
-                    ? 'सर्वदोष नाशक • महत्वपूर्ण आरम्भ व विजय मुहूर्त'
-                    : 'Supreme auspicious window for all major undertakings'}
-                </Text>
-
-                {/* Rahu Kaal Warning Badge */}
-                <View style={styles.rahuKaalInline}>
-                  <Ionicons name="alert-circle" size={13} color="#b91c1c" />
-                  <Text style={styles.rahuKaalInlineText}>
-                    {isHi ? 'राहु काल:' : 'Rahu:'}{' '}
-                    {formatTime(panchang.muhurtas.rahuKaal.startTime)} -{' '}
-                    {formatTime(panchang.muhurtas.rahuKaal.endTime)}
-                  </Text>
-                </View>
-
-                {/* Bottom Action Pill: Recite Daily Sankalpa */}
-                <View style={styles.tallCardFooter}>
-                  <View style={styles.trainerAvatar}>
-                    <Text style={{ fontSize: 13 }}>📜</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.tallFooterRole}>
-                      {isHi ? 'वैदिक संकल्प' : 'Daily Sankalpa'}
-                    </Text>
-                    <Text style={styles.tallFooterName}>
-                      {isHi ? 'आरम्भ करें →' : 'Recite Vow →'}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {/* RIGHT COLUMN (2 Stacked Cards) */}
-              <View style={styles.bentoRightColumn}>
-                {/* TOP RIGHT CARD: Deity of the Day & Japa */}
-                <TouchableOpacity
-                  style={[styles.bentoRightCardTop, { backgroundColor: weekdayDevata.bgPastel }]}
-                  activeOpacity={0.9}
-                  onPress={() => router.push('/(tabs)/prayers' as any)}
+                <Text
+                  style={[
+                    styles.liveCosmicBadgeText,
+                    { color: liveStatus.accentColor },
+                  ]}
                 >
-                  <View style={styles.cardTagPillSky}>
-                    <Text style={styles.cardTagTextSky}>
-                      {isHi ? 'वार अधिष्ठाता' : 'Daily Deity'}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.rightCardTitle} numberOfLines={1}>
-                    {isHi ? weekdayDevata.deityNameHi : weekdayDevata.deityName}
-                  </Text>
-
-                  <Text style={styles.rightCardMantra} numberOfLines={2}>
-                    {isHi ? weekdayDevata.mantraDevanagari : weekdayDevata.mantra}
-                  </Text>
-
-                  <View style={styles.rightCardActionRow}>
-                    <Text style={styles.japaLaunchText}>
-                      {isHi ? '📿 जप माला खोलें' : '📿 Open Japa Mala'}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={14} color="#0369a1" />
-                  </View>
-                </TouchableOpacity>
-
-                {/* BOTTOM RIGHT CARD: Vrat & Sacred Shloka Action Bar */}
-                <View style={[styles.bentoRightCardBottom, { backgroundColor: '#fce7f3' }]}>
-                  <View style={styles.cardTagPillPink}>
-                    <Text style={styles.cardTagTextPink}>
-                      {isHi ? 'नित्यकर्म साधन' : 'Daily Sadhana'}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.bottomCardNotice} numberOfLines={2}>
-                    {activeMasa} • {isHi ? panchang.tithi.current.pakshaDevanagari : panchang.tithi.current.paksha}
-                  </Text>
-
-                  {/* 3 Quick Action Buttons */}
-                  <View style={styles.quickIconRow}>
-                    <TouchableOpacity
-                      style={styles.quickCircleBtn}
-                      onPress={() => {
-                        setSelectedVerse(SACRED_DAILY_VERSES[0]);
-                        setIsVerseModalVisible(true);
-                      }}
-                    >
-                      <Text style={styles.quickCircleEmoji}>🌅</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.quickCircleBtn}
-                      onPress={() => {
-                        setSelectedVerse(SACRED_DAILY_VERSES[2]);
-                        setIsVerseModalVisible(true);
-                      }}
-                    >
-                      <Text style={styles.quickCircleEmoji}>🪔</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.quickCircleBtn}
-                      onPress={() => router.push('/(tabs)/festivals' as any)}
-                    >
-                      <Text style={styles.quickCircleEmoji}>📅</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                  {isHi ? liveStatus.badgeHi : liveStatus.badgeEn}
+                </Text>
               </View>
+              <Text style={styles.liveCosmicWindow}>
+                {isHi ? liveStatus.windowHi : liveStatus.windowEn}
+              </Text>
             </View>
 
-            {/* ======================================================= */}
-            {/* SUN & MOON TIMES STRIP                                  */}
-            {/* ======================================================= */}
-            <View style={styles.sunStripRow}>
-              <View style={styles.sunItem}>
-                <Text style={styles.sunItemEmoji}>🌅</Text>
-                <View>
-                  <Text style={styles.sunItemLabel}>{isHi ? 'सूर्योदय' : 'Sunrise'}</Text>
-                  <Text style={styles.sunItemVal}>{formatTime(panchang.sunTimes.sunrise)}</Text>
-                </View>
+            <Text style={styles.liveCosmicTitle}>
+              {isHi ? liveStatus.titleHi : liveStatus.titleEn}
+            </Text>
+
+            <Text style={styles.liveCosmicDesc} numberOfLines={2}>
+              {isHi ? liveStatus.descriptionHi : liveStatus.descriptionEn}
+            </Text>
+          </View>
+
+          {/* ========================================================= */}
+          {/* 3. SACRED ALIGNMENT HUB (Sadhana & Vedic Sankalpa)        */}
+          {/* ========================================================= */}
+          <View style={styles.sacredAlignmentRow}>
+            {/* Left Card: Daily Sadhana Checklist */}
+            <TouchableOpacity
+              testID="hero-challenge-card"
+              style={styles.sacredAlignmentCardLeft}
+              activeOpacity={0.88}
+              onPress={() => setIsSadhanaModalVisible(true)}
+            >
+              <View style={styles.alignmentCardHeader}>
+                <Text style={styles.alignmentCardTag}>
+                  {isHi ? '📿 नित्यकर्म साधना' : '📿 Daily Sadhana'}
+                </Text>
+                {streakCount > 0 && (
+                  <Text style={styles.alignmentCardStreak}>🔥 {streakCount}d</Text>
+                )}
               </View>
-
-              <View style={styles.sunDivider} />
-
-              <View style={styles.sunItem}>
-                <Text style={styles.sunItemEmoji}>🌇</Text>
-                <View>
-                  <Text style={styles.sunItemLabel}>{isHi ? 'सूर्यास्त' : 'Sunset'}</Text>
-                  <Text style={styles.sunItemVal}>{formatTime(panchang.sunTimes.sunset)}</Text>
-                </View>
+              <Text style={styles.alignmentCardTitle}>
+                {isHi ? 'दैनिक सूक्ष्म साधनाएं' : '5 Sacred Micro-Habits'}
+              </Text>
+              <Text style={styles.alignmentCardSub} numberOfLines={1}>
+                {completedHabits.length}/5 {isHi ? 'साधनाएं पूर्ण' : 'habits completed'}
+              </Text>
+              <View style={styles.alignmentCardFooter}>
+                <Text style={styles.alignmentCardAction}>
+                  {isHi ? 'चेकलिस्ट देखें →' : 'View Checklist →'}
+                </Text>
+                <Ionicons name="checkmark-done" size={14} color="#047857" />
               </View>
+            </TouchableOpacity>
 
-              <View style={styles.sunDivider} />
-
-              <View style={styles.sunItem}>
-                <Text style={styles.sunItemEmoji}>🌙</Text>
-                <View>
-                  <Text style={styles.sunItemLabel}>{isHi ? 'चन्द्रमा' : 'Moon'}</Text>
-                  <Text style={styles.sunItemVal}>
-                    {panchang.moonTimes.moonrise
-                      ? formatTime(panchang.moonTimes.moonrise)
-                      : isHi
-                      ? 'अस्त'
-                      : 'Set'}
-                  </Text>
-                </View>
+            {/* Right Card: Vedic Sankalpa Recital */}
+            <TouchableOpacity
+              testID="bento-tall-card"
+              style={styles.sacredAlignmentCardRight}
+              activeOpacity={0.88}
+              onPress={() => setIsSankalpaModalVisible(true)}
+            >
+              <View style={styles.alignmentCardHeader}>
+                <Text style={styles.alignmentCardTag}>
+                  {isHi ? '📜 दैनिक सङ्कल्प' : '📜 Vedic Sankalpa'}
+                </Text>
+                <Text style={styles.alignmentCardStreak}>
+                  {isHi ? 'आज का व्रत' : 'Daily Vow'}
+                </Text>
               </View>
-            </View>
+              <Text style={styles.alignmentCardTitle} numberOfLines={1}>
+                {userProfile.gotra ? `${userProfile.gotra} गोत्र` : isHi ? 'वैदिक संकल्प' : 'Vedic Vow'}
+              </Text>
+              <Text style={styles.alignmentCardSub} numberOfLines={1}>
+                {activeMasa} • {panchang.tithi.current.nameDevanagari || panchang.tithi.current.name}
+              </Text>
+              <View style={styles.alignmentCardFooter}>
+                <Text style={styles.alignmentCardAction}>
+                  {isHi ? 'सङ्कल्प लें →' : 'Recite Vow →'}
+                </Text>
+                <Ionicons name="arrow-forward" size={13} color="#b45309" />
+              </View>
+            </TouchableOpacity>
+          </View>
 
-            {/* ======================================================= */}
-            {/* MUHURTA DAY PLANNER (Time - What time is for - Input)   */}
-            {/* ======================================================= */}
-            <View style={styles.plannerSection}>
+          {/* ========================================================= */}
+          {/* 4. THE HEART: HINDU DAY PLANNER (Front & Center!)         */}
+          {/* ========================================================= */}
+          {isCalculating ? (
+            <LoadingIndicator
+              message={isHi ? 'शुभ मुहूर्त दिनचर्या लोड हो रही है...' : 'Calculating Hindu Day Planner...'}
+            />
+          ) : (
+            <>
+              <View style={styles.plannerSection}>
               <View style={styles.plannerHeaderRow}>
-                <View>
+                <View style={{ flex: 1, paddingRight: 8, backgroundColor: 'transparent' }}>
                   <Text style={styles.plannerSectionTitle}>
-                    {isHi ? 'मुहूर्तानुसार दिन योजनाकार' : 'Muhurta Day Planner'}
+                    {isHi ? '🗓️ आज की दिन योजना (Day Planner)' : '🗓️ Hindu Day Planner'}
                   </Text>
                   <Text style={styles.plannerSectionSub}>
                     {isHi
-                      ? 'शुभ काल के अनुसार अपने कार्यों का नियोजन करें'
-                      : 'Schedule tasks aligned with auspicious cosmic timing'}
+                      ? 'शास्त्रसम्मत शुभ काल के अनुसार अपने कार्यों का नियोजन करें'
+                      : 'Schedule tasks aligned with auspicious cosmic timings'}
                   </Text>
                 </View>
 
@@ -688,9 +658,28 @@ export default function PanchangScreen() {
                 )}
               </View>
 
-              {/* Filter Tabs */}
+              {/* Filter Tabs: Core vs All 24h vs Planned */}
               <View style={styles.plannerFilterRow}>
                 <TouchableOpacity
+                  testID="planner-tab-core"
+                  style={[
+                    styles.plannerFilterTab,
+                    plannerFilter === 'core' && styles.plannerFilterTabActive,
+                  ]}
+                  onPress={() => setPlannerFilter('core')}
+                >
+                  <Text
+                    style={[
+                      styles.plannerFilterTabText,
+                      plannerFilter === 'core' && styles.plannerFilterTabTextActive,
+                    ]}
+                  >
+                    {isHi ? '🌟 मुख्य मुहूर्त' : '🌟 Core Windows'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  testID="planner-tab-all"
                   style={[
                     styles.plannerFilterTab,
                     plannerFilter === 'all' && styles.plannerFilterTabActive,
@@ -703,28 +692,12 @@ export default function PanchangScreen() {
                       plannerFilter === 'all' && styles.plannerFilterTabTextActive,
                     ]}
                   >
-                    {isHi ? 'सभी समय' : 'All Windows'}
+                    {isHi ? '🕒 24h सम्पूर्ण' : '🕒 All 24h'}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[
-                    styles.plannerFilterTab,
-                    plannerFilter === 'shubh' && styles.plannerFilterTabActive,
-                  ]}
-                  onPress={() => setPlannerFilter('shubh')}
-                >
-                  <Text
-                    style={[
-                      styles.plannerFilterTabText,
-                      plannerFilter === 'shubh' && styles.plannerFilterTabTextActive,
-                    ]}
-                  >
-                    {isHi ? '🌟 केवल शुभ मुहूर्त' : '🌟 Auspicious Only'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
+                  testID="planner-tab-planned"
                   style={[
                     styles.plannerFilterTab,
                     plannerFilter === 'planned' && styles.plannerFilterTabActive,
@@ -737,571 +710,723 @@ export default function PanchangScreen() {
                       plannerFilter === 'planned' && styles.plannerFilterTabTextActive,
                     ]}
                   >
-                    {isHi ? `✍️ नियोजित (${totalPlannedCount})` : `✍️ Planned (${totalPlannedCount})`}
+                    {isHi
+                      ? `✍️ नियोजित (${totalPlannedCount})`
+                      : `✍️ Planned (${totalPlannedCount})`}
                   </Text>
                 </TouchableOpacity>
               </View>
 
               {/* Slot Cards List */}
               <View style={styles.plannerCardsContainer}>
-                {filteredSlots.map((slot) => {
-                  const plan = dayPlans[slot.id];
-                  const hasPlan = Boolean(plan?.taskText);
-                  const isDone = Boolean(plan?.isCompleted);
-                  const currentInputValue = editingInputs[slot.id] !== undefined
-                    ? editingInputs[slot.id]
-                    : plan?.taskText || '';
+                {filteredSlots.length === 0 ? (
+                  <View style={styles.plannerEmptyBox}>
+                    <Text style={{ fontSize: 28, marginBottom: 8 }}>📝</Text>
+                    <Text style={styles.plannerEmptyTitle}>
+                      {isHi ? 'कोई कार्य नियोजित नहीं है' : 'No tasks planned yet'}
+                    </Text>
+                    <Text style={styles.plannerEmptySubtitle}>
+                      {isHi
+                        ? 'ऊपर "मुख्य मुहूर्त" टैब पर जाएँ और अपने कार्यों को शुभ समय अनुसार जोड़ें।'
+                        : 'Switch to "Core Windows" above to plan tasks during auspicious hours.'}
+                    </Text>
+                  </View>
+                ) : (
+                  filteredSlots.map((slot) => {
+                    const plan = dayPlans[slot.id];
+                    const todos: TodoItem[] =
+                      plan?.todos && plan.todos.length > 0
+                        ? plan.todos
+                        : plan?.taskText
+                        ? [
+                            {
+                              id: 'legacy',
+                              text: plan.taskText,
+                              isCompleted: Boolean(plan.isCompleted),
+                              createdAt: plan.updatedAt || Date.now(),
+                            },
+                          ]
+                        : [];
 
-                  // Quality styling
-                  const isAshubh = slot.quality === 'Ashubh';
-                  const isMahashubh = slot.quality === 'Mahashubh' || slot.quality === 'Amrit';
+                    const slotDoneCount = todos.filter((t) => t.isCompleted).length;
+                    const slotTotalCount = todos.length;
+                    const isAllDone = slotTotalCount > 0 && slotDoneCount === slotTotalCount;
+                    const inputValue = editingInputs[slot.id] || '';
 
-                  return (
-                    <View
-                      key={slot.id}
-                      style={[
-                        styles.plannerSlotCard,
-                        slot.isCurrent && styles.plannerSlotCardCurrent,
-                        isAshubh && styles.plannerSlotCardAshubh,
-                        isDone && styles.plannerSlotCardDone,
-                      ]}
-                    >
-                      {/* Top Time & Quality Row */}
-                      <View style={styles.slotTopRow}>
-                        <View style={styles.slotTimeBlock}>
-                          <Text style={styles.slotTimeRange}>
-                            {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                          </Text>
-                          <Text style={styles.slotTitle} numberOfLines={1}>
-                            {isHi ? slot.titleHi : slot.title}
-                          </Text>
-                        </View>
+                    // Quality styling
+                    const isAshubh = slot.quality === 'Ashubh';
+                    const isMahashubh =
+                      slot.quality === 'Mahashubh' || slot.quality === 'Amrit';
 
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          {slot.isCurrent && (
-                            <View style={styles.currentActiveBadge}>
-                              <Text style={styles.currentActiveBadgeText}>
-                                {isHi ? '● अभी सक्रिय' : '● LIVE NOW'}
-                              </Text>
-                            </View>
-                          )}
-
-                          <View
-                            style={[
-                              styles.qualityBadge,
-                              isMahashubh && styles.qualityBadgeMahashubh,
-                              isAshubh && styles.qualityBadgeAshubh,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.qualityBadgeText,
-                                isMahashubh && styles.qualityBadgeTextMahashubh,
-                                isAshubh && styles.qualityBadgeTextAshubh,
-                              ]}
-                            >
-                              {isAshubh
-                                ? isHi ? 'त्याज्य' : 'Avoid'
-                                : isMahashubh
-                                ? isHi ? 'महाशुभ' : 'Supreme'
-                                : isHi ? 'शुभ' : 'Shubh'}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-
-                      {/* For What this time is for (शास्त्रीय प्रयोजन) */}
+                    return (
                       <View
+                        key={slot.id}
                         style={[
-                          styles.suitabilityBox,
-                          isAshubh && styles.suitabilityBoxAshubh,
+                          styles.plannerSlotCard,
+                          slot.isCurrent && styles.plannerSlotCardCurrent,
+                          isAshubh && styles.plannerSlotCardAshubh,
+                          isAllDone && styles.plannerSlotCardDone,
                         ]}
                       >
-                        <Text style={styles.suitabilityHeading}>
-                          {isAshubh
-                            ? isHi ? '⚠️ इस समय क्या न करें:' : '⚠️ What to avoid now:'
-                            : isHi ? '💡 किस कार्य हेतु उपयुक्त:' : '💡 Ideal for:'}
-                        </Text>
-                        <Text
+                        {/* Top Time & Quality Row */}
+                        <View style={styles.slotTopRow}>
+                          <View style={styles.slotTimeBlock}>
+                            <Text style={styles.slotTimeRange}>
+                              {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                            </Text>
+                            <Text style={styles.slotTitle} numberOfLines={1}>
+                              {isHi ? slot.titleHi : slot.title}
+                            </Text>
+                          </View>
+
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {slot.isCurrent && (
+                              <View style={styles.currentActiveBadge}>
+                                <Text style={styles.currentActiveBadgeText}>
+                                  {isHi ? '● अभी सक्रिय' : '● LIVE NOW'}
+                                </Text>
+                              </View>
+                            )}
+
+                            {slotTotalCount > 0 && (
+                              <View
+                                style={[
+                                  styles.slotProgressBadge,
+                                  isAllDone && styles.slotProgressBadgeDone,
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.slotProgressBadgeText,
+                                    isAllDone && styles.slotProgressBadgeTextDone,
+                                  ]}
+                                >
+                                  {isAllDone
+                                    ? isHi ? '✓ पूर्ण' : '✓ Done'
+                                    : `🎯 ${slotDoneCount}/${slotTotalCount}`}
+                                </Text>
+                              </View>
+                            )}
+
+                            <View
+                              style={[
+                                styles.qualityBadge,
+                                isMahashubh && styles.qualityBadgeMahashubh,
+                                isAshubh && styles.qualityBadgeAshubh,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.qualityBadgeText,
+                                  isMahashubh && styles.qualityBadgeTextMahashubh,
+                                  isAshubh && styles.qualityBadgeTextAshubh,
+                                ]}
+                              >
+                                {isAshubh
+                                  ? isHi ? 'त्याज्य' : 'Avoid'
+                                  : isMahashubh
+                                  ? isHi ? 'महाशुभ' : 'Supreme'
+                                  : isHi ? 'शुभ' : 'Shubh'}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        {/* For What this time is for (शास्त्रीय प्रयोजन) */}
+                        <View
                           style={[
-                            styles.suitabilityText,
-                            isAshubh && styles.suitabilityTextAshubh,
+                            styles.suitabilityBox,
+                            isAshubh && styles.suitabilityBoxAshubh,
                           ]}
                         >
-                          {isHi ? slot.suitabilityHi : slot.suitability}
-                        </Text>
-                      </View>
-
-                      {/* Suggested Quick Chips */}
-                      <View style={styles.quickChipsRow}>
-                        {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
-                          <TouchableOpacity
-                            key={sIdx}
-                            style={styles.suggestionChip}
-                            onPress={() => handleApplySuggestion(slot.id, suggestion)}
+                          <Text style={styles.suitabilityHeading}>
+                            {isAshubh
+                              ? isHi ? '⚠️ इस समय क्या न करें:' : '⚠️ What to avoid now:'
+                              : isHi ? '💡 यह समय किस कार्य के लिए है:' : '💡 What this time is for:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.suitabilityText,
+                              isAshubh && styles.suitabilityTextAshubh,
+                            ]}
                           >
-                            <Text style={styles.suggestionChipText}>+ {suggestion}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
+                            {isHi ? slot.suitabilityHi : slot.suitability}
+                          </Text>
+                        </View>
 
-                      {/* Interactive Input Box */}
-                      <View style={[styles.inputRow, isDone && styles.inputRowDone]}>
-                        <TouchableOpacity
-                          style={styles.checkCircleBtn}
-                          onPress={() => handleTogglePlanCompletion(slot.id)}
-                          disabled={!hasPlan && !currentInputValue}
-                        >
-                          <Ionicons
-                            name={isDone ? 'checkmark-circle' : 'ellipse-outline'}
-                            size={22}
-                            color={isDone ? '#10b981' : hasPlan ? '#d97706' : '#d4d4d8'}
-                          />
-                        </TouchableOpacity>
+                        {/* Suggested Quick Chips (Tap to instantly add to To-Do list) */}
+                        <View style={styles.quickChipsRow}>
+                          {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
+                            <TouchableOpacity
+                              key={sIdx}
+                              style={styles.suggestionChip}
+                              onPress={() => handleApplySuggestion(slot.id, suggestion)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={styles.suggestionChipText}>+ {suggestion}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
 
-                        <TextInput
-                          style={[
-                            styles.slotTextInput,
-                            isDone && styles.slotTextInputDone,
-                          ]}
-                          placeholder={
-                            isAshubh
-                              ? isHi
-                                ? 'इस समय विश्राम/सामान्य कार्य लिखें...'
-                                : 'Plan quiet chores / rest...'
-                              : isHi
-                              ? 'अपनी योजना लिखें (उदा. नए कार्य का आरम्भ)...'
-                              : 'Plan your task for this auspicious window...'
-                          }
-                          placeholderTextColor="#a1a1aa"
-                          value={currentInputValue}
-                          onChangeText={(txt) => handleInputChange(slot.id, txt)}
-                          onBlur={() => handleSavePlan(slot.id, currentInputValue)}
-                          returnKeyType="done"
-                          onSubmitEditing={() => handleSavePlan(slot.id, currentInputValue)}
-                        />
+                        {/* To-Do Checklist Items */}
+                        {todos.length > 0 && (
+                          <View style={styles.slotTodoList}>
+                            {todos.map((todo) => (
+                              <View key={todo.id} style={styles.todoItemRow}>
+                                <TouchableOpacity
+                                  style={styles.todoCheckboxBtn}
+                                  onPress={() => handleToggleTodo(slot.id, todo.id)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                >
+                                  <Ionicons
+                                    name={todo.isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
+                                    size={22}
+                                    color={todo.isCompleted ? '#059669' : '#d97706'}
+                                  />
+                                </TouchableOpacity>
 
-                        {currentInputValue.length > 0 && (
-                          <TouchableOpacity
-                            style={styles.clearSlotBtn}
-                            onPress={() => handleClearSlot(slot.id)}
-                          >
-                            <Ionicons name="close-circle" size={18} color="#a1a1aa" />
-                          </TouchableOpacity>
+                                <Text
+                                  style={[
+                                    styles.todoItemText,
+                                    todo.isCompleted && styles.todoItemTextDone,
+                                  ]}
+                                  numberOfLines={2}
+                                >
+                                  {todo.text}
+                                </Text>
+
+                                <TouchableOpacity
+                                  style={styles.todoDeleteBtn}
+                                  onPress={() => handleDeleteTodo(slot.id, todo.id)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                >
+                                  <Ionicons name="close" size={18} color="#a1a1aa" />
+                                </TouchableOpacity>
+                              </View>
+                            ))}
+                          </View>
                         )}
+
+                        {/* Inline Add Task Input */}
+                        <View style={styles.addTodoInputRow}>
+                          <Ionicons name="add" size={20} color="#b45309" style={{ marginLeft: 6 }} />
+                          <TextInput
+                            style={styles.addTodoTextInput}
+                            placeholder={
+                              isAshubh
+                                ? isHi
+                                  ? 'इस समय हेतु शांत कार्य जोड़ें...'
+                                  : 'Add quiet chore for this slot...'
+                                : isHi
+                                ? 'इस मुहूर्त में अपना कार्य जोड़ें...'
+                                : 'Add task for this auspicious window...'
+                            }
+                            placeholderTextColor="#a1a1aa"
+                            value={inputValue}
+                            onChangeText={(txt) => handleInputChange(slot.id, txt)}
+                            returnKeyType="done"
+                            onSubmitEditing={() => handleAddTodo(slot.id, inputValue)}
+                          />
+
+                          {inputValue.trim().length > 0 && (
+                            <TouchableOpacity
+                              style={styles.addTodoSubmitBtn}
+                              onPress={() => handleAddTodo(slot.id, inputValue)}
+                            >
+                              <Text style={styles.addTodoSubmitBtnText}>{isHi ? 'जोड़ें' : 'Add'}</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
+                    );
+                  })
+                )}
+              </View>
+
+              {/* ======================================================= */}
+              {/* 5. QUICK ASTRONOMICAL GLANCE BAR                        */}
+              {/* ======================================================= */}
+              <View style={styles.quickAstroRow}>
+                <View style={styles.quickAstroItem}>
+                  <Text style={styles.quickAstroEmoji}>🌅</Text>
+                  <View style={{ backgroundColor: 'transparent' }}>
+                    <Text style={styles.quickAstroLabel}>{isHi ? 'सूर्योदय' : 'Sunrise'}</Text>
+                    <Text style={styles.quickAstroVal}>{formatTime(panchang.sunTimes.sunrise)}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.quickAstroDivider} />
+
+                <View style={styles.quickAstroItem}>
+                  <Text style={styles.quickAstroEmoji}>🌇</Text>
+                  <View style={{ backgroundColor: 'transparent' }}>
+                    <Text style={styles.quickAstroLabel}>{isHi ? 'सूर्यास्त' : 'Sunset'}</Text>
+                    <Text style={styles.quickAstroVal}>{formatTime(panchang.sunTimes.sunset)}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.quickAstroDivider} />
+
+                <View style={styles.quickAstroItem}>
+                  <Text style={styles.quickAstroEmoji}>⚠️</Text>
+                  <View style={{ backgroundColor: 'transparent' }}>
+                    <Text style={[styles.quickAstroLabel, { color: '#b91c1c' }]}>
+                      {isHi ? 'राहु काल' : 'Rahu'}
+                    </Text>
+                    <Text style={[styles.quickAstroVal, { color: '#b91c1c' }]}>
+                      {formatTime(panchang.muhurtas.rahuKaal.startTime)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.quickAstroDivider} />
+
+                <TouchableOpacity
+                  style={styles.quickAstroItem}
+                  onPress={() => router.push('/(tabs)/prayers' as any)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.quickAstroEmoji}>🔱</Text>
+                  <View style={{ backgroundColor: 'transparent' }}>
+                    <Text style={styles.quickAstroLabel}>{isHi ? 'वार देव' : 'Deity'}</Text>
+                    <Text style={styles.quickAstroVal} numberOfLines={1}>
+                      {isHi ? weekdayDevata.deityNameHi.split(' ')[0] : weekdayDevata.deityName.split(' ')[0]}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               </View>
             </View>
 
-            {/* ======================================================= */}
-            {/* 5 SACRED LIMBS (PANCHA-ANGA) EXPANDABLE ACCORDION       */}
-            {/* ======================================================= */}
-            <TouchableOpacity
-              style={styles.limbsHeaderBtn}
-              onPress={() => setIsLimbsExpanded((prev) => !prev)}
-              activeOpacity={0.8}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ fontSize: 16 }}>🪐</Text>
-                <Text style={styles.limbsHeaderText}>
-                  {isHi ? 'पञ्चाङ्ग के ५ मूल अंग (विस्तार)' : 'The 5 Sacred Limbs (Pancha-Anga)'}
-                </Text>
-              </View>
-              <Ionicons
-                name={isLimbsExpanded ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color="#71717a"
-              />
-            </TouchableOpacity>
-
-            {isLimbsExpanded && (
-              <View style={styles.limbsContainer}>
-                {/* 1. Tithi */}
-                <View style={styles.limbCard}>
-                  <View style={styles.limbTop}>
-                    <Text style={styles.limbIndex}>{isHi ? '१. तिथि' : '1. Tithi'}</Text>
-                    <Text style={styles.limbStatus}>
-                      {isHi
-                        ? `${panchang.tithi.current.pakshaDevanagari} पक्ष`
-                        : `${panchang.tithi.current.paksha} Paksha`}
-                    </Text>
-                  </View>
-                  <Text style={styles.limbName}>
-                    {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
-                  </Text>
-                  <View style={styles.limbFooter}>
-                    <Text style={styles.limbEnd}>
-                      {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.tithi.endTime)}
-                    </Text>
-                    <Text style={styles.limbDeity}>
-                      {isHi ? 'देवता:' : 'Deity:'}{' '}
-                      {cleanDeityName(panchang.tithi.current.deity, isHi)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* 2. Nakshatra */}
-                <View style={styles.limbCard}>
-                  <View style={styles.limbTop}>
-                    <Text style={styles.limbIndex}>{isHi ? '२. नक्षत्र' : '2. Nakshatra'}</Text>
-                    <Text style={styles.limbStatus}>
-                      {isHi
-                        ? `चरण ${panchang.nakshatra.current.pada}`
-                        : `Pada ${panchang.nakshatra.current.pada}`}
-                    </Text>
-                  </View>
-                  <Text style={styles.limbName}>
-                    {isHi
-                      ? panchang.nakshatra.current.nameDevanagari
-                      : panchang.nakshatra.current.name}
-                  </Text>
-                  <View style={styles.limbFooter}>
-                    <Text style={styles.limbEnd}>
-                      {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.nakshatra.endTime)}
-                    </Text>
-                    <Text style={styles.limbDeity}>
-                      {isHi ? 'स्वामी:' : 'Lord:'}{' '}
-                      {cleanPlanetLord(panchang.nakshatra.current.lord, isHi)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* 3. Yoga */}
-                <View style={styles.limbCard}>
-                  <View style={styles.limbTop}>
-                    <Text style={styles.limbIndex}>{isHi ? '३. योग' : '3. Yoga'}</Text>
-                    <Text
-                      style={[
-                        styles.limbStatus,
-                        panchang.yoga.current.nature === 'Auspicious'
-                          ? { color: '#10b981', backgroundColor: '#ecfdf5' }
-                          : { color: '#ef4444', backgroundColor: '#fef2f2' },
-                      ]}
-                    >
-                      {isHi
-                        ? panchang.yoga.current.nature === 'Auspicious'
-                          ? 'शुभ'
-                          : 'अशुभ'
-                        : panchang.yoga.current.nature}
-                    </Text>
-                  </View>
-                  <Text style={styles.limbName}>
-                    {isHi ? panchang.yoga.current.nameDevanagari : panchang.yoga.current.name}
-                  </Text>
-                  <View style={styles.limbFooter}>
-                    <Text style={styles.limbEnd}>
-                      {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.yoga.endTime)}
-                    </Text>
-                    <Text style={styles.limbDeity}>
-                      {isHi
-                        ? `संख्या ${panchang.yoga.current.index}`
-                        : `Index ${panchang.yoga.current.index} / 27`}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* 4. Karana */}
-                <View style={styles.limbCard}>
-                  <View style={styles.limbTop}>
-                    <Text style={styles.limbIndex}>{isHi ? '४. करण' : '4. Karana'}</Text>
-                    <Text style={styles.limbStatus}>
-                      {isHi
-                        ? panchang.karana.current.type === 'Chara'
-                          ? 'चर'
-                          : 'स्थिर'
-                        : panchang.karana.current.type}
-                    </Text>
-                  </View>
-                  <Text style={styles.limbName}>
-                    {isHi ? panchang.karana.current.nameDevanagari : panchang.karana.current.name}
-                  </Text>
-                  <View style={styles.limbFooter}>
-                    <Text style={styles.limbEnd}>
-                      {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.karana.endTime)}
-                    </Text>
-                    <Text style={styles.limbDeity}>
-                      {isHi ? 'देवता:' : 'Deity:'}{' '}
-                      {cleanDeityName(panchang.karana.current.deity, isHi)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* 5. Vara */}
-                <View style={styles.limbCard}>
-                  <View style={styles.limbTop}>
-                    <Text style={styles.limbIndex}>{isHi ? '५. वार' : '5. Solar Day'}</Text>
-                    <Text style={styles.limbStatus}>
-                      {isHi ? 'सौर दिवस' : 'Sunrise-based'}
-                    </Text>
-                  </View>
-                  <Text style={styles.limbName}>
-                    {isHi ? panchang.vara.nameDevanagari : panchang.vara.name}
-                  </Text>
-                  <View style={styles.limbFooter}>
-                    <Text style={styles.limbEnd}>
-                      {isHi ? 'अधिपति:' : 'Lord:'}{' '}
-                      {cleanPlanetLord(panchang.vara.lordPlanet, isHi)}
-                    </Text>
-                    <Text style={styles.limbDeity}>
-                      {isHi ? `संवत् ${panchang.samvat.vikramSamvat}` : `Vikram ${panchang.samvat.vikramSamvat}`}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
-          </>
-        )}
-
-      </ScrollView>
-
-      {/* ========================================================= */}
-      {/* MODAL 1: DAILY VEDIC SANKALPA                             */}
-      {/* ========================================================= */}
-      <Modal visible={isSankalpaModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ fontSize: 20 }}>📜</Text>
-                <Text style={styles.modalTitle}>
-                  {isHi ? 'दैनिक वैदिक सङ्कल्प' : 'Daily Vedic Sankalpa'}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setIsSankalpaModalVisible(false)}>
-                <Ionicons name="close-circle" size={26} color="#71717a" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }}>
-              <View style={styles.sankalpaPillHeader}>
-                <Text style={styles.sankalpaPillLocation}>📍 {location.name}</Text>
-                <Text style={styles.sankalpaPillDate}>
-                  संवत् {panchang.samvat.vikramSamvat} • {activeMasa}
-                </Text>
-              </View>
-
-              <Text style={styles.sankalpaSanskrit}>{dailySankalpa.sanskrit}</Text>
-
-              <View style={styles.meaningDivider} />
-
-              <Text style={styles.meaningLabel}>{isHi ? 'भावार्थ (हिंदी):' : 'Meaning (Hindi):'}</Text>
-              <Text style={styles.meaningText}>{dailySankalpa.hindi}</Text>
-
-              <View style={styles.meaningDivider} />
-
-              <Text style={styles.meaningLabel}>English Contemplation:</Text>
-              <Text style={styles.meaningText}>{dailySankalpa.english}</Text>
-            </ScrollView>
-
-            <View style={styles.modalFooterBtns}>
+              {/* ======================================================= */}
+              {/* 5 SACRED LIMBS (PANCHA-ANGA) EXPANDABLE ACCORDION       */}
+              {/* ======================================================= */}
               <TouchableOpacity
-                style={styles.shareBtn}
-                onPress={handleShareSankalpa}
+                style={styles.limbsHeaderBtn}
+                onPress={() => setIsLimbsExpanded((prev) => !prev)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="share-social-outline" size={18} color="#ffffff" />
-                <Text style={styles.shareBtnText}>{isHi ? 'साझा करें' : 'Share'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 16 }}>🪐</Text>
+                  <Text style={styles.limbsHeaderText}>
+                    {isHi ? 'पञ्चाङ्ग के ५ मूल अंग (विस्तार)' : 'The 5 Sacred Limbs (Pancha-Anga)'}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={isLimbsExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color="#71717a"
+                />
               </TouchableOpacity>
+
+              {isLimbsExpanded && (
+                <View style={styles.limbsContainer}>
+                  {/* 1. Tithi */}
+                  <View style={styles.limbCard}>
+                    <View style={styles.limbTop}>
+                      <Text style={styles.limbIndex}>{isHi ? '१. तिथि' : '1. Tithi'}</Text>
+                      <Text style={styles.limbStatus}>
+                        {isHi
+                          ? `${panchang.tithi.current.pakshaDevanagari} पक्ष`
+                          : `${panchang.tithi.current.paksha} Paksha`}
+                      </Text>
+                    </View>
+                    <Text style={styles.limbName}>
+                      {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
+                    </Text>
+                    <View style={styles.limbFooter}>
+                      <Text style={styles.limbEnd}>
+                        {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.tithi.endTime)}
+                      </Text>
+                      <Text style={styles.limbDeity}>
+                        {isHi ? 'देवता:' : 'Deity:'}{' '}
+                        {cleanDeityName(panchang.tithi.current.deity, isHi)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 2. Nakshatra */}
+                  <View style={styles.limbCard}>
+                    <View style={styles.limbTop}>
+                      <Text style={styles.limbIndex}>{isHi ? '२. नक्षत्र' : '2. Nakshatra'}</Text>
+                      <Text style={styles.limbStatus}>
+                        {isHi
+                          ? `चरण ${panchang.nakshatra.current.pada}`
+                          : `Pada ${panchang.nakshatra.current.pada}`}
+                      </Text>
+                    </View>
+                    <Text style={styles.limbName}>
+                      {isHi
+                        ? panchang.nakshatra.current.nameDevanagari
+                        : panchang.nakshatra.current.name}
+                    </Text>
+                    <View style={styles.limbFooter}>
+                      <Text style={styles.limbEnd}>
+                        {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.nakshatra.endTime)}
+                      </Text>
+                      <Text style={styles.limbDeity}>
+                        {isHi ? 'स्वामी:' : 'Lord:'}{' '}
+                        {cleanPlanetLord(panchang.nakshatra.current.lord, isHi)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 3. Yoga */}
+                  <View style={styles.limbCard}>
+                    <View style={styles.limbTop}>
+                      <Text style={styles.limbIndex}>{isHi ? '३. योग' : '3. Yoga'}</Text>
+                      <Text
+                        style={[
+                          styles.limbStatus,
+                          panchang.yoga.current.nature === 'Auspicious'
+                            ? { color: '#10b981', backgroundColor: '#ecfdf5' }
+                            : { color: '#ef4444', backgroundColor: '#fef2f2' },
+                        ]}
+                      >
+                        {isHi
+                          ? panchang.yoga.current.nature === 'Auspicious'
+                            ? 'शुभ'
+                            : 'अशुभ'
+                          : panchang.yoga.current.nature}
+                      </Text>
+                    </View>
+                    <Text style={styles.limbName}>
+                      {isHi ? panchang.yoga.current.nameDevanagari : panchang.yoga.current.name}
+                    </Text>
+                    <View style={styles.limbFooter}>
+                      <Text style={styles.limbEnd}>
+                        {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.yoga.endTime)}
+                      </Text>
+                      <Text style={styles.limbDeity}>
+                        {isHi
+                          ? `संख्या ${panchang.yoga.current.index}`
+                          : `Index ${panchang.yoga.current.index} / 27`}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 4. Karana */}
+                  <View style={styles.limbCard}>
+                    <View style={styles.limbTop}>
+                      <Text style={styles.limbIndex}>{isHi ? '४. करण' : '4. Karana'}</Text>
+                      <Text style={styles.limbStatus}>
+                        {isHi
+                          ? panchang.karana.current.type === 'Chara'
+                            ? 'चर'
+                            : 'स्थिर'
+                          : panchang.karana.current.type}
+                      </Text>
+                    </View>
+                    <Text style={styles.limbName}>
+                      {isHi ? panchang.karana.current.nameDevanagari : panchang.karana.current.name}
+                    </Text>
+                    <View style={styles.limbFooter}>
+                      <Text style={styles.limbEnd}>
+                        {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.karana.endTime)}
+                      </Text>
+                      <Text style={styles.limbDeity}>
+                        {isHi ? 'देवता:' : 'Deity:'}{' '}
+                        {cleanDeityName(panchang.karana.current.deity, isHi)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 5. Vara */}
+                  <View style={styles.limbCard}>
+                    <View style={styles.limbTop}>
+                      <Text style={styles.limbIndex}>{isHi ? '५. वार' : '5. Solar Day'}</Text>
+                      <Text style={styles.limbStatus}>
+                        {isHi ? 'सौर दिवस' : 'Sunrise-based'}
+                      </Text>
+                    </View>
+                    <Text style={styles.limbName}>
+                      {isHi ? panchang.vara.nameDevanagari : panchang.vara.name}
+                    </Text>
+                    <View style={styles.limbFooter}>
+                      <Text style={styles.limbEnd}>
+                        {isHi ? 'अधिपति:' : 'Lord:'}{' '}
+                        {cleanPlanetLord(panchang.vara.lordPlanet, isHi)}
+                      </Text>
+                      <Text style={styles.limbDeity}>
+                        {isHi ? `संवत् ${panchang.samvat.vikramSamvat}` : `Vikram ${panchang.samvat.vikramSamvat}`}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </>
+          )}
+
+        </ScrollView>
+
+        {/* ========================================================= */}
+        {/* MODAL 1: DAILY VEDIC SANKALPA                             */}
+        {/* ========================================================= */}
+        <Modal visible={isSankalpaModalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 20 }}>📜</Text>
+                  <Text style={styles.modalTitle}>
+                    {isHi ? 'दैनिक वैदिक सङ्कल्प' : 'Daily Vedic Sankalpa'}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setIsSankalpaModalVisible(false)}>
+                  <Ionicons name="close-circle" size={26} color="#71717a" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }}>
+                <View style={styles.sankalpaPillHeader}>
+                  <Text style={styles.sankalpaPillLocation}>📍 {location.name}</Text>
+                  <Text style={styles.sankalpaPillDate}>
+                    संवत् {panchang.samvat.vikramSamvat} • {activeMasa}
+                  </Text>
+                  {userProfile.gotra ? (
+                    <Text style={[styles.sankalpaPillDate, { color: '#b45309', fontWeight: '700' }]}>
+                      गोत्र: {userProfile.gotra} {userProfile.name ? `• यजमान: ${userProfile.name}` : ''}
+                    </Text>
+                  ) : null}
+                </View>
+
+                <Text style={styles.sankalpaSanskrit}>{dailySankalpa.sanskrit}</Text>
+
+                <View style={styles.meaningDivider} />
+
+                <Text style={styles.meaningLabel}>{isHi ? 'भावार्थ (हिंदी):' : 'Meaning (Hindi):'}</Text>
+                <Text style={styles.meaningText}>{dailySankalpa.hindi}</Text>
+
+                <View style={styles.meaningDivider} />
+
+                <Text style={styles.meaningLabel}>English Contemplation:</Text>
+                <Text style={styles.meaningText}>{dailySankalpa.english}</Text>
+              </ScrollView>
+
+              <View style={styles.modalFooterBtns}>
+                <TouchableOpacity
+                  style={styles.shareBtn}
+                  onPress={handleShareSankalpa}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="share-social-outline" size={18} color="#ffffff" />
+                  <Text style={styles.shareBtnText}>{isHi ? 'साझा करें' : 'Share'}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.doneBtn}
+                  onPress={() => setIsSankalpaModalVisible(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.doneBtnText}>{isHi ? 'सङ्कल्प सम्पन्न' : 'Done'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* ========================================================= */}
+        {/* MODAL 2: INTERACTIVE DAILY SADHANA HABIT CHECKLIST        */}
+        {/* ========================================================= */}
+        <Modal visible={isSadhanaModalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <View style={{ backgroundColor: 'transparent' }}>
+                  <Text style={styles.modalTitle}>
+                    {isHi ? 'दैनिक नित्यकर्म साधना' : 'Daily Sadhana Checklist'}
+                  </Text>
+                  <Text style={styles.modalSubtitle}>
+                    {isHi ? 'प्रतिदिन की ५ सूक्ष्म साधनाएं' : '5 essential daily sacred micro-habits'}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setIsSadhanaModalVisible(false)}>
+                  <Ionicons name="close-circle" size={26} color="#71717a" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+                {DAILY_SADHANA_HABITS.map((habit) => {
+                  const isDone = completedHabits.includes(habit.id);
+                  return (
+                    <TouchableOpacity
+                      key={habit.id}
+                      style={[styles.habitRow, isDone && styles.habitRowDone]}
+                      onPress={() => handleToggleHabit(habit.id)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={[styles.habitIconBox, isDone && styles.habitIconBoxDone]}>
+                        <Ionicons
+                          name={habit.iconName as any}
+                          size={20}
+                          color={isDone ? '#ffffff' : '#d97706'}
+                        />
+                      </View>
+
+                      <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+                        <Text style={[styles.habitTitle, isDone && styles.habitTitleDone]}>
+                          {isHi ? habit.titleHi : habit.titleEn}
+                        </Text>
+                        <Text style={styles.habitDesc}>
+                          {isHi ? habit.descHi : habit.descEn}
+                        </Text>
+                        <Text style={styles.habitTime}>
+                          ⏰ {isHi ? habit.timeContextHi : habit.timeContext}
+                        </Text>
+                      </View>
+
+                      <Ionicons
+                        name={isDone ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={24}
+                        color={isDone ? '#10b981' : '#a1a1aa'}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <TouchableOpacity
+                testID="sadhana-save-btn"
+                style={styles.sadhanaDoneBtn}
+                onPress={() => setIsSadhanaModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.sadhanaDoneBtnText}>
+                  ✓ {isHi ? 'साधना सहेजें' : 'Save Sadhana'} ({completedHabits.length}/5)
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* ========================================================= */}
+        {/* MODAL 3: SHASTRA VERSE & ARGYA RECITER                    */}
+        {/* ========================================================= */}
+        <Modal visible={isVerseModalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {isHi ? selectedVerse.titleHi : selectedVerse.title}
+                </Text>
+                <TouchableOpacity onPress={() => setIsVerseModalVisible(false)}>
+                  <Ionicons name="close-circle" size={26} color="#71717a" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
+                <View style={styles.contextPill}>
+                  <Ionicons name="time-outline" size={14} color="#d97706" />
+                  <Text style={styles.contextPillText}>
+                    {isHi ? selectedVerse.timeContextHi : selectedVerse.timeContext}
+                  </Text>
+                </View>
+
+                <Text style={styles.verseSanskrit}>{selectedVerse.shloka}</Text>
+                <Text style={styles.verseTranslit}>{selectedVerse.transliteration}</Text>
+
+                <View style={styles.meaningDivider} />
+                <Text style={styles.meaningLabel}>{isHi ? 'भावार्थ:' : 'Meaning:'}</Text>
+                <Text style={styles.meaningText}>
+                  {isHi ? selectedVerse.meaningHi : selectedVerse.meaning}
+                </Text>
+              </ScrollView>
 
               <TouchableOpacity
                 style={styles.doneBtn}
-                onPress={() => setIsSankalpaModalVisible(false)}
-                activeOpacity={0.8}
+                onPress={() => setIsVerseModalVisible(false)}
               >
-                <Text style={styles.doneBtnText}>{isHi ? 'सङ्कल्प सम्पन्न' : 'Done'}</Text>
+                <Text style={styles.doneBtnText}>{isHi ? 'बन्द करें' : 'Close'}</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* ========================================================= */}
-      {/* MODAL 2: INTERACTIVE DAILY SADHANA HABIT CHECKLIST        */}
-      {/* ========================================================= */}
-      <Modal visible={isSadhanaModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>
-                  {isHi ? 'दैनिक नित्यकर्म साधना' : 'Daily Sadhana Checklist'}
-                </Text>
-                <Text style={styles.modalSubtitle}>
-                  {isHi ? 'प्रतिदिन की ५ सूक्ष्म साधनाएं' : '5 essential daily sacred micro-habits'}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setIsSadhanaModalVisible(false)}>
-                <Ionicons name="close-circle" size={26} color="#71717a" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
-              {DAILY_SADHANA_HABITS.map((habit) => {
-                const isDone = completedHabits.includes(habit.id);
-                return (
-                  <TouchableOpacity
-                    key={habit.id}
-                    style={[styles.habitRow, isDone && styles.habitRowDone]}
-                    onPress={() => handleToggleHabit(habit.id)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.habitIconBox, isDone && styles.habitIconBoxDone]}>
-                      <Ionicons
-                        name={habit.iconName as any}
-                        size={20}
-                        color={isDone ? '#ffffff' : '#d97706'}
-                      />
-                    </View>
-
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.habitTitle, isDone && styles.habitTitleDone]}>
-                        {isHi ? habit.titleHi : habit.titleEn}
-                      </Text>
-                      <Text style={styles.habitDesc}>
-                        {isHi ? habit.descHi : habit.descEn}
-                      </Text>
-                      <Text style={styles.habitTime}>
-                        ⏰ {isHi ? habit.timeContextHi : habit.timeContext}
-                      </Text>
-                    </View>
-
-                    <Ionicons
-                      name={isDone ? 'checkmark-circle' : 'ellipse-outline'}
-                      size={24}
-                      color={isDone ? '#10b981' : '#a1a1aa'}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={styles.doneBtn}
-              onPress={() => setIsSadhanaModalVisible(false)}
-            >
-              <Text style={styles.doneBtnText}>
-                {isHi ? 'साधना सहेजें' : 'Save Sadhana'} ({completedHabits.length}/5)
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* ========================================================= */}
-      {/* MODAL 3: SHASTRA VERSE & ARGYA RECITER                    */}
-      {/* ========================================================= */}
-      <Modal visible={isVerseModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {isHi ? selectedVerse.titleHi : selectedVerse.title}
-              </Text>
-              <TouchableOpacity onPress={() => setIsVerseModalVisible(false)}>
-                <Ionicons name="close-circle" size={26} color="#71717a" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
-              <View style={styles.contextPill}>
-                <Ionicons name="time-outline" size={14} color="#d97706" />
-                <Text style={styles.contextPillText}>
-                  {isHi ? selectedVerse.timeContextHi : selectedVerse.timeContext}
-                </Text>
-              </View>
-
-              <Text style={styles.verseSanskrit}>{selectedVerse.shloka}</Text>
-              <Text style={styles.verseTranslit}>{selectedVerse.transliteration}</Text>
-
-              <View style={styles.meaningDivider} />
-              <Text style={styles.meaningLabel}>{isHi ? 'भावार्थ:' : 'Meaning:'}</Text>
-              <Text style={styles.meaningText}>
-                {isHi ? selectedVerse.meaningHi : selectedVerse.meaning}
-              </Text>
-            </ScrollView>
-
-            <TouchableOpacity
-              style={styles.doneBtn}
-              onPress={() => setIsVerseModalVisible(false)}
-            >
-              <Text style={styles.doneBtnText}>{isHi ? 'बन्द करें' : 'Close'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* ========================================================= */}
-      {/* MODAL 4: CITY / TIRTHA SELECTOR                           */}
-      {/* ========================================================= */}
-      <Modal visible={isCityModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>
-                  {isHi ? 'तीर्थ अथवा नगर चुनें' : 'Select City or Tirtha'}
-                </Text>
-                <Text style={styles.modalSubtitle}>
-                  {isHi ? 'सटीक स्थानिक सूर्योदय व पञ्चाङ्ग' : 'Local coordinates for true astronomical timings'}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setIsCityModalVisible(false)}>
-                <Ionicons name="close-circle" size={26} color="#71717a" />
-              </TouchableOpacity>
-            </View>
-
-            {/* GPS Detection Bar */}
-            <TouchableOpacity
-              style={styles.gpsBanner}
-              onPress={handleGpsDetect}
-              disabled={isLocating}
-            >
-              {isLocating ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <>
-                  <Ionicons name="navigate" size={16} color="#ffffff" />
-                  <Text style={styles.gpsBannerText}>
-                    {isHi ? 'वर्तमान जीपीएस स्थान स्वतः पता करें' : 'Auto-detect Current GPS Location'}
+        {/* ========================================================= */}
+        {/* MODAL 4: CITY / TIRTHA SELECTOR                           */}
+        {/* ========================================================= */}
+        <Modal visible={isCityModalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <View style={{ backgroundColor: 'transparent' }}>
+                  <Text style={styles.modalTitle}>
+                    {isHi ? 'तीर्थ अथवा नगर चुनें' : 'Select City or Tirtha'}
                   </Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            <FlatList
-              data={PRESET_CITIES}
-              keyExtractor={(item) => item.name}
-              style={{ maxHeight: 340 }}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.cityRow,
-                    item.name === location.name && styles.cityRowSelected,
-                  ]}
-                  onPress={() => handleSelectCity(item)}
-                >
-                  <Text
-                    style={[
-                      styles.cityName,
-                      item.name === location.name && styles.cityNameSelected,
-                    ]}
-                  >
-                    {item.name}
+                  <Text style={styles.modalSubtitle}>
+                    {isHi ? 'सटीक स्थानिक सूर्योदय व पञ्चाङ्ग' : 'Local coordinates for true astronomical timings'}
                   </Text>
-                  <Text style={styles.cityCoords}>
-                    {item.latitude.toFixed(2)}°, {item.longitude.toFixed(2)}°
-                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setIsCityModalVisible(false)}>
+                  <Ionicons name="close-circle" size={26} color="#71717a" />
                 </TouchableOpacity>
-              )}
-            />
+              </View>
+
+              {/* GPS Detection Bar */}
+              <TouchableOpacity
+                style={styles.gpsBanner}
+                onPress={handleGpsDetect}
+                disabled={isLocating}
+              >
+                {isLocating ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <>
+                    <Ionicons name="navigate" size={16} color="#ffffff" />
+                    <Text style={styles.gpsBannerText}>
+                      {isHi ? 'वर्तमान जीपीएस स्थान स्वतः पता करें' : 'Auto-detect Current GPS Location'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <FlatList
+                data={PRESET_CITIES}
+                keyExtractor={(item) => item.name}
+                style={{ maxHeight: 340 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.cityRow,
+                      item.name === location.name && styles.cityRowSelected,
+                    ]}
+                    onPress={() => handleSelectCity(item)}
+                  >
+                    <Text
+                      style={[
+                        styles.cityName,
+                        item.name === location.name && styles.cityNameSelected,
+                      ]}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text style={styles.cityCoords}>
+                      {item.latitude.toFixed(2)}°, {item.longitude.toFixed(2)}°
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
-  </KeyboardAvoidingView>
+        </Modal>
+
+        {/* Viral WhatsApp 1-Tap Daily Panchang Card Generator Modal */}
+        <DailyPanchangCardModal
+          visible={isShareCardModalVisible}
+          onClose={() => setIsShareCardModalVisible(false)}
+          panchang={panchang}
+          cityName={location.name}
+          devataInfo={weekdayDevata}
+          verse={selectedVerse}
+        />
+
+        {/* First-Time User App Tour Walkthrough Modal */}
+        <AppTourModal
+          visible={isTourModalVisible}
+          onClose={handleCloseTour}
+          isHi={isHi}
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -1311,22 +1436,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f8fa',
   },
   content: {
-    paddingHorizontal: 18,
-    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingBottom: 28,
   },
 
   // Header Bar
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
     backgroundColor: 'transparent',
   },
   avatarContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#f59e0b',
     alignItems: 'center',
@@ -1343,54 +1468,149 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   avatarGlyph: {
-    fontSize: 20,
+    fontSize: 19,
   },
   greetingContainer: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
     backgroundColor: 'transparent',
   },
   greetingTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#18181b',
     letterSpacing: -0.3,
   },
   greetingSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#71717a',
     marginTop: 2,
     fontWeight: '500',
   },
+  headerActionsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'transparent',
+  },
+  bellActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fffbeb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  whatsAppShareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#25d366', // Authentic WhatsApp Green
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 18,
+    shadowColor: '#16a34a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  whatsAppShareBtnText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
   cityActionBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#e4e4e7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowRadius: 2,
     elevation: 1,
+  },
+
+  // Live Cosmic Pulse Banner
+  liveCosmicBanner: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  liveCosmicTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+    backgroundColor: 'transparent',
+  },
+  livePulseGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'transparent',
+  },
+  livePulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  liveCosmicBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+  },
+  liveCosmicWindow: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#52525b',
+  },
+  liveCosmicTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#18181b',
+    marginBottom: 2,
+  },
+  liveCosmicDesc: {
+    fontSize: 12,
+    color: '#3f3f46',
+    lineHeight: 16,
+    fontWeight: '500',
   },
 
   // Daily Challenge Card (Hero Banner)
   heroChallengeCard: {
     backgroundColor: '#ede9fe', // Soft Lavender matching screenshot
-    borderRadius: 28,
-    padding: 20,
+    borderRadius: 26,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
     shadowColor: '#7c3aed',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
     overflow: 'hidden',
   },
   heroLeftColumn: {
@@ -1398,22 +1618,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   heroChallengeTitle: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: '800',
     color: '#2e1065',
     letterSpacing: -0.4,
   },
   heroChallengeSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#5b21b6',
-    marginTop: 6,
-    lineHeight: 18,
+    marginTop: 4,
+    lineHeight: 17,
     fontWeight: '500',
   },
   habitsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 14,
+    marginTop: 12,
     backgroundColor: 'transparent',
   },
   habitMiniBubble: {
@@ -1457,85 +1677,215 @@ const styles = StyleSheet.create({
 
   // 3D Sacred Art Simulation in Hero
   heroGraphicArea: {
-    width: 86,
-    height: 86,
+    width: 82,
+    height: 82,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   graphicSunOuter: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: '#fcd34d',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#d97706',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   graphicSunCore: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: '#f59e0b',
     alignItems: 'center',
     justifyContent: 'center',
   },
   graphicIcon: {
-    fontSize: 28,
+    fontSize: 26,
   },
   floatingGemBadge: {
     position: 'absolute',
     bottom: -4,
     right: -4,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 3,
   },
   floatingGemText: {
-    fontSize: 14,
+    fontSize: 13,
+  },
+
+  // Sacred Alignment Dual-Card Quick Hub
+  sacredAlignmentRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+    backgroundColor: 'transparent',
+  },
+  sacredAlignmentCardLeft: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 18,
+    backgroundColor: '#fef3c7', // Warm amber cream
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    justifyContent: 'space-between',
+  },
+  sacredAlignmentCardRight: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 18,
+    backgroundColor: '#ffedd5', // Warm peach saffron
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    shadowColor: '#b45309',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    justifyContent: 'space-between',
+  },
+  alignmentCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+    backgroundColor: 'transparent',
+  },
+  alignmentCardTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#b45309',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  alignmentCardStreak: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#b45309',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  alignmentCardTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#18181b',
+    marginBottom: 2,
+  },
+  alignmentCardSub: {
+    fontSize: 11,
+    color: '#71717a',
+    lineHeight: 15,
+  },
+  alignmentCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: 'transparent',
+  },
+  alignmentCardAction: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+
+  // Quick Astro Glance Bar below planner
+  quickAstroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#f4f4f5',
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    marginTop: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  quickAstroItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'transparent',
+  },
+  quickAstroEmoji: {
+    fontSize: 16,
+  },
+  quickAstroLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#71717a',
+  },
+  quickAstroVal: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#18181b',
+  },
+  quickAstroDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: '#e4e4e7',
   },
 
   // Week Calendar Strip
   weekStripContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 18,
     backgroundColor: 'transparent',
   },
   dayPill: {
-    width: 44,
-    paddingVertical: 12,
-    borderRadius: 22,
+    flex: 1,
+    marginHorizontal: 2,
+    paddingVertical: 10,
+    borderRadius: 20,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e4e4e7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
   },
   dayPillSelected: {
-    backgroundColor: '#18181b', // Inverted dark pill matching screenshot
-    borderColor: '#18181b',
-    shadowColor: '#18181b',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: '#b45309', // Sacred Kesariya / Amber active day pill
+    borderColor: '#92400e',
+    shadowColor: '#b45309',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   dayDot: {
     width: 5,
@@ -1562,7 +1912,7 @@ const styles = StyleSheet.create({
     color: '#a1a1aa',
   },
   dayNumberText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#18181b',
   },
@@ -1579,7 +1929,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: '800',
     color: '#18181b',
     letterSpacing: -0.4,
@@ -1606,27 +1956,27 @@ const styles = StyleSheet.create({
   bentoContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 14,
     backgroundColor: 'transparent',
   },
   bentoTallCard: {
     flex: 1.1,
-    borderRadius: 26,
-    padding: 16,
+    borderRadius: 24,
+    padding: 15,
     justifyContent: 'space-between',
     shadowColor: '#ea580c',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowRadius: 8,
     elevation: 3,
   },
   cardTagPill: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginBottom: 6,
   },
   cardTagText: {
     fontSize: 11,
@@ -1634,36 +1984,36 @@ const styles = StyleSheet.create({
     color: '#9a3412',
   },
   tallCardTitle: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '800',
     color: '#431407',
     letterSpacing: -0.3,
   },
   tallCardDate: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#9a3412',
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 2,
   },
   tallCardTime: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#1c1917',
     marginTop: 2,
   },
   tallCardSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#7c2d12',
-    marginTop: 6,
-    lineHeight: 16,
+    marginTop: 5,
+    lineHeight: 15,
   },
   rahuKaalInline: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(254, 226, 226, 0.7)',
+    backgroundColor: 'rgba(254, 226, 226, 0.85)',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 8,
     marginTop: 8,
   },
@@ -1676,15 +2026,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    padding: 8,
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    padding: 7,
+    borderRadius: 14,
     marginTop: 10,
   },
   trainerAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1707,21 +2059,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   bentoRightCardTop: {
-    borderRadius: 24,
-    padding: 14,
+    borderRadius: 22,
+    padding: 13,
     shadowColor: '#0284c7',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
   },
   cardTagPillSky: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
-    marginBottom: 6,
+    borderRadius: 9,
+    marginBottom: 5,
   },
   cardTagTextSky: {
     fontSize: 10,
@@ -1729,15 +2081,15 @@ const styles = StyleSheet.create({
     color: '#0369a1',
   },
   rightCardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0c4a6e',
   },
   rightCardMantra: {
     fontSize: 11,
     color: '#0369a1',
-    marginTop: 4,
-    lineHeight: 15,
+    marginTop: 3,
+    lineHeight: 14,
   },
   rightCardActionRow: {
     flexDirection: 'row',
@@ -1753,20 +2105,20 @@ const styles = StyleSheet.create({
   },
 
   bentoRightCardBottom: {
-    borderRadius: 24,
-    padding: 14,
+    borderRadius: 22,
+    padding: 13,
     shadowColor: '#db2777',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
   },
   cardTagPillPink: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: 9,
     marginBottom: 4,
   },
   cardTagTextPink: {
@@ -1786,9 +2138,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   quickCircleBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1799,49 +2151,49 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   quickCircleEmoji: {
-    fontSize: 15,
+    fontSize: 14,
   },
 
   // Sun & Moon Times Strip
   sunStripRow: {
     flexDirection: 'row',
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: 18,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'space-around',
-    marginBottom: 18,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#e4e4e7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 1,
   },
   sunItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
     backgroundColor: 'transparent',
   },
   sunItemEmoji: {
-    fontSize: 20,
+    fontSize: 18,
   },
   sunItemLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#71717a',
     fontWeight: '500',
   },
   sunItemVal: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#18181b',
   },
   sunDivider: {
     width: 1,
-    height: 24,
+    height: 22,
     backgroundColor: '#e4e4e7',
   },
 
@@ -1855,12 +2207,12 @@ const styles = StyleSheet.create({
   plannerHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 10,
     backgroundColor: 'transparent',
   },
   plannerSectionTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '800',
     color: '#18181b',
     letterSpacing: -0.3,
@@ -1869,6 +2221,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#71717a',
     marginTop: 2,
+    fontWeight: '500',
   },
   plannerProgressBadge: {
     backgroundColor: '#fef3c7',
@@ -1886,29 +2239,53 @@ const styles = StyleSheet.create({
   plannerFilterRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 14,
+    marginBottom: 12,
     backgroundColor: 'transparent',
   },
   plannerFilterTab: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: '#f4f4f5',
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
   },
   plannerFilterTabActive: {
-    backgroundColor: '#18181b',
+    backgroundColor: '#b45309',
+    borderColor: '#92400e',
   },
   plannerFilterTabText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#71717a',
+    color: '#52525b',
   },
   plannerFilterTabTextActive: {
     color: '#ffffff',
+    fontWeight: '700',
   },
   plannerCardsContainer: {
     gap: 12,
     backgroundColor: 'transparent',
+  },
+  plannerEmptyBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+  },
+  plannerEmptyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#18181b',
+  },
+  plannerEmptySubtitle: {
+    fontSize: 12,
+    color: '#71717a',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 17,
   },
   plannerSlotCard: {
     backgroundColor: '#ffffff',
@@ -1918,22 +2295,26 @@ const styles = StyleSheet.create({
     borderColor: '#e4e4e7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
     elevation: 1,
   },
   plannerSlotCardCurrent: {
     borderColor: '#f59e0b',
-    borderWidth: 1.5,
-    backgroundColor: '#fffdfa',
+    borderWidth: 2,
+    shadowColor: '#f59e0b',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
   plannerSlotCardAshubh: {
-    borderColor: '#fecaca',
-    backgroundColor: '#fffdfd',
+    backgroundColor: '#fff1f2',
+    borderColor: '#fecdd3',
   },
   plannerSlotCardDone: {
     backgroundColor: '#f0fdf4',
-    borderColor: '#bbf7d0',
+    borderColor: '#86efac',
   },
   slotTopRow: {
     flexDirection: 'row',
@@ -1944,49 +2325,50 @@ const styles = StyleSheet.create({
   },
   slotTimeBlock: {
     flex: 1,
+    marginRight: 8,
     backgroundColor: 'transparent',
   },
   slotTimeRange: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#18181b',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#71717a',
   },
   slotTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#71717a',
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#18181b',
     marginTop: 1,
   },
   currentActiveBadge: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 8,
   },
   currentActiveBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#b45309',
   },
   qualityBadge: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#e0f2fe',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
   },
   qualityBadgeMahashubh: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: '#dcfce7',
   },
   qualityBadgeAshubh: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#fee2e2',
   },
   qualityBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#1d4ed8',
+    color: '#0369a1',
   },
   qualityBadgeTextMahashubh: {
-    color: '#047857',
+    color: '#15803d',
   },
   qualityBadgeTextAshubh: {
     color: '#b91c1c',
@@ -1994,28 +2376,26 @@ const styles = StyleSheet.create({
   suitabilityBox: {
     backgroundColor: '#f8fafc',
     borderRadius: 12,
-    padding: 8,
+    padding: 10,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
   },
   suitabilityBoxAshubh: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fee2e2',
+    backgroundColor: '#ffe4e6',
   },
   suitabilityHeading: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: '#64748b',
     marginBottom: 2,
   },
   suitabilityText: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 12,
     color: '#334155',
+    lineHeight: 16,
+    fontWeight: '500',
   },
   suitabilityTextAshubh: {
-    color: '#991b1b',
+    color: '#9f1239',
   },
   quickChipsRow: {
     flexDirection: 'row',
@@ -2026,53 +2406,145 @@ const styles = StyleSheet.create({
   },
   suggestionChip: {
     backgroundColor: '#f4f4f5',
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     paddingVertical: 4,
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
   },
   suggestionChipText: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#52525b',
     fontWeight: '600',
+  },
+  slotProgressBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  slotProgressBadgeDone: {
+    backgroundColor: '#dcfce7',
+    borderColor: '#86efac',
+  },
+  slotProgressBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#b45309',
+  },
+  slotProgressBadgeTextDone: {
+    color: '#15803d',
+  },
+  slotTodoList: {
+    marginBottom: 8,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  todoItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  todoCheckboxBtn: {
+    paddingRight: 8,
+    paddingVertical: 2,
+  },
+  todoItemText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1e293b',
+    lineHeight: 18,
+  },
+  todoItemTextDone: {
+    textDecorationLine: 'line-through',
+    color: '#94a3b8',
+    fontWeight: '400',
+  },
+  todoDeleteBtn: {
+    padding: 4,
+    marginLeft: 6,
+  },
+  addTodoInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f4f4f5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    minHeight: 40,
+    paddingHorizontal: 4,
+  },
+  addTodoTextInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#18181b',
+    fontWeight: '500',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  addTodoSubmitBtn: {
+    backgroundColor: '#b45309',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginRight: 4,
+  },
+  addTodoSubmitBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
     backgroundColor: '#f4f4f5',
     borderRadius: 14,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
   },
   inputRowDone: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: '#ecfdf5',
+    borderColor: '#a7f3d0',
   },
   checkCircleBtn: {
-    padding: 2,
+    padding: 4,
   },
   slotTextInput: {
     flex: 1,
     fontSize: 13,
     color: '#18181b',
-    paddingVertical: 4,
+    fontWeight: '500',
+    paddingVertical: 6,
   },
   slotTextInputDone: {
-    color: '#15803d',
+    color: '#047857',
     textDecorationLine: 'line-through',
   },
   clearSlotBtn: {
     padding: 4,
   },
 
-  // Limbs Accordion
+  // 5 Sacred Limbs Accordion
   limbsHeaderBtn: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#ffffff',
-    padding: 14,
     borderRadius: 18,
-    marginBottom: 10,
+    padding: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e4e4e7',
   },
@@ -2083,61 +2555,64 @@ const styles = StyleSheet.create({
   },
   limbsContainer: {
     gap: 8,
-    backgroundColor: 'transparent',
     marginBottom: 16,
+    backgroundColor: 'transparent',
   },
   limbCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#f4f4f5',
+    borderColor: '#e4e4e7',
   },
   limbTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
+    alignItems: 'center',
     marginBottom: 4,
+    backgroundColor: 'transparent',
   },
   limbIndex: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#71717a',
   },
   limbStatus: {
     fontSize: 10,
     fontWeight: '700',
     color: '#d97706',
-    backgroundColor: '#fffbeb',
-    paddingHorizontal: 6,
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
   },
   limbName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#18181b',
   },
   limbFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
+    alignItems: 'center',
     marginTop: 6,
+    backgroundColor: 'transparent',
   },
   limbEnd: {
     fontSize: 11,
     color: '#71717a',
+    fontWeight: '500',
   },
   limbDeity: {
     fontSize: 11,
     color: '#71717a',
-    fontWeight: '500',
+    fontWeight: '600',
   },
 
-  // Modals Styling
+  // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -2145,6 +2620,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 20,
+    paddingBottom: 32,
     maxHeight: '85%',
   },
   modalHeader: {
@@ -2165,28 +2641,33 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sankalpaPillHeader: {
-    backgroundColor: '#fffbeb',
-    padding: 10,
-    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#fef3c7',
+    padding: 8,
+    borderRadius: 10,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#fef3c7',
   },
   sankalpaPillLocation: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: '#b45309',
   },
   sankalpaPillDate: {
     fontSize: 11,
+    fontWeight: '600',
     color: '#92400e',
-    marginTop: 2,
   },
   sankalpaSanskrit: {
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 22,
     color: '#18181b',
     fontWeight: '600',
+    backgroundColor: '#fafaf9',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e7e5e4',
   },
   meaningDivider: {
     height: 1,
@@ -2196,13 +2677,13 @@ const styles = StyleSheet.create({
   meaningLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#d97706',
+    color: '#71717a',
     marginBottom: 4,
   },
   meaningText: {
     fontSize: 13,
-    lineHeight: 20,
-    color: '#3f3f46',
+    lineHeight: 19,
+    color: '#27272a',
   },
   modalFooterBtns: {
     flexDirection: 'row',
@@ -2212,49 +2693,75 @@ const styles = StyleSheet.create({
   },
   shareBtn: {
     flex: 1,
-    backgroundColor: '#3f3f46',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 14,
+    backgroundColor: '#25d366',
+    paddingVertical: 13,
     borderRadius: 16,
   },
   shareBtnText: {
     color: '#ffffff',
-    fontWeight: '700',
     fontSize: 14,
+    fontWeight: '700',
   },
   doneBtn: {
-    flex: 2,
-    backgroundColor: '#18181b',
+    flex: 1,
+    minHeight: 48,
+    backgroundColor: '#b45309', // Sacred Kesariya / Amber instead of jet black
+    paddingVertical: 13,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 16,
-    marginTop: 12,
+    shadowColor: '#b45309',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   doneBtnText: {
     color: '#ffffff',
-    fontWeight: '700',
     fontSize: 14,
+    fontWeight: '700',
+  },
+  sadhanaDoneBtn: {
+    width: '100%',
+    minHeight: 52,
+    backgroundColor: '#047857', // Sacred emerald green matching completed habits
+    paddingVertical: 14,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    shadowColor: '#047857',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  sadhanaDoneBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 
-  // Habit Checklist
+  // Habits List in Modal
   habitRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 12,
     backgroundColor: '#fafafa',
+    padding: 12,
     borderRadius: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#f4f4f5',
+    borderColor: '#e4e4e7',
   },
   habitRowDone: {
     backgroundColor: '#f0fdf4',
-    borderColor: '#bbf7d0',
+    borderColor: '#86efac',
   },
   habitIconBox: {
     width: 38,
@@ -2273,63 +2780,67 @@ const styles = StyleSheet.create({
     color: '#18181b',
   },
   habitTitleDone: {
-    color: '#15803d',
-    textDecorationLine: 'line-through',
+    color: '#047857',
   },
   habitDesc: {
     fontSize: 11,
     color: '#71717a',
     marginTop: 2,
+    lineHeight: 15,
   },
   habitTime: {
     fontSize: 10,
     color: '#d97706',
-    marginTop: 2,
     fontWeight: '600',
+    marginTop: 4,
   },
 
   // Verse Modal
   contextPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#fffbeb',
-    padding: 8,
-    borderRadius: 10,
-    marginBottom: 12,
+    gap: 5,
+    backgroundColor: '#fef3c7',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 10,
   },
   contextPillText: {
     fontSize: 11,
-    color: '#b45309',
     fontWeight: '600',
+    color: '#b45309',
   },
   verseSanskrit: {
-    fontSize: 16,
-    lineHeight: 26,
-    color: '#18181b',
+    fontSize: 15,
     fontWeight: '700',
-    textAlign: 'center',
-    marginVertical: 8,
+    color: '#18181b',
+    lineHeight: 24,
+    backgroundColor: '#fffbeb',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fde68a',
   },
   verseTranslit: {
     fontSize: 12,
-    lineHeight: 18,
-    color: '#71717a',
+    color: '#78350f',
     fontStyle: 'italic',
-    textAlign: 'center',
-    marginBottom: 8,
+    marginTop: 8,
+    lineHeight: 18,
   },
 
-  // City modal
+  // City Modal
   gpsBanner: {
-    backgroundColor: '#d97706',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    backgroundColor: '#d97706',
     paddingVertical: 12,
     borderRadius: 14,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   gpsBannerText: {
     color: '#ffffff',
@@ -2341,7 +2852,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f4f4f5',
   },
@@ -2356,10 +2867,10 @@ const styles = StyleSheet.create({
   },
   cityNameSelected: {
     color: '#d97706',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   cityCoords: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#a1a1aa',
   },
 });

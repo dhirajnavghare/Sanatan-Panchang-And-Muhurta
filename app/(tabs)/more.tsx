@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Linking, Modal, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -11,12 +11,39 @@ import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle } from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
+import {
+  loadUserProfile,
+  saveUserProfile,
+  UserSacredProfile,
+  DEFAULT_USER_PROFILE,
+} from '@/src/services/userProfile';
+import { SacredProfileEditorModal } from '@/src/components/SacredProfileEditorModal';
+import { triggerHaptic } from '@/src/services/sacredAudio';
+import { scheduleDailySacredReminders } from '@/src/services/sacredNotifications';
+import { calculatePanchang, PRESET_CITIES } from '@/src/core/panchang';
+import { getDayPlans } from '@/src/services/dayplanner';
+import { getDateKey } from '@/src/services/sadhana';
 
 type MoreSection = 'temples' | 'devatas' | 'vrat_katha';
 
 export default function MoreScreen() {
-  const { language, setLanguage, calendarSystem, setCalendarSystem } = useLanguage();
+  const { language, calendarSystem } = useLanguage();
   const isHi = language === 'hi';
+
+  const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  useEffect(() => {
+    loadUserProfile().then(setUserProfile);
+  }, []);
+
+  const handleSaveProfile = async (updated: UserSacredProfile) => {
+    setUserProfile(updated);
+    await saveUserProfile(updated);
+    const panchang = calculatePanchang(new Date(), PRESET_CITIES[0]);
+    const plans = await getDayPlans(getDateKey(new Date()));
+    await scheduleDailySacredReminders(panchang, updated, plans);
+  };
 
   const [activeSection, setActiveSection] = useState<MoreSection>('temples');
   const [isCalculating, setIsCalculating] = useState(false);
@@ -50,24 +77,6 @@ export default function MoreScreen() {
     }, 120);
   };
 
-  const handleLanguageSelect = (lang: 'hi' | 'en') => {
-    if (lang === language) return;
-    setIsCalculating(true);
-    setTimeout(() => {
-      setLanguage(lang);
-      setIsCalculating(false);
-    }, 120);
-  };
-
-  const handleCalendarSystemSelect = (sys: 'purnimanta' | 'amanta') => {
-    if (sys === calendarSystem) return;
-    setIsCalculating(true);
-    setTimeout(() => {
-      setCalendarSystem(sys);
-      setIsCalculating(false);
-    }, 120);
-  };
-
   const handleCircuitSelect = (c: 'jyotirlinga' | 'char_dham' | 'pancha_bhoota') => {
     if (c === circuitFilter) return;
     setIsCalculating(true);
@@ -97,84 +106,65 @@ export default function MoreScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Settings Section */}
-      <View style={styles.settingsCard}>
-        <Text style={styles.cardHeader}>
-          {isHi ? '⚙️ ऍप सेटिंग्स एवं प्राथमिकताएं' : '⚙️ App Preferences & Settings'}
-        </Text>
-
-        {/* 1. Language Toggle */}
-        <View style={styles.settingRow}>
-          <View style={{ backgroundColor: 'transparent' }}>
-            <Text style={styles.settingTitle}>{isHi ? 'भाषा' : 'Language'}</Text>
-            <Text style={styles.settingDesc}>
-              {isHi ? 'सम्पूर्ण ऍप की भाषा' : 'Display language'}
-            </Text>
-          </View>
-
-          <View style={styles.toggleGroup}>
-            <TouchableOpacity
-              style={[styles.toggleBtn, language === 'hi' && styles.toggleBtnActive]}
-              onPress={() => handleLanguageSelect('hi')}
-            >
-              <Text style={[styles.toggleText, language === 'hi' && styles.toggleTextActive]}>
-                हिन्दी
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleBtn, language === 'en' && styles.toggleBtnActive]}
-              onPress={() => handleLanguageSelect('en')}
-            >
-              <Text style={[styles.toggleText, language === 'en' && styles.toggleTextActive]}>
-                EN
-              </Text>
-            </TouchableOpacity>
-          </View>
+      {/* Sacred Devotee Profile Banner */}
+      <View style={styles.profileBanner}>
+        <View style={styles.profileAvatarBox}>
+          <Text style={styles.profileAvatarEmoji}>🕉️</Text>
         </View>
-
-        {/* 2. Regional Calendar System */}
-        <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
-          <View style={{ backgroundColor: 'transparent', flex: 1, marginRight: 8 }}>
-            <Text style={styles.settingTitle}>
-              {isHi ? 'चान्द्र मास पद्धति' : 'Lunar Calendar System'}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.profileGreeting}>
+            {isHi ? 'श्री' : 'Sri'} {userProfile.name} {isHi ? 'जी' : ''}
+          </Text>
+          <Text style={styles.profileGotraText}>
+            {userProfile.gotra ? `${isHi ? 'गोत्र:' : 'Gotra:'} ${userProfile.gotra}` : ''} • {userProfile.ishtaDevata}
+          </Text>
+          {userProfile.kuldeviOrDevata ? (
+            <Text style={styles.profileKuldeviText}>
+              {isHi ? 'कुलदेवी:' : 'Family Deity:'} {userProfile.kuldeviOrDevata}
             </Text>
-            <Text style={styles.settingDesc}>
-              {isHi
-                ? 'पूर्णिमान्त (उत्तर भारत) या अमान्त (दक्षिण व पश्चिम भारत)'
-                : 'Purnimanta (North) or Amanta (West/South)'}
-            </Text>
-          </View>
-
-          <View style={styles.toggleGroup}>
-            <TouchableOpacity
-              style={[styles.toggleBtn, calendarSystem === 'purnimanta' && styles.toggleBtnActive]}
-              onPress={() => handleCalendarSystemSelect('purnimanta')}
-            >
-              <Text
-                style={[
-                  styles.toggleText,
-                  calendarSystem === 'purnimanta' && styles.toggleTextActive,
-                ]}
-              >
-                {isHi ? 'पूर्णिमान्त' : 'Purnimanta'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleBtn, calendarSystem === 'amanta' && styles.toggleBtnActive]}
-              onPress={() => handleCalendarSystemSelect('amanta')}
-            >
-              <Text
-                style={[
-                  styles.toggleText,
-                  calendarSystem === 'amanta' && styles.toggleTextActive,
-                ]}
-              >
-                {isHi ? 'अमान्त' : 'Amanta'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          ) : null}
         </View>
+        <TouchableOpacity
+          testID="more-edit-profile-btn"
+          style={styles.editProfilePill}
+          onPress={async () => {
+            await triggerHaptic('tap', userProfile.hapticsEnabled);
+            setIsProfileModalOpen(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="create-outline" size={15} color="#b45309" />
+          <Text style={styles.editProfilePillText}>{isHi ? 'बदलें' : 'Edit'}</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Quick Navigation to Settings Tab */}
+      <TouchableOpacity
+        testID="more-to-settings-btn"
+        style={styles.settingsNavPill}
+        onPress={() => {
+          triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+          router.push('/(tabs)/settings');
+        }}
+        activeOpacity={0.8}
+      >
+        <View style={styles.settingsNavPillLeft}>
+          <View style={styles.settingsNavIconBox}>
+            <Ionicons name="settings-sharp" size={17} color="#d97706" />
+          </View>
+          <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+            <Text style={styles.settingsNavTitle}>
+              {isHi ? 'ऍप सेटिंग्स एवं अलर्ट प्राथमिकताएं' : 'App Settings & Muhurta Alerts'}
+            </Text>
+            <Text style={styles.settingsNavSubtitle}>
+              {isHi
+                ? 'भाषा, चान्द्र पद्धति, फोन पैनल सूचनाएं व गोत्र प्रोफाइल'
+                : 'Configure language, notifications, audio & profile'}
+            </Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="#b45309" />
+      </TouchableOpacity>
 
       {/* Main Feature Switcher */}
       <View style={styles.featureSwitcher}>
@@ -187,6 +177,7 @@ export default function MoreScreen() {
           return (
             <TouchableOpacity
               key={tab.id}
+              testID={`more-tab-${tab.id}`}
               style={[styles.featureTab, isActive && styles.featureTabActive]}
               onPress={() => handleSectionSelect(tab.id)}
             >
@@ -224,6 +215,7 @@ export default function MoreScreen() {
                 ].map((c) => (
                   <TouchableOpacity
                     key={c.id}
+                    testID={`circuit-pill-${c.id}`}
                     style={[styles.circuitPill, circuitFilter === c.id && styles.circuitPillActive]}
                     onPress={() => handleCircuitSelect(c.id as typeof circuitFilter)}
                   >
@@ -297,6 +289,7 @@ export default function MoreScreen() {
             ].map((t) => (
               <TouchableOpacity
                 key={t.id}
+                testID={`tradition-pill-${t.id}`}
                 style={[styles.circuitPill, devataTradition === t.id && styles.circuitPillActive]}
                 onPress={() => handleDevataTraditionSelect(t.id)}
               >
@@ -310,6 +303,7 @@ export default function MoreScreen() {
           {filteredDeities.map((deity: DeityRecord) => (
             <TouchableOpacity
               key={deity.id}
+              testID={`deity-card-${deity.id}`}
               style={styles.card}
               onPress={() => setSelectedDeityModal(deity)}
               activeOpacity={0.8}
@@ -382,6 +376,7 @@ export default function MoreScreen() {
               return (
                 <TouchableOpacity
                   key={vrat.id}
+                  testID={`vrat-pill-${vrat.id}`}
                   style={[styles.circuitPill, isSelected && styles.circuitPillActive]}
                   onPress={() => handleVratSelect(vrat.id)}
                 >
@@ -523,7 +518,10 @@ export default function MoreScreen() {
                       {isHi ? selectedDeityModal.subtitleDevanagari : selectedDeityModal.subtitle}
                     </Text>
                   </View>
-                  <TouchableOpacity onPress={() => setSelectedDeityModal(null)}>
+                  <TouchableOpacity
+                    testID="deity-modal-close-btn"
+                    onPress={() => setSelectedDeityModal(null)}
+                  >
                     <Ionicons name="close-circle" size={26} color="#71717a" />
                   </TouchableOpacity>
                 </View>
@@ -598,6 +596,14 @@ export default function MoreScreen() {
           </View>
         </View>
       </Modal>
+
+      <SacredProfileEditorModal
+        visible={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        profile={userProfile}
+        onSave={handleSaveProfile}
+        isHi={isHi}
+      />
     </ScrollView>
   );
 }
@@ -610,6 +616,67 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.lg,
     paddingBottom: Spacing.dockClearance,
+  },
+  profileBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffdf5',
+    borderRadius: Radius.lg,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#fde68a',
+    marginBottom: Spacing.md,
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 12,
+  },
+  profileAvatarBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+  },
+  profileAvatarEmoji: {
+    fontSize: 22,
+  },
+  profileGreeting: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#18181b',
+  },
+  profileGotraText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#b45309',
+    marginTop: 2,
+  },
+  profileKuldeviText: {
+    fontSize: 11,
+    color: '#71717a',
+    marginTop: 1,
+  },
+  editProfilePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fffbeb',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+  },
+  editProfilePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#b45309',
   },
   settingsCard: {
     backgroundColor: '#ffffff',
@@ -624,53 +691,48 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  cardHeader: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#18181b',
-    marginBottom: Spacing.md,
-  },
-  settingRow: {
+  settingsNavPill: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f4f4f5',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  settingsNavPillLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
     backgroundColor: 'transparent',
   },
-  settingTitle: {
+  settingsNavIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsNavTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#18181b',
   },
-  settingDesc: {
+  settingsNavSubtitle: {
     fontSize: 11,
     color: '#71717a',
     marginTop: 2,
-  },
-  toggleGroup: {
-    flexDirection: 'row',
-    backgroundColor: '#f4f4f5',
-    borderRadius: Radius.md,
-    padding: 3,
-  },
-  toggleBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.sm,
-  },
-  toggleBtnActive: {
-    backgroundColor: '#18181b',
-  },
-  toggleText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#71717a',
-  },
-  toggleTextActive: {
-    color: '#ffffff',
-    fontWeight: '700',
   },
   featureSwitcher: {
     flexDirection: 'row',
