@@ -264,6 +264,15 @@ export async function runStartupDiagnostics(): Promise<DiagnosticReport> {
     }
     const hasCore = slots.some((s) => s.isCore);
     if (!hasCore) throw new Error('No core slots flagged in Day Planner');
+
+    // Strict contiguous timeline validation: every slot's endTime matches the next slot's startTime
+    for (let i = 0; i < slots.length - 1; i++) {
+      if (slots[i].endTime.getTime() !== slots[i + 1].startTime.getTime()) {
+        throw new Error(
+          `Day Planner slot discontinuity between "${slots[i].title}" (${slots[i].endTime.toISOString()}) and "${slots[i + 1].title}" (${slots[i + 1].startTime.toISOString()})`
+        );
+      }
+    }
   });
 
   record('Day Planner Engine', 'Live Cosmic Status Real-time Resolver', () => {

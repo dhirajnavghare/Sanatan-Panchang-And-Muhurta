@@ -48,11 +48,15 @@ import {
   getDayPlans,
   saveSlotPlan,
   toggleSlotCompletion,
+  addTodoToSlot,
+  toggleTodoItem,
+  deleteTodoItem,
   getLiveCosmicStatus,
   generateWhatsAppPanchangShare,
   DayPlannerSlot,
   DayPlansMap,
   LiveCosmicStatus,
+  TodoItem,
 } from '@/src/services/dayplanner';
 import {
   loadUserProfile,
@@ -177,37 +181,69 @@ export default function PanchangScreen() {
     return buildDayPlannerSlots(panchang, new Date());
   }, [panchang]);
 
-  const filteredSlots = useMemo(() => {
-    if (plannerFilter === 'core') {
-      return plannerSlots.filter((s) => s.isCore || dayPlans[s.id]?.taskText);
-    }
-    if (plannerFilter === 'planned') {
-      return plannerSlots.filter((s) => dayPlans[s.id]?.taskText);
-    }
-    return plannerSlots;
-  }, [plannerSlots, plannerFilter, dayPlans]);
-
   const totalPlannedCount = useMemo(() => {
-    return Object.values(dayPlans).filter((p) => p.taskText).length;
+    return Object.values(dayPlans).reduce((acc, plan) => {
+      const count = plan.todos && plan.todos.length > 0 ? plan.todos.length : plan.taskText ? 1 : 0;
+      return acc + count;
+    }, 0);
   }, [dayPlans]);
 
   const totalCompletedCount = useMemo(() => {
-    return Object.values(dayPlans).filter((p) => p.taskText && p.isCompleted).length;
+    return Object.values(dayPlans).reduce((acc, plan) => {
+      if (plan.todos && plan.todos.length > 0) {
+        return acc + plan.todos.filter((t) => t.isCompleted).length;
+      }
+      return acc + (plan.taskText && plan.isCompleted ? 1 : 0);
+    }, 0);
   }, [dayPlans]);
+
+  const filteredSlots = useMemo(() => {
+    if (plannerFilter === 'core') {
+      return plannerSlots.filter((s) => {
+        const plan = dayPlans[s.id];
+        const hasTasks = (plan?.todos && plan.todos.length > 0) || Boolean(plan?.taskText);
+        return s.isCore || hasTasks;
+      });
+    }
+    if (plannerFilter === 'planned') {
+      return plannerSlots.filter((s) => {
+        const plan = dayPlans[s.id];
+        return (plan?.todos && plan.todos.length > 0) || Boolean(plan?.taskText);
+      });
+    }
+    return plannerSlots;
+  }, [plannerSlots, plannerFilter, dayPlans]);
 
   const handleInputChange = (slotId: string, text: string) => {
     setEditingInputs((prev) => ({ ...prev, [slotId]: text }));
   };
 
-  const handleSavePlan = async (slotId: string, text: string) => {
-    const currentCompleted = dayPlans[slotId]?.isCompleted || false;
-    const updated = await saveSlotPlan(dateKey, slotId, text, currentCompleted);
+  const handleAddTodo = async (slotId: string, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const updated = await addTodoToSlot(dateKey, slotId, trimmed);
     setDayPlans(updated);
+    setEditingInputs((prev) => ({ ...prev, [slotId]: '' }));
   };
 
   const handleApplySuggestion = async (slotId: string, suggestion: string) => {
-    setEditingInputs((prev) => ({ ...prev, [slotId]: suggestion }));
-    const updated = await saveSlotPlan(dateKey, slotId, suggestion, false);
+    const updated = await addTodoToSlot(dateKey, slotId, suggestion);
+    setDayPlans(updated);
+  };
+
+  const handleToggleTodo = async (slotId: string, todoId: string) => {
+    const updated = await toggleTodoItem(dateKey, slotId, todoId);
+    setDayPlans(updated);
+  };
+
+  const handleDeleteTodo = async (slotId: string, todoId: string) => {
+    const updated = await deleteTodoItem(dateKey, slotId, todoId);
+    setDayPlans(updated);
+  };
+
+  const handleSavePlan = async (slotId: string, text: string) => {
+    const currentCompleted = dayPlans[slotId]?.isCompleted || false;
+    const updated = await saveSlotPlan(dateKey, slotId, text, currentCompleted);
     setDayPlans(updated);
   };
 
@@ -680,12 +716,24 @@ export default function PanchangScreen() {
                 ) : (
                   filteredSlots.map((slot) => {
                     const plan = dayPlans[slot.id];
-                    const hasPlan = Boolean(plan?.taskText);
-                    const isDone = Boolean(plan?.isCompleted);
-                    const currentInputValue =
-                      editingInputs[slot.id] !== undefined
-                        ? editingInputs[slot.id]
-                        : plan?.taskText || '';
+                    const todos: TodoItem[] =
+                      plan?.todos && plan.todos.length > 0
+                        ? plan.todos
+                        : plan?.taskText
+                        ? [
+                            {
+                              id: 'legacy',
+                              text: plan.taskText,
+                              isCompleted: Boolean(plan.isCompleted),
+                              createdAt: plan.updatedAt || Date.now(),
+                            },
+                          ]
+                        : [];
+
+                    const slotDoneCount = todos.filter((t) => t.isCompleted).length;
+                    const slotTotalCount = todos.length;
+                    const isAllDone = slotTotalCount > 0 && slotDoneCount === slotTotalCount;
+                    const inputValue = editingInputs[slot.id] || '';
 
                     // Quality styling
                     const isAshubh = slot.quality === 'Ashubh';
@@ -699,7 +747,7 @@ export default function PanchangScreen() {
                           styles.plannerSlotCard,
                           slot.isCurrent && styles.plannerSlotCardCurrent,
                           isAshubh && styles.plannerSlotCardAshubh,
-                          isDone && styles.plannerSlotCardDone,
+                          isAllDone && styles.plannerSlotCardDone,
                         ]}
                       >
                         {/* Top Time & Quality Row */}
@@ -718,6 +766,26 @@ export default function PanchangScreen() {
                               <View style={styles.currentActiveBadge}>
                                 <Text style={styles.currentActiveBadgeText}>
                                   {isHi ? '● अभी सक्रिय' : '● LIVE NOW'}
+                                </Text>
+                              </View>
+                            )}
+
+                            {slotTotalCount > 0 && (
+                              <View
+                                style={[
+                                  styles.slotProgressBadge,
+                                  isAllDone && styles.slotProgressBadgeDone,
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.slotProgressBadgeText,
+                                    isAllDone && styles.slotProgressBadgeTextDone,
+                                  ]}
+                                >
+                                  {isAllDone
+                                    ? isHi ? '✓ पूर्ण' : '✓ Done'
+                                    : `🎯 ${slotDoneCount}/${slotTotalCount}`}
                                 </Text>
                               </View>
                             )}
@@ -768,61 +836,86 @@ export default function PanchangScreen() {
                           </Text>
                         </View>
 
-                        {/* Suggested Quick Chips */}
+                        {/* Suggested Quick Chips (Tap to instantly add to To-Do list) */}
                         <View style={styles.quickChipsRow}>
                           {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
                             <TouchableOpacity
                               key={sIdx}
                               style={styles.suggestionChip}
                               onPress={() => handleApplySuggestion(slot.id, suggestion)}
+                              activeOpacity={0.7}
                             >
                               <Text style={styles.suggestionChipText}>+ {suggestion}</Text>
                             </TouchableOpacity>
                           ))}
                         </View>
 
-                        {/* Interactive Input Box with Checkbox & Auto-Save */}
-                        <View style={[styles.inputRow, isDone && styles.inputRowDone]}>
-                          <TouchableOpacity
-                            style={styles.checkCircleBtn}
-                            onPress={() => handleTogglePlanCompletion(slot.id)}
-                            disabled={!hasPlan && !currentInputValue}
-                          >
-                            <Ionicons
-                              name={isDone ? 'checkmark-circle' : 'ellipse-outline'}
-                              size={22}
-                              color={isDone ? '#10b981' : hasPlan ? '#d97706' : '#d4d4d8'}
-                            />
-                          </TouchableOpacity>
+                        {/* To-Do Checklist Items */}
+                        {todos.length > 0 && (
+                          <View style={styles.slotTodoList}>
+                            {todos.map((todo) => (
+                              <View key={todo.id} style={styles.todoItemRow}>
+                                <TouchableOpacity
+                                  style={styles.todoCheckboxBtn}
+                                  onPress={() => handleToggleTodo(slot.id, todo.id)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                >
+                                  <Ionicons
+                                    name={todo.isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
+                                    size={22}
+                                    color={todo.isCompleted ? '#059669' : '#d97706'}
+                                  />
+                                </TouchableOpacity>
 
+                                <Text
+                                  style={[
+                                    styles.todoItemText,
+                                    todo.isCompleted && styles.todoItemTextDone,
+                                  ]}
+                                  numberOfLines={2}
+                                >
+                                  {todo.text}
+                                </Text>
+
+                                <TouchableOpacity
+                                  style={styles.todoDeleteBtn}
+                                  onPress={() => handleDeleteTodo(slot.id, todo.id)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                >
+                                  <Ionicons name="close" size={18} color="#a1a1aa" />
+                                </TouchableOpacity>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+
+                        {/* Inline Add Task Input */}
+                        <View style={styles.addTodoInputRow}>
+                          <Ionicons name="add" size={20} color="#b45309" style={{ marginLeft: 6 }} />
                           <TextInput
-                            style={[
-                              styles.slotTextInput,
-                              isDone && styles.slotTextInputDone,
-                            ]}
+                            style={styles.addTodoTextInput}
                             placeholder={
                               isAshubh
                                 ? isHi
-                                  ? 'इस समय सामान्य कार्य/विश्राम लिखें...'
-                                  : 'Plan quiet chores / rest...'
+                                  ? 'इस समय हेतु शांत कार्य जोड़ें...'
+                                  : 'Add quiet chore for this slot...'
                                 : isHi
-                                ? 'इस समय के लिए अपना कार्य लिखें...'
-                                : 'Plan your task for this auspicious window...'
+                                ? 'इस मुहूर्त में अपना कार्य जोड़ें...'
+                                : 'Add task for this auspicious window...'
                             }
                             placeholderTextColor="#a1a1aa"
-                            value={currentInputValue}
+                            value={inputValue}
                             onChangeText={(txt) => handleInputChange(slot.id, txt)}
-                            onBlur={() => handleSavePlan(slot.id, currentInputValue)}
                             returnKeyType="done"
-                            onSubmitEditing={() => handleSavePlan(slot.id, currentInputValue)}
+                            onSubmitEditing={() => handleAddTodo(slot.id, inputValue)}
                           />
 
-                          {currentInputValue.length > 0 && (
+                          {inputValue.trim().length > 0 && (
                             <TouchableOpacity
-                              style={styles.clearSlotBtn}
-                              onPress={() => handleClearSlot(slot.id)}
+                              style={styles.addTodoSubmitBtn}
+                              onPress={() => handleAddTodo(slot.id, inputValue)}
                             >
-                              <Ionicons name="close-circle" size={18} color="#a1a1aa" />
+                              <Text style={styles.addTodoSubmitBtnText}>{isHi ? 'जोड़ें' : 'Add'}</Text>
                             </TouchableOpacity>
                           )}
                         </View>
@@ -2298,6 +2391,92 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#52525b',
     fontWeight: '600',
+  },
+  slotProgressBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  slotProgressBadgeDone: {
+    backgroundColor: '#dcfce7',
+    borderColor: '#86efac',
+  },
+  slotProgressBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#b45309',
+  },
+  slotProgressBadgeTextDone: {
+    color: '#15803d',
+  },
+  slotTodoList: {
+    marginBottom: 8,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  todoItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  todoCheckboxBtn: {
+    paddingRight: 8,
+    paddingVertical: 2,
+  },
+  todoItemText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1e293b',
+    lineHeight: 18,
+  },
+  todoItemTextDone: {
+    textDecorationLine: 'line-through',
+    color: '#94a3b8',
+    fontWeight: '400',
+  },
+  todoDeleteBtn: {
+    padding: 4,
+    marginLeft: 6,
+  },
+  addTodoInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f4f4f5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    minHeight: 40,
+    paddingHorizontal: 4,
+  },
+  addTodoTextInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#18181b',
+    fontWeight: '500',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  addTodoSubmitBtn: {
+    backgroundColor: '#b45309',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginRight: 4,
+  },
+  addTodoSubmitBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   inputRow: {
     flexDirection: 'row',
