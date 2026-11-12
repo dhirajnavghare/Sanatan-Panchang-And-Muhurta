@@ -20,6 +20,7 @@ import {
   getOfflineCapabilityReport,
 } from '../src/services/sacredNotifications';
 import * as Notifications from 'expo-notifications';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { calculatePanchang, PRESET_CITIES } from '../src/core/panchang';
 
 describe('User Profile, Sacred Audio & Notifications Tests', () => {
@@ -66,9 +67,16 @@ describe('User Profile, Sacred Audio & Notifications Tests', () => {
       expect(TEMPLE_BELL_HARMONICS[1].freq).toBeCloseTo(1174.66, 1);
     });
 
-    it('should execute playTempleBell and playShankhNaad without errors', () => {
+    it('should execute playTempleBell and playShankhNaad and invoke native audio players', () => {
       expect(() => playTempleBell(0.8)).not.toThrow();
+      expect(createAudioPlayer).toHaveBeenCalled();
+      
+      const mockPlayer = (createAudioPlayer as jest.Mock).mock.results[0]?.value;
+      expect(mockPlayer).toBeDefined();
+      expect(mockPlayer.play).toHaveBeenCalled();
+
       expect(() => playShankhNaad(0.8)).not.toThrow();
+      expect(mockPlayer.play).toHaveBeenCalledTimes(2);
     });
 
     it('should trigger tactile haptics smoothly without throwing', async () => {

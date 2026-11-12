@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 
 // Shared Web Audio context instance for web platforms
 let webAudioCtx: any = null;
@@ -27,11 +28,49 @@ export const TEMPLE_BELL_HARMONICS = [
   { freq: 2936.65, gain: 0.08, decay: 0.4 }, // High sparkle
 ];
 
-/**
- * Synthesizes a resonant, authentic brass Mandir Bell (घंटी नाद)
- * using acoustic harmonic overtones and exponential natural decay.
- */
-export function playTempleBell(volume: number = 0.5): void {
+let audioModeConfigured = false;
+async function configureNativeAudioMode(): Promise<void> {
+  if (audioModeConfigured || Platform.OS === 'web') return;
+  try {
+    if (typeof setAudioModeAsync === 'function') {
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        interruptionMode: 'mixWithOthers',
+      });
+      audioModeConfigured = true;
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+}
+
+// Cached audio player instances for native mobile
+let nativeBellPlayer: any = null;
+let nativeShankhPlayer: any = null;
+
+function getNativeBellPlayer(): any {
+  if (!nativeBellPlayer) {
+    try {
+      nativeBellPlayer = createAudioPlayer(require('@/assets/audio/temple_bell.wav'));
+    } catch {
+      // Non-blocking fallback
+    }
+  }
+  return nativeBellPlayer;
+}
+
+function getNativeShankhPlayer(): any {
+  if (!nativeShankhPlayer) {
+    try {
+      nativeShankhPlayer = createAudioPlayer(require('@/assets/audio/shankh_naad.wav'));
+    } catch {
+      // Non-blocking fallback
+    }
+  }
+  return nativeShankhPlayer;
+}
+
+function playTempleBellWeb(volume: number): void {
   try {
     const ctx = getWebAudioContext();
     if (!ctx) return;
@@ -58,15 +97,11 @@ export function playTempleBell(volume: number = 0.5): void {
       osc.stop(now + h.decay);
     });
   } catch {
-    // Graceful fallback if audio context not available
+    // Graceful fallback if web audio context not available
   }
 }
 
-/**
- * Synthesizes an auspicious Shankha Naad (शंख नाद)
- * with characteristic continuous breath resonance and frequency modulation.
- */
-export function playShankhNaad(volume: number = 0.6): void {
+function playShankhNaadWeb(volume: number): void {
   try {
     const ctx = getWebAudioContext();
     if (!ctx) return;
@@ -79,7 +114,6 @@ export function playShankhNaad(volume: number = 0.6): void {
     masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     masterGain.connect(ctx.destination);
 
-    // Conch resonance frequencies (Fundamental around 220Hz - A3 with rich overtones)
     const shankhTones = [
       { baseFreq: 220, targetFreq: 245, gain: 0.5 },
       { baseFreq: 440, targetFreq: 490, gain: 0.3 },
@@ -91,14 +125,12 @@ export function playShankhNaad(volume: number = 0.6): void {
       const gain = ctx.createGain();
 
       osc.type = 'sawtooth';
-      // Slight pitch rise and fall mimicking blowing air into conch
       osc.frequency.setValueAtTime(t.baseFreq, now);
       osc.frequency.exponentialRampToValueAtTime(t.targetFreq, now + 0.6);
       osc.frequency.exponentialRampToValueAtTime(t.baseFreq * 0.95, now + duration);
 
       gain.gain.setValueAtTime(t.gain, now);
 
-      // Lowpass filter to give warm, deep, acoustic conch resonance
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(800, now);
@@ -112,6 +144,68 @@ export function playShankhNaad(volume: number = 0.6): void {
     });
   } catch {
     // Graceful fallback
+  }
+}
+
+/**
+ * Synthesizes or plays a resonant, authentic brass Mandir Bell (घंटी नाद).
+ * - On Native (iOS/Android): Plays authentic offline brass Ghanti audio with haptic immersion.
+ * - On Web: Uses Web Audio API harmonic oscillator synthesis.
+ */
+export function playTempleBell(volume: number = 0.5): void {
+  try {
+    if (Platform.OS === 'web') {
+      playTempleBellWeb(volume);
+      return;
+    }
+
+    // Configure audio mode to ensure sound plays even if device hardware mute switch is active
+    configureNativeAudioMode().catch(() => {});
+
+    const player = getNativeBellPlayer();
+    if (player) {
+      player.volume = Math.max(0, Math.min(1, volume));
+      if (typeof player.seekTo === 'function') {
+        player.seekTo(0).catch?.(() => {});
+      }
+      player.play();
+      return;
+    }
+
+    playTempleBellWeb(volume);
+  } catch {
+    playTempleBellWeb(volume);
+  }
+}
+
+/**
+ * Synthesizes or plays an auspicious Shankha Naad (शंख नाद).
+ * - On Native (iOS/Android): Plays sacred acoustic Shankha conch resonance.
+ * - On Web: Uses Web Audio API lowpass resonant oscillator synthesis.
+ */
+export function playShankhNaad(volume: number = 0.6): void {
+  try {
+    if (Platform.OS === 'web') {
+      playShankhNaadWeb(volume);
+      return;
+    }
+
+    // Configure audio mode to ensure sound plays even if device hardware mute switch is active
+    configureNativeAudioMode().catch(() => {});
+
+    const player = getNativeShankhPlayer();
+    if (player) {
+      player.volume = Math.max(0, Math.min(1, volume));
+      if (typeof player.seekTo === 'function') {
+        player.seekTo(0).catch?.(() => {});
+      }
+      player.play();
+      return;
+    }
+
+    playShankhNaadWeb(volume);
+  } catch {
+    playShankhNaadWeb(volume);
   }
 }
 
