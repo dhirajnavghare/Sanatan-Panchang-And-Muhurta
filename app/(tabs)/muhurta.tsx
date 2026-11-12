@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { MUHURTA_CATEGORIES } from '@/src/core/muhurta-finder/categories';
 import { findMuhurtas } from '@/src/core/muhurta-finder/calculator';
 import { MuhurtaCategoryId, MuhurtaDayEvaluation } from '@/src/core/muhurta-finder/types';
-import { PRESET_CITIES } from '@/src/core/panchang';
+import { calculatePanchang, PRESET_CITIES } from '@/src/core/panchang';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle } from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
@@ -74,6 +74,24 @@ export default function MuhurtaScreen() {
     return MUHURTA_CATEGORIES.find((c) => c.id === selectedCategory) || MUHURTA_CATEGORIES[0];
   }, [selectedCategory]);
 
+  const todayPanchang = useMemo(() => {
+    return calculatePanchang(new Date(), PRESET_CITIES[0]);
+  }, []);
+
+  const formatTime = (d: Date | string | null): string => {
+    if (!d) return '—';
+    const dateObj = typeof d === 'string' ? new Date(d) : d;
+    try {
+      return new Intl.DateTimeFormat('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }).format(dateObj);
+    } catch {
+      return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -123,6 +141,56 @@ export default function MuhurtaScreen() {
           <Text style={styles.scriptureBadgeText}>
             📜 {activeCategoryMeta.traditionalReference}
           </Text>
+        </View>
+      </View>
+
+      {/* Today's Inauspicious & Avoidable Windows */}
+      <View style={styles.inauspiciousCard} testID="muhurta-inauspicious-card">
+        <View style={styles.inauspiciousHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ fontSize: 13 }}>⚠️</Text>
+            <Text style={styles.inauspiciousTitle}>
+              {isHi ? 'आज के त्याज्य व अशुभ काल' : "Today's Inauspicious Windows"}
+            </Text>
+          </View>
+          <Text style={styles.inauspiciousSub}>
+            {isHi ? 'आरम्भ वर्जित' : 'Avoid Beginnings'}
+          </Text>
+        </View>
+
+        <View style={styles.inauspiciousRow}>
+          {/* Rahu Kaal */}
+          <View style={styles.inauspiciousItem}>
+            <Text style={styles.inauspiciousBadgeRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
+            <Text style={styles.inauspiciousTime}>
+              {formatTime(todayPanchang.muhurtas.rahuKaal.startTime)} - {formatTime(todayPanchang.muhurtas.rahuKaal.endTime)}
+            </Text>
+            <Text style={styles.inauspiciousDesc}>
+              {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
+            </Text>
+          </View>
+
+          {/* Yamagandam */}
+          <View style={styles.inauspiciousItem}>
+            <Text style={styles.inauspiciousBadgeOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
+            <Text style={styles.inauspiciousTime}>
+              {formatTime(todayPanchang.muhurtas.yamaganda.startTime)} - {formatTime(todayPanchang.muhurtas.yamaganda.endTime)}
+            </Text>
+            <Text style={styles.inauspiciousDesc}>
+              {isHi ? 'यात्रा व सौदा वर्जित' : 'Avoid deals/travel'}
+            </Text>
+          </View>
+
+          {/* Gulika Kaal */}
+          <View style={styles.inauspiciousItem}>
+            <Text style={styles.inauspiciousBadgePurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
+            <Text style={styles.inauspiciousTime}>
+              {formatTime(todayPanchang.muhurtas.gulikaKaal.startTime)} - {formatTime(todayPanchang.muhurtas.gulikaKaal.endTime)}
+            </Text>
+            <Text style={styles.inauspiciousDesc}>
+              {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -722,5 +790,78 @@ const styles = StyleSheet.create({
   expandedDetailText: {
     fontSize: 11,
     color: '#64748b',
+  },
+
+  // Today's Inauspicious Windows Card
+  inauspiciousCard: {
+    backgroundColor: '#fff7ed',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    padding: 12,
+    marginBottom: 16,
+  },
+  inauspiciousHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  inauspiciousIcon: {
+    fontSize: 13,
+  },
+  inauspiciousTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#9a3412',
+  },
+  inauspiciousSub: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#c2410c',
+  },
+  inauspiciousRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  inauspiciousItem: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: Radius.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+  },
+  inauspiciousBadgeRed: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#dc2626',
+    marginBottom: 2,
+  },
+  inauspiciousBadgeOrange: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#d97706',
+    marginBottom: 2,
+  },
+  inauspiciousBadgePurple: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#7c3aed',
+    marginBottom: 2,
+  },
+  inauspiciousTime: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1f2937',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  inauspiciousDesc: {
+    fontSize: 9,
+    color: '#6b7280',
+    textAlign: 'center',
   },
 });
