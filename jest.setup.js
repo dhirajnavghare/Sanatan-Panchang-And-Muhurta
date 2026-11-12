@@ -31,7 +31,9 @@ jest.mock('expo-notifications', () => ({
   requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
   getPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
   setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn().mockResolvedValue(undefined),
   SchedulableTriggerInputTypes: { DATE: 'date', TIME_INTERVAL: 'timeInterval' },
+  AndroidImportance: { MAX: 5, HIGH: 4, DEFAULT: 3, LOW: 2, MIN: 1, NONE: 0 },
 }));
 
 // Mock expo-audio
@@ -39,8 +41,11 @@ jest.mock('expo-audio', () => ({
   createAudioPlayer: jest.fn().mockReturnValue({
     play: jest.fn(),
     pause: jest.fn(),
+    seekTo: jest.fn().mockResolvedValue(undefined),
     volume: 1,
   }),
+  setAudioModeAsync: jest.fn().mockResolvedValue(undefined),
+  setIsAudioActiveAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
 // Mock expo-sharing

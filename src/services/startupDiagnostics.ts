@@ -27,7 +27,9 @@ import {
   DEFAULT_USER_PROFILE,
   POPULAR_GOTRAS,
   POPULAR_ISHTA_DEVATAS,
+  loadUserLocation,
 } from './userProfile';
+import { getOfflineCapabilityReport } from './sacredNotifications';
 
 export interface DiagnosticResult {
   suiteName: string;
@@ -346,6 +348,27 @@ export async function runStartupDiagnostics(): Promise<DiagnosticReport> {
     }
     if (typeof DEFAULT_USER_PROFILE.hapticsEnabled !== 'boolean') {
       throw new Error('DEFAULT_USER_PROFILE missing hapticsEnabled boolean');
+    }
+  });
+
+  // 9. OFFLINE AUTONOMY & NOTIFICATIONS ENGINE
+  record('Offline Autonomy', 'Zero External Network Dependency', () => {
+    const offlineReport = getOfflineCapabilityReport();
+    if (!offlineReport.zeroNetworkRequired) {
+      throw new Error('Zero network required flag failed');
+    }
+    if (!offlineReport.isOfflineEphemerisReady) {
+      throw new Error('Offline mathematical ephemeris not ready');
+    }
+  });
+
+  record('Offline Autonomy', 'Offline Multi-Day Pre-Scheduled Alarms', () => {
+    const offlineReport = getOfflineCapabilityReport();
+    if (offlineReport.offlinePreScheduleDays < 7) {
+      throw new Error(`Expected at least 7 offline pre-scheduled days, got ${offlineReport.offlinePreScheduleDays}`);
+    }
+    if (!offlineReport.isNotificationChannelsConfigured) {
+      throw new Error('Offline notification channels not configured');
     }
   });
 
