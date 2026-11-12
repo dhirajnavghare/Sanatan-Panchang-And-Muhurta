@@ -42,7 +42,7 @@ export default function MoreScreen() {
     await saveUserProfile(updated);
     const panchang = calculatePanchang(new Date(), PRESET_CITIES[0]);
     const plans = await getDayPlans(getDateKey(new Date()));
-    await scheduleDailySacredReminders(panchang, updated, plans);
+    await scheduleDailySacredReminders(panchang, updated, plans, undefined, 7, undefined, language);
   };
 
   const [activeSection, setActiveSection] = useState<MoreSection>('temples');

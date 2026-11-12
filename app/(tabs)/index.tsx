@@ -70,13 +70,16 @@ import { scheduleDailySacredReminders } from '@/src/services/sacredNotifications
 import { DailyPanchangCardModal } from '@/src/components/DailyPanchangCardModal';
 import { AppTourModal } from '@/src/components/AppTourModal';
 import { hasSeenAppTour, markAppTourCompleted } from '@/src/services/appTour';
+import { MonthlyCalendarGrid } from '@/src/components/MonthlyCalendarGrid';
+import { calculateEkadashiParana, VratParanaDetails } from '@/src/services/vratParana';
 
 export default function PanchangScreen() {
   const insets = useSafeAreaInsets();
-  const { language, calendarSystem } = useLanguage();
+  const { language, setLanguage, calendarSystem } = useLanguage();
   const isHi = language === 'hi';
 
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
   const [location, setLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
   const [isLocating, setIsLocating] = useState(false);
   const [isCityModalVisible, setIsCityModalVisible] = useState(false);
@@ -186,14 +189,18 @@ export default function PanchangScreen() {
     loadUserProfile().then((p) => {
       setUserProfile(p);
       if (panchang) {
-        scheduleDailySacredReminders(panchang, p, dayPlans, location.timezone, 7, location);
+        scheduleDailySacredReminders(panchang, p, dayPlans, location.timezone, 7, location, language);
       }
     });
-  }, [panchang, dayPlans, location]);
+  }, [panchang, dayPlans, location, language]);
 
   const dailySankalpa = useMemo(() => {
     return generateDailySankalpa(panchang, location.name, userProfile.name, userProfile.gotra);
   }, [panchang, location.name, userProfile.name, userProfile.gotra]);
+
+  const paranaInfo = useMemo(() => {
+    return calculateEkadashiParana(panchang, location, currentDate);
+  }, [panchang, location, currentDate]);
 
   // Live Cosmic Status (Real-time pulse of right now)
   const liveStatus: LiveCosmicStatus = useMemo(() => {
@@ -204,6 +211,27 @@ export default function PanchangScreen() {
   const plannerSlots = useMemo(() => {
     return buildDayPlannerSlots(panchang, new Date());
   }, [panchang]);
+
+  // Tasks planned for the active cosmic window (if any)
+  const activeSlotTodos = useMemo(() => {
+    const nowMs = Date.now();
+    const currentSlot = plannerSlots.find(
+      (s) => nowMs >= s.startTime.getTime() && nowMs <= s.endTime.getTime()
+    );
+    if (!currentSlot) return null;
+    const plan = dayPlans[currentSlot.id];
+    if (!plan) return null;
+    const pendingTodos = plan.todos
+      ? plan.todos.filter((t) => !t.isCompleted)
+      : plan.taskText && !plan.isCompleted
+      ? [{ text: plan.taskText }]
+      : [];
+    if (pendingTodos.length === 0) return null;
+    return {
+      slot: currentSlot,
+      tasks: pendingTodos,
+    };
+  }, [plannerSlots, dayPlans]);
 
   const totalPlannedCount = useMemo(() => {
     return Object.values(dayPlans).reduce((acc, plan) => {
@@ -451,6 +479,21 @@ export default function PanchangScreen() {
             </View>
 
             <View style={styles.headerActionsGroup}>
+              {/* 1-Tap Language Switcher (हिं / EN) */}
+              <TouchableOpacity
+                testID="header-lang-btn"
+                style={styles.langActionBtn}
+                onPress={async () => {
+                  await triggerHaptic('tap', userProfile.hapticsEnabled);
+                  setLanguage(language === 'hi' ? 'en' : 'hi');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.langActionBtnText}>
+                  {language === 'hi' ? 'EN' : 'हिं'}
+                </Text>
+              </TouchableOpacity>
+
               {/* Sacred Temple Brass Bell Chime */}
               <TouchableOpacity
                 testID="header-bell-btn"
@@ -530,6 +573,77 @@ export default function PanchangScreen() {
             })}
           </View>
 
+          {/* View Mode Switcher: Daily vs Monthly Calendar Grid */}
+          <View style={styles.viewModeSegment}>
+            <TouchableOpacity
+              testID="view-mode-daily-btn"
+              style={[styles.viewModeBtn, viewMode === 'daily' && styles.viewModeBtnActive]}
+              onPress={async () => {
+                await triggerHaptic('tap', userProfile.hapticsEnabled);
+                setViewMode('daily');
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.viewModeBtnText, viewMode === 'daily' && styles.viewModeBtnTextActive]}>
+                {isHi ? '☀️ दैनिक पञ्चाङ्ग' : '☀️ Daily Panchang'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="view-mode-monthly-btn"
+              style={[styles.viewModeBtn, viewMode === 'monthly' && styles.viewModeBtnActive]}
+              onPress={async () => {
+                await triggerHaptic('tap', userProfile.hapticsEnabled);
+                setViewMode('monthly');
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.viewModeBtnText, viewMode === 'monthly' && styles.viewModeBtnTextActive]}>
+                {isHi ? '📅 मासिक कैलेंडर' : '📅 Month Calendar'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Conditional Monthly Calendar Grid */}
+          {viewMode === 'monthly' && (
+            <MonthlyCalendarGrid
+              currentDate={currentDate}
+              onSelectDate={(d) => {
+                handleSelectDate(d);
+                setViewMode('daily');
+              }}
+              location={location}
+              isHi={isHi}
+            />
+          )}
+
+          {/* Ekadashi Parana Card (Visible on Ekadashi & Dwadashi) */}
+          {paranaInfo && (
+            <View style={styles.paranaBanner}>
+              <View style={styles.paranaHeaderRow}>
+                <View style={styles.paranaTitleGroup}>
+                  <Text style={styles.paranaEmoji}>🌟</Text>
+                  <Text style={styles.paranaTitle}>
+                    {isHi
+                      ? (paranaInfo.isDwadashi ? 'एकादशी व्रत पारण मुहूर्त (आज)' : 'एकादशी व्रत पारण मुहूर्त (कल)')
+                      : (paranaInfo.isDwadashi ? 'Ekadashi Fast Breaking (Today)' : 'Ekadashi Fast Breaking (Tomorrow)')}
+                  </Text>
+                </View>
+                <View style={styles.paranaBadge}>
+                  <Text style={styles.paranaBadgeText}>
+                    {isHi ? paranaInfo.vratNameHi : paranaInfo.vratNameEn}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.paranaTimeWindow}>
+                {paranaInfo.startTimeFormatted} — {paranaInfo.endTimeFormatted}
+              </Text>
+              <Text style={styles.paranaGuidance}>
+                {isHi ? paranaInfo.guidanceHi : paranaInfo.guidanceEn}
+              </Text>
+            </View>
+          )}
+
           {/* ========================================================= */}
           {/* 2. LIVE COSMIC COMPASS (Now & Next Instant Guidance)      */}
           {/* ========================================================= */}
@@ -571,6 +685,21 @@ export default function PanchangScreen() {
             <Text style={styles.liveCosmicDesc} numberOfLines={2}>
               {isHi ? liveStatus.descriptionHi : liveStatus.descriptionEn}
             </Text>
+
+            {activeSlotTodos && (
+              <View style={styles.liveCosmicTasksRow}>
+                <Text style={styles.liveCosmicTasksTitle}>
+                  {isHi ? '🎯 इस मुहूर्त हेतु नियोजित कार्य:' : '🎯 Tasks planned for this window:'}
+                </Text>
+                <View style={styles.liveCosmicTasksList}>
+                  {activeSlotTodos.tasks.map((t, idx) => (
+                    <View key={idx} style={styles.liveCosmicTaskChip}>
+                      <Text style={styles.liveCosmicTaskChipText}>• {t.text}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
 
           {/* ========================================================= */}
@@ -977,6 +1106,20 @@ export default function PanchangScreen() {
                 <View style={styles.quickAstroDivider} />
 
                 <View style={styles.quickAstroItem}>
+                  <Text style={styles.quickAstroEmoji}>🌙</Text>
+                  <View style={{ backgroundColor: 'transparent' }}>
+                    <Text style={styles.quickAstroLabel}>{isHi ? 'चन्द्रोदय' : 'Moonrise'}</Text>
+                    <Text style={styles.quickAstroVal}>
+                      {panchang.moonTimes.moonrise
+                        ? formatTime(panchang.moonTimes.moonrise)
+                        : (isHi ? 'दिन में' : 'Day')}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.quickAstroDivider} />
+
+                <View style={styles.quickAstroItem}>
                   <Text style={styles.quickAstroEmoji}>⚠️</Text>
                   <View style={{ backgroundColor: 'transparent' }}>
                     <Text style={[styles.quickAstroLabel, { color: '#b91c1c' }]}>
@@ -987,22 +1130,6 @@ export default function PanchangScreen() {
                     </Text>
                   </View>
                 </View>
-
-                <View style={styles.quickAstroDivider} />
-
-                <TouchableOpacity
-                  style={styles.quickAstroItem}
-                  onPress={() => router.push('/(tabs)/prayers' as any)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.quickAstroEmoji}>🔱</Text>
-                  <View style={{ backgroundColor: 'transparent' }}>
-                    <Text style={styles.quickAstroLabel}>{isHi ? 'वार देव' : 'Deity'}</Text>
-                    <Text style={styles.quickAstroVal} numberOfLines={1}>
-                      {isHi ? weekdayDevata.deityNameHi.split(' ')[0] : weekdayDevata.deityName.split(' ')[0]}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -1426,6 +1553,7 @@ export default function PanchangScreen() {
           cityName={location.name}
           devataInfo={weekdayDevata}
           verse={selectedVerse}
+          userName={userProfile.name}
         />
 
         {/* First-Time User App Tour Walkthrough Modal */}
@@ -1502,6 +1630,21 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: 'transparent',
   },
+  langActionBtn: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: '#fff7ed',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langActionBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#ea580c',
+  },
   bellActionBtn: {
     width: 36,
     height: 36,
@@ -1550,6 +1693,100 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+  },
+
+  // View Mode Switcher
+  viewModeSegment: {
+    flexDirection: 'row',
+    backgroundColor: '#f4f4f5',
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 12,
+    gap: 4,
+  },
+  viewModeBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewModeBtnActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  viewModeBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#71717a',
+  },
+  viewModeBtnTextActive: {
+    color: '#b45309',
+    fontWeight: '800',
+  },
+
+  // Ekadashi Vrat Parana Banner
+  paranaBanner: {
+    backgroundColor: '#fffbeb',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#f59e0b',
+    marginBottom: 14,
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  paranaHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  paranaTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  paranaEmoji: {
+    fontSize: 16,
+  },
+  paranaTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+  paranaBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  paranaBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+  paranaTimeWindow: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#b45309',
+    marginVertical: 4,
+    letterSpacing: 0.5,
+  },
+  paranaGuidance: {
+    fontSize: 11.5,
+    color: '#78350f',
+    lineHeight: 16,
   },
 
   // Live Cosmic Pulse Banner
@@ -1605,6 +1842,38 @@ const styles = StyleSheet.create({
     color: '#3f3f46',
     lineHeight: 16,
     fontWeight: '500',
+  },
+  liveCosmicTasksRow: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.08)',
+    backgroundColor: 'transparent',
+  },
+  liveCosmicTasksTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  liveCosmicTasksList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    backgroundColor: 'transparent',
+  },
+  liveCosmicTaskChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+  },
+  liveCosmicTaskChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#1f2937',
   },
 
   // Daily Challenge Card (Hero Banner)

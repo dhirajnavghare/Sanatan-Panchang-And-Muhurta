@@ -25,6 +25,7 @@ interface DailyPanchangCardModalProps {
   cityName: string;
   devataInfo: DailyDevataInfo;
   verse: ShastricVerse;
+  userName?: string;
 }
 
 export function DailyPanchangCardModal({
@@ -34,6 +35,7 @@ export function DailyPanchangCardModal({
   cityName,
   devataInfo,
   verse,
+  userName,
 }: DailyPanchangCardModalProps) {
   const cardRef = useRef<any>(null);
   const [isSharing, setIsSharing] = useState(false);
@@ -75,7 +77,13 @@ export function DailyPanchangCardModal({
   const handleShareText = async () => {
     await triggerHaptic('tap');
     try {
-      const text = `॥ ॐ श्री गणेशाय नमः ॥\n\n🌅 *आज का पञ्चाङ्ग एवं सुविचार*\n📍 स्थान: ${cityName}\n📅 तिथि: ${panchang.tithi.current.pakshaDevanagari} ${panchang.tithi.current.nameDevanagari}\n⭐ नक्षत्र: ${panchang.nakshatra.current.nameDevanagari}\n🧘 योग: ${panchang.yoga.current.nameDevanagari}\n\n🚩 *आज के वार अधिष्ठाता:* ${devataInfo.deityNameHi}\n✨ *मन्त्र:* ${devataInfo.mantraDevanagari}\n\n🌟 *अभिजित मुहूर्त:* ${panchang.muhurtas.abhijitMuhurta ? `${formatTime(panchang.muhurtas.abhijitMuhurta.startTime)} - ${formatTime(panchang.muhurtas.abhijitMuhurta.endTime)}` : 'आज वर्जित'}\n⚠️ *राहु काल:* ${formatTime(panchang.muhurtas.rahuKaal.startTime)} - ${formatTime(panchang.muhurtas.rahuKaal.endTime)}\n\n📖 *आज का श्लोक:*\n${verse.shloka}\n\n[अर्थ]: ${verse.meaningHi}\n\n— सनातन पञ्चाङ्ग (sanatan.cc)\nहर सनातनी का प्रामाणिक दैनिक साथी`;
+      const sunrise = formatTime(panchang.sunTimes.sunrise);
+      const moonrise = panchang.moonTimes.moonrise
+        ? formatTime(panchang.moonTimes.moonrise)
+        : 'दिन में';
+      const senderText = userName ? `\n🙏 प्रेषक: ${userName}` : '';
+
+      const text = `॥ ॐ श्री गणेशाय नमः ॥\n\n🌅 *आज का पञ्चाङ्ग एवं सुविचार*\n📍 स्थान: ${cityName}\n📅 तिथि: ${panchang.tithi.current.pakshaDevanagari} ${panchang.tithi.current.nameDevanagari}\n⭐ नक्षत्र: ${panchang.nakshatra.current.nameDevanagari}\n🧘 योग: ${panchang.yoga.current.nameDevanagari}\n\n🌅 *सूर्योदय:* ${sunrise} | 🌙 *चन्द्रोदय:* ${moonrise}\n🚩 *आज के वार अधिष्ठाता:* ${devataInfo.deityNameHi}\n✨ *मन्त्र:* ${devataInfo.mantraDevanagari}\n\n🌟 *अभिजित मुहूर्त:* ${panchang.muhurtas.abhijitMuhurta ? `${formatTime(panchang.muhurtas.abhijitMuhurta.startTime)} - ${formatTime(panchang.muhurtas.abhijitMuhurta.endTime)}` : 'आज वर्जित'}\n⚠️ *राहु काल:* ${formatTime(panchang.muhurtas.rahuKaal.startTime)} - ${formatTime(panchang.muhurtas.rahuKaal.endTime)}\n\n📖 *आज का श्लोक:*\n${verse.shloka}\n\n[अर्थ]: ${verse.meaningHi}${senderText}\n\n— सनातन पञ्चाङ्ग (sanatan.cc)\nहर सनातनी का प्रामाणिक दैनिक साथी`;
 
       await Share.share({ message: text });
     } catch {
@@ -167,12 +175,34 @@ export function DailyPanchangCardModal({
                   </View>
                 </View>
 
+                {/* Celestial Sunrise & Moonrise Bar */}
+                <View style={styles.celestialRow}>
+                  <View style={styles.celestialItem}>
+                    <Text style={styles.celestialEmoji}>🌅</Text>
+                    <Text style={styles.celestialText}>सूर्योदय: {formatTime(panchang.sunTimes.sunrise)}</Text>
+                  </View>
+                  <View style={styles.celestialDivider} />
+                  <View style={styles.celestialItem}>
+                    <Text style={styles.celestialEmoji}>🌙</Text>
+                    <Text style={styles.celestialText}>
+                      चन्द्रोदय: {panchang.moonTimes.moonrise ? formatTime(panchang.moonTimes.moonrise) : 'दिन में'}
+                    </Text>
+                  </View>
+                </View>
+
                 {/* Sacred Shloka Box */}
                 <View style={styles.shlokaBox}>
                   <Text style={styles.shlokaTitle}>📖 आज का कल्याणकारी श्लोक</Text>
                   <Text style={styles.shlokaText}>{verse.shloka}</Text>
                   <Text style={styles.shlokaMeaning}>[अर्थ]: {verse.meaningHi}</Text>
                 </View>
+
+                {/* Personalized Sender Tag if provided */}
+                {userName ? (
+                  <View style={styles.senderPill}>
+                    <Text style={styles.senderPillText}>🙏 सप्रेम प्रेषक: {userName}</Text>
+                  </View>
+                ) : null}
 
                 {/* Card Footer Watermark */}
                 <View style={styles.cardFooter}>
@@ -366,6 +396,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginTop: 12,
+  },
+  celestialRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+  },
+  celestialItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  celestialDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: '#fde68a',
+  },
+  celestialEmoji: {
+    fontSize: 12,
+  },
+  celestialText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#44403c',
+  },
+  senderPill: {
+    alignSelf: 'center',
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  senderPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#b45309',
   },
   muhurtaBadgeShubh: {
     flex: 1,

@@ -110,4 +110,46 @@ describe('Home Screen (Panchang / Index) - Complete UI Interaction Tests', () =>
 
     expect(coreTab).toBeTruthy();
   });
+
+  it('should toggle language with 1-tap header toggle button', async () => {
+    await renderScreen();
+
+    const langBtn = screen.getByTestId('header-lang-btn');
+    expect(langBtn).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(langBtn);
+    });
+
+    // Language switched from hi to en
+    expect(sacredAudio.triggerHaptic).toHaveBeenCalledWith('tap', expect.any(Boolean));
+  });
+
+  it('should toggle between daily view and monthly calendar grid', async () => {
+    await renderScreen();
+
+    const monthlyBtn = screen.getByTestId('view-mode-monthly-btn');
+    expect(monthlyBtn).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(monthlyBtn);
+    });
+
+    // Monthly calendar should now be visible
+    expect(screen.getByTestId('monthly-calendar-grid')).toBeTruthy();
+
+    const dailyBtn = screen.getByTestId('view-mode-daily-btn');
+    await act(async () => {
+      fireEvent.press(dailyBtn);
+    });
+
+    // Should switch back to daily
+    expect(screen.getByTestId('view-mode-daily-btn')).toBeTruthy();
+  });
+
+  it('should display Moonrise in celestial glance row', async () => {
+    await renderScreen();
+
+    expect(screen.getByText(/Moonrise|चन्द्रोदय/i)).toBeTruthy();
+  });
 });

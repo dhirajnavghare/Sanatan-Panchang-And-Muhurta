@@ -42,13 +42,16 @@ export default function SettingsScreen() {
     await saveUserProfile(updated);
     const panchang = calculatePanchang(new Date(), userLocation);
     const plans = await getDayPlans(getDateKey(new Date()));
-    await scheduleDailySacredReminders(panchang, updated, plans, userLocation.timezone, 7, userLocation);
+    await scheduleDailySacredReminders(panchang, updated, plans, userLocation.timezone, 7, userLocation, language);
   };
 
-  const handleLanguageSelect = (lang: 'hi' | 'en') => {
+  const handleLanguageSelect = async (lang: 'hi' | 'en') => {
     if (lang === language) return;
     triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
     setLanguage(lang);
+    const panchang = calculatePanchang(new Date(), userLocation);
+    const plans = await getDayPlans(getDateKey(new Date()));
+    await scheduleDailySacredReminders(panchang, userProfile, plans, userLocation.timezone, 7, userLocation, lang);
   };
 
   const handleCalendarSystemSelect = (sys: 'purnimanta' | 'amanta') => {
@@ -67,7 +70,7 @@ export default function SettingsScreen() {
     await saveUserProfile(updated);
     const panchang = calculatePanchang(new Date(), userLocation);
     const plans = await getDayPlans(getDateKey(new Date()));
-    await scheduleDailySacredReminders(panchang, updated, plans, userLocation.timezone, 7, userLocation);
+    await scheduleDailySacredReminders(panchang, updated, plans, userLocation.timezone, 7, userLocation, language);
   };
 
   const handleToggleNotifCategory = async (
@@ -86,7 +89,7 @@ export default function SettingsScreen() {
     await saveUserProfile(updated);
     const panchang = calculatePanchang(new Date(), userLocation);
     const plans = await getDayPlans(getDateKey(new Date()));
-    await scheduleDailySacredReminders(panchang, updated, plans, userLocation.timezone, 7, userLocation);
+    await scheduleDailySacredReminders(panchang, updated, plans, userLocation.timezone, 7, userLocation, language);
   };
 
   const handleToggleAudio = async (val: boolean) => {
