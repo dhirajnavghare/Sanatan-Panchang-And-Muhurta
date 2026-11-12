@@ -34,6 +34,7 @@ describe('Settings Screen - Preferences, Notifications & Profile Tests', () => {
     expect(screen.getByTestId('notif-master-switch')).toBeTruthy();
     expect(screen.getByTestId('settings-toggle-audio')).toBeTruthy();
     expect(screen.getByTestId('settings-toggle-haptics')).toBeTruthy();
+    expect(screen.getByTestId('settings-offline-card')).toBeTruthy();
   });
 
   it('should open the Sacred Profile Editor Modal when user clicks edit profile', async () => {

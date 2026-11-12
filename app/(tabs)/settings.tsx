@@ -5,11 +5,13 @@ import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
 import {
   loadUserProfile,
+  loadUserLocation,
   saveUserProfile,
   UserSacredProfile,
   UserNotificationPreferences,
   DEFAULT_USER_PROFILE,
 } from '@/src/services/userProfile';
+import { GeoLocation } from '@/src/core/panchang/types';
 import { SacredProfileEditorModal } from '@/src/components/SacredProfileEditorModal';
 import { AppTourModal } from '@/src/components/AppTourModal';
 import { triggerHaptic } from '@/src/services/sacredAudio';
@@ -26,19 +28,21 @@ export default function SettingsScreen() {
   const isHi = language === 'hi';
 
   const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
+  const [userLocation, setUserLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isTourModalOpen, setIsTourModalOpen] = useState(false);
 
   useEffect(() => {
     loadUserProfile().then(setUserProfile);
+    loadUserLocation().then(setUserLocation);
   }, []);
 
   const handleSaveProfile = async (updated: UserSacredProfile) => {
     setUserProfile(updated);
     await saveUserProfile(updated);
-    const panchang = calculatePanchang(new Date(), PRESET_CITIES[0]);
+    const panchang = calculatePanchang(new Date(), userLocation);
     const plans = await getDayPlans(getDateKey(new Date()));
-    await scheduleDailySacredReminders(panchang, updated, plans);
+    await scheduleDailySacredReminders(panchang, updated, plans, userLocation.timezone, 7, userLocation);
   };
 
   const handleLanguageSelect = (lang: 'hi' | 'en') => {
@@ -61,9 +65,9 @@ export default function SettingsScreen() {
     };
     setUserProfile(updated);
     await saveUserProfile(updated);
-    const panchang = calculatePanchang(new Date(), PRESET_CITIES[0]);
+    const panchang = calculatePanchang(new Date(), userLocation);
     const plans = await getDayPlans(getDateKey(new Date()));
-    await scheduleDailySacredReminders(panchang, updated, plans);
+    await scheduleDailySacredReminders(panchang, updated, plans, userLocation.timezone, 7, userLocation);
   };
 
   const handleToggleNotifCategory = async (
@@ -80,9 +84,9 @@ export default function SettingsScreen() {
     };
     setUserProfile(updated);
     await saveUserProfile(updated);
-    const panchang = calculatePanchang(new Date(), PRESET_CITIES[0]);
+    const panchang = calculatePanchang(new Date(), userLocation);
     const plans = await getDayPlans(getDateKey(new Date()));
-    await scheduleDailySacredReminders(panchang, updated, plans);
+    await scheduleDailySacredReminders(panchang, updated, plans, userLocation.timezone, 7, userLocation);
   };
 
   const handleToggleAudio = async (val: boolean) => {
@@ -475,7 +479,52 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      {/* 5. About & Mission Card */}
+      {/* 5. 100% Offline Autonomy Guarantee Card */}
+      <View testID="settings-offline-card" style={styles.offlineCard}>
+        <View style={styles.offlineHeaderRow}>
+          <View style={styles.offlineBadge}>
+            <Text style={styles.offlineBadgeText}>⚡ 100% OFFLINE</Text>
+          </View>
+          <Text style={styles.offlineHeaderTitle}>
+            {isHi ? 'पूर्णतः ऑफ़लाइन कार्य प्रणाली' : 'Full Offline Autonomy'}
+          </Text>
+        </View>
+
+        <Text style={styles.offlineDesc}>
+          {isHi
+            ? 'यह सम्पूर्ण ऍप एवं इसकी सभी सूचनाएं बिना इंटरनेट के १००% ऑफ़लाइन कार्य करती हैं। नासा एवं वैदिक सिद्धान्तों पर आधारित खगोलीय पञ्चाङ्ग आपके फोन में ही गणितीय रूप से संगणित होता है।'
+            : 'Zero internet required. All astronomical calculations, ephemeris, festivals, and alerts run locally on your phone hardware.'}
+        </Text>
+
+        <View style={styles.offlineGrid}>
+          <View style={styles.offlineGridItem}>
+            <Ionicons name="airplane" size={16} color="#15803d" />
+            <Text style={styles.offlineGridText}>
+              {isHi ? 'एयरप्लेन मोड में सक्रिय' : 'Works in Airplane Mode'}
+            </Text>
+          </View>
+          <View style={styles.offlineGridItem}>
+            <Ionicons name="alarm-outline" size={16} color="#15803d" />
+            <Text style={styles.offlineGridText}>
+              {isHi ? '७ दिन की पूर्व-सूचनाएं' : '7 Days Pre-Scheduled Alarms'}
+            </Text>
+          </View>
+          <View style={styles.offlineGridItem}>
+            <Ionicons name="shield-checkmark-outline" size={16} color="#15803d" />
+            <Text style={styles.offlineGridText}>
+              {isHi ? 'शून्य डेटा / गोपनीयता' : 'Zero Data / Zero Tracking'}
+            </Text>
+          </View>
+          <View style={styles.offlineGridItem}>
+            <Ionicons name="hardware-chip-outline" size={16} color="#15803d" />
+            <Text style={styles.offlineGridText}>
+              {isHi ? 'हार्डवेयर अलार्म क्लॉक' : 'Hardware Clock Trigger'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 6. About & Mission Card */}
       <View style={styles.aboutCard}>
         <Text style={styles.aboutTitle}>
           {isHi ? 'सनातन दिनचर्या एवं पञ्चाङ्ग' : 'Sanatan Dinacharya & Panchang'}
@@ -689,5 +738,66 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#a1a1aa',
     fontWeight: '600',
+  },
+  offlineCard: {
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  offlineHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    backgroundColor: 'transparent',
+  },
+  offlineBadge: {
+    backgroundColor: '#15803d',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  offlineBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  offlineHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#166534',
+  },
+  offlineDesc: {
+    fontSize: 12,
+    color: '#15803d',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  offlineGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    backgroundColor: 'transparent',
+  },
+  offlineGridItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#dcfce7',
+    flexGrow: 1,
+  },
+  offlineGridText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#166534',
   },
 });

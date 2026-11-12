@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GeoLocation } from '../core/panchang/types';
+import { PRESET_CITIES } from '../core/panchang/constants';
 
 export interface UserNotificationPreferences {
   abhijitAlert: boolean; // 🌟 Abhijit Muhurta & Supreme Auspicious Windows
@@ -106,6 +108,37 @@ export async function loadUserProfile(): Promise<UserSacredProfile> {
 export async function saveUserProfile(profile: UserSacredProfile): Promise<boolean> {
   try {
     await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const LOCATION_STORAGE_KEY = '@sanatan_user_location_v1';
+
+/**
+ * Loads persisted user location from device storage, defaulting to Ujjain offline.
+ */
+export async function loadUserLocation(): Promise<GeoLocation> {
+  try {
+    const raw = await AsyncStorage.getItem(LOCATION_STORAGE_KEY);
+    if (!raw) return PRESET_CITIES[0];
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.latitude === 'number' && typeof parsed.longitude === 'number') {
+      return parsed;
+    }
+    return PRESET_CITIES[0];
+  } catch {
+    return PRESET_CITIES[0];
+  }
+}
+
+/**
+ * Saves user selected city or GPS coordinates to device storage for 100% offline persistence.
+ */
+export async function saveUserLocation(location: GeoLocation): Promise<boolean> {
+  try {
+    await AsyncStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(location));
     return true;
   } catch {
     return false;

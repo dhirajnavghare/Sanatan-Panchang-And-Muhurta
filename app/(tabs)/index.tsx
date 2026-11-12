@@ -60,6 +60,8 @@ import {
 } from '@/src/services/dayplanner';
 import {
   loadUserProfile,
+  loadUserLocation,
+  saveUserLocation,
   UserSacredProfile,
   DEFAULT_USER_PROFILE,
 } from '@/src/services/userProfile';
@@ -177,13 +179,17 @@ export default function PanchangScreen() {
   }, [currentDate]);
 
   useEffect(() => {
+    loadUserLocation().then(setLocation);
+  }, []);
+
+  useEffect(() => {
     loadUserProfile().then((p) => {
       setUserProfile(p);
       if (panchang) {
-        scheduleDailySacredReminders(panchang, p, dayPlans, location.timezone);
+        scheduleDailySacredReminders(panchang, p, dayPlans, location.timezone, 7, location);
       }
     });
-  }, [panchang, dayPlans, location.timezone]);
+  }, [panchang, dayPlans, location]);
 
   const dailySankalpa = useMemo(() => {
     return generateDailySankalpa(panchang, location.name, userProfile.name, userProfile.gotra);
@@ -323,6 +329,7 @@ export default function PanchangScreen() {
   const handleSelectCity = (city: GeoLocation) => {
     setIsCityModalVisible(false);
     setIsCalculating(true);
+    saveUserLocation(city).catch(() => {});
     setTimeout(() => {
       setLocation(city);
       setIsCalculating(false);
@@ -350,13 +357,15 @@ export default function PanchangScreen() {
       const { latitude, longitude, altitude } = loc.coords;
       const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
 
-      setLocation({
+      const detectedLocation: GeoLocation = {
         name: isHi ? 'वर्तमान स्थान' : 'Current GPS City',
         latitude,
         longitude,
         altitude: altitude ?? 0,
         timezone: detectedTz,
-      });
+      };
+      saveUserLocation(detectedLocation).catch(() => {});
+      setLocation(detectedLocation);
       setIsLocating(false);
       setIsCalculating(false);
     } catch {

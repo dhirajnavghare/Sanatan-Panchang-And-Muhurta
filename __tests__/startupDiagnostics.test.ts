@@ -34,6 +34,7 @@ describe('Startup Diagnostics & Automated Invariant Tests', () => {
     expect(suites.has('Dinacharya Engine')).toBe(true);
     expect(suites.has('Sadhana Engine')).toBe(true);
     expect(suites.has('Profile & Registry')).toBe(true);
+    expect(suites.has('Offline Autonomy')).toBe(true);
 
     for (const res of report.results) {
       expect(res.passed).toBe(true);

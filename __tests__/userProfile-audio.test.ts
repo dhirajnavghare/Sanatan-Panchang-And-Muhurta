@@ -1,6 +1,8 @@
 import {
   loadUserProfile,
   saveUserProfile,
+  loadUserLocation,
+  saveUserLocation,
   DEFAULT_USER_PROFILE,
   POPULAR_GOTRAS,
   POPULAR_ISHTA_DEVATAS,
@@ -14,6 +16,8 @@ import {
 import {
   scheduleDailySacredReminders,
   presentTestNotification,
+  ensureOfflineNotificationChannels,
+  getOfflineCapabilityReport,
 } from '../src/services/sacredNotifications';
 import * as Notifications from 'expo-notifications';
 import { calculatePanchang, PRESET_CITIES } from '../src/core/panchang';
@@ -153,6 +157,43 @@ describe('User Profile, Sacred Audio & Notifications Tests', () => {
 
       await scheduleDailySacredReminders(panchang, profile);
       expect(Notifications.cancelAllScheduledNotificationsAsync).toHaveBeenCalled();
+    });
+
+    it('should pre-schedule rolling multi-day notifications offline for 7 days ahead', async () => {
+      const profile = {
+        ...DEFAULT_USER_PROFILE,
+        notificationsEnabled: true,
+        notifications: {
+          ...DEFAULT_USER_PROFILE.notifications,
+          brahmaMuhurtaAlert: true,
+          abhijitAlert: true,
+          rahuKaalAlert: true,
+          sandhyaDeepamAlert: true,
+        },
+      };
+
+      await scheduleDailySacredReminders(panchang, profile, undefined, 'Asia/Kolkata', 7, ujjain);
+      expect(Notifications.scheduleNotificationAsync).toHaveBeenCalled();
+    });
+
+    it('should configure offline notification channels and report 100% offline autonomy', async () => {
+      await ensureOfflineNotificationChannels();
+      const report = getOfflineCapabilityReport();
+      expect(report.isOfflineEphemerisReady).toBe(true);
+      expect(report.isNotificationChannelsConfigured).toBe(true);
+      expect(report.zeroNetworkRequired).toBe(true);
+      expect(report.offlinePreScheduleDays).toBe(7);
+    });
+
+    it('should save and load user location for 100% offline persistence', async () => {
+      const varanasi = PRESET_CITIES.find((c) => c.name === 'Varanasi') || PRESET_CITIES[1];
+      const saved = await saveUserLocation(varanasi);
+      expect(saved).toBe(true);
+
+      const loaded = await loadUserLocation();
+      expect(loaded.name).toBe(varanasi.name);
+      expect(loaded.latitude).toBeCloseTo(varanasi.latitude, 2);
+      expect(loaded.longitude).toBeCloseTo(varanasi.longitude, 2);
     });
   });
 });
