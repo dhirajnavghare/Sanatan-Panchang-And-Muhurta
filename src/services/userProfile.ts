@@ -20,6 +20,7 @@ export interface UserSacredProfile {
   ishtaDevata: string;
   kuldeviOrDevata: string;
   city: string;
+  rashi?: number; // 0 to 11 (Mesha to Meena)
   audioEnabled: boolean;
   hapticsEnabled: boolean;
   notificationsEnabled: boolean;
@@ -69,6 +70,7 @@ export const DEFAULT_USER_PROFILE: UserSacredProfile = {
   ishtaDevata: 'Lord Shiva / Mahadeva',
   kuldeviOrDevata: '',
   city: 'Ujjain, India (Standard Meridian)',
+  rashi: 0, // Mesha default
   audioEnabled: true,
   hapticsEnabled: true,
   notificationsEnabled: true,

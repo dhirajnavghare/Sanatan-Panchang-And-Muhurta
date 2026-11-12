@@ -60,6 +60,7 @@ import {
 } from '@/src/services/dayplanner';
 import {
   loadUserProfile,
+  saveUserProfile,
   loadUserLocation,
   saveUserLocation,
   UserSacredProfile,
@@ -72,6 +73,9 @@ import { AppTourModal } from '@/src/components/AppTourModal';
 import { hasSeenAppTour, markAppTourCompleted } from '@/src/services/appTour';
 import { MonthlyCalendarGrid } from '@/src/components/MonthlyCalendarGrid';
 import { calculateEkadashiParana, VratParanaDetails } from '@/src/services/vratParana';
+import { getTodayVratGuidance } from '@/src/services/vratGuidelines';
+import { VratHeroCard } from '@/src/components/VratHeroCard';
+import { DailyRashiCard } from '@/src/components/DailyRashiCard';
 
 export default function PanchangScreen() {
   const insets = useSafeAreaInsets();
@@ -201,6 +205,16 @@ export default function PanchangScreen() {
   const paranaInfo = useMemo(() => {
     return calculateEkadashiParana(panchang, location, currentDate);
   }, [panchang, location, currentDate]);
+
+  const vratGuidance = useMemo(() => {
+    return getTodayVratGuidance(panchang, currentDate, location.timezone);
+  }, [panchang, currentDate, location.timezone]);
+
+  const handleSaveRashi = async (rashiIdx: number) => {
+    const updated = { ...userProfile, rashi: rashiIdx };
+    setUserProfile(updated);
+    await saveUserProfile(updated);
+  };
 
   // Live Cosmic Status (Real-time pulse of right now)
   const liveStatus: LiveCosmicStatus = useMemo(() => {
@@ -617,8 +631,14 @@ export default function PanchangScreen() {
             />
           )}
 
-          {/* Ekadashi Parana Card (Visible on Ekadashi & Dwadashi) */}
-          {paranaInfo && (
+          {/* Sacred Vrat Hero Card (Sankashti Moonrise, Ekadashi, Pradosha, Purnima) */}
+          {vratGuidance ? (
+            <VratHeroCard
+              vrat={vratGuidance}
+              isHi={isHi}
+              hapticsEnabled={userProfile.hapticsEnabled}
+            />
+          ) : paranaInfo ? (
             <View style={styles.paranaBanner}>
               <View style={styles.paranaHeaderRow}>
                 <View style={styles.paranaTitleGroup}>
@@ -642,7 +662,7 @@ export default function PanchangScreen() {
                 {isHi ? paranaInfo.guidanceHi : paranaInfo.guidanceEn}
               </Text>
             </View>
-          )}
+          ) : null}
 
           {/* ========================================================= */}
           {/* 2. LIVE COSMIC COMPASS (Now & Next Instant Guidance)      */}
@@ -764,6 +784,15 @@ export default function PanchangScreen() {
               </View>
             </TouchableOpacity>
           </View>
+
+          {/* Daily Satvik Rashi Guidance (Vedic Gochara & Remedies) */}
+          <DailyRashiCard
+            moonRashiIndex={panchang.moonRashi?.current?.index ?? 0}
+            savedRashiIndex={userProfile.rashi}
+            onSaveRashi={handleSaveRashi}
+            isHi={isHi}
+            hapticsEnabled={userProfile.hapticsEnabled}
+          />
 
           {/* ========================================================= */}
           {/* 4. THE HEART: HINDU DAY PLANNER (Front & Center!)         */}
@@ -1129,6 +1158,56 @@ export default function PanchangScreen() {
                       {formatTime(panchang.muhurtas.rahuKaal.startTime)}
                     </Text>
                   </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Pan-Indian Inauspicious Triad (त्रिकाल वर्ज्य: राहु काल, यमगण्ड, एवं गुलिक काल) */}
+            <View style={styles.inauspiciousTriadCard} testID="inauspicious-triad-card">
+              <View style={styles.inauspiciousTriadHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'transparent' }}>
+                  <Text style={{ fontSize: 13 }}>⚠️</Text>
+                  <Text style={styles.inauspiciousTriadTitle}>
+                    {isHi ? 'त्रिकाल वर्ज्य (त्याज्य काल)' : 'Inauspicious Windows (To Avoid)'}
+                  </Text>
+                </View>
+                <Text style={styles.inauspiciousTriadSub}>
+                  {isHi ? 'दक्षिण एवं सर्व-भारतीय पञ्चाङ्ग' : 'South & Pan-Indian Panchangam'}
+                </Text>
+              </View>
+
+              <View style={styles.inauspiciousTriadRow}>
+                {/* 1. Rahu Kaal */}
+                <View style={styles.triadItem}>
+                  <Text style={styles.triadBadgeTextRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
+                  <Text style={styles.triadTimeText}>
+                    {formatTime(panchang.muhurtas.rahuKaal.startTime)} - {formatTime(panchang.muhurtas.rahuKaal.endTime)}
+                  </Text>
+                  <Text style={styles.triadDescText}>
+                    {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
+                  </Text>
+                </View>
+
+                {/* 2. Yamagandam */}
+                <View style={styles.triadItem}>
+                  <Text style={styles.triadBadgeTextOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
+                  <Text style={styles.triadTimeText}>
+                    {formatTime(panchang.muhurtas.yamaganda.startTime)} - {formatTime(panchang.muhurtas.yamaganda.endTime)}
+                  </Text>
+                  <Text style={styles.triadDescText}>
+                    {isHi ? 'यात्रा व निवेश वर्जित' : 'Avoid travel & deals'}
+                  </Text>
+                </View>
+
+                {/* 3. Gulika Kaal */}
+                <View style={styles.triadItem}>
+                  <Text style={styles.triadBadgeTextPurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
+                  <Text style={styles.triadTimeText}>
+                    {formatTime(panchang.muhurtas.gulikaKaal.startTime)} - {formatTime(panchang.muhurtas.gulikaKaal.endTime)}
+                  </Text>
+                  <Text style={styles.triadDescText}>
+                    {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -2132,6 +2211,79 @@ const styles = StyleSheet.create({
     width: 1,
     height: 22,
     backgroundColor: '#e4e4e7',
+  },
+
+  // Pan-Indian Inauspicious Triad (Rahu, Yamagandam, Gulika)
+  inauspiciousTriadCard: {
+    backgroundColor: '#fff7ed', // Soft warm cream
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  inauspiciousTriadHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    backgroundColor: 'transparent',
+  },
+  inauspiciousTriadTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#9a3412',
+  },
+  inauspiciousTriadSub: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#c2410c',
+  },
+  inauspiciousTriadRow: {
+    flexDirection: 'row',
+    gap: 6,
+    backgroundColor: 'transparent',
+  },
+  triadItem: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+  },
+  triadBadgeTextRed: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#dc2626',
+    marginBottom: 2,
+  },
+  triadBadgeTextOrange: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#d97706',
+    marginBottom: 2,
+  },
+  triadBadgeTextPurple: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#7c3aed',
+    marginBottom: 2,
+  },
+  triadTimeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1f2937',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  triadDescText: {
+    fontSize: 9,
+    color: '#6b7280',
+    textAlign: 'center',
   },
 
   // Week Calendar Strip

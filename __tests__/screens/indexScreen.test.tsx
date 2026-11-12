@@ -152,4 +152,11 @@ describe('Home Screen (Panchang / Index) - Complete UI Interaction Tests', () =>
 
     expect(screen.getByText(/Moonrise|चन्द्रोदय/i)).toBeTruthy();
   });
+
+  it('should display the Pan-Indian Inauspicious Triad and Daily Rashi Card', async () => {
+    await renderScreen();
+
+    expect(screen.getByTestId('inauspicious-triad-card')).toBeTruthy();
+    expect(screen.getByTestId('daily-rashi-card')).toBeTruthy();
+  });
 });
