@@ -83,7 +83,7 @@ export default function PanchangScreen() {
   const isHi = language === 'hi';
 
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
-  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
+  const [viewMode, setViewMode] = useState<'daily' | 'planner' | 'monthly'>('daily');
   const [location, setLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
   const [isLocating, setIsLocating] = useState(false);
   const [isCityModalVisible, setIsCityModalVisible] = useState(false);
@@ -449,6 +449,418 @@ export default function PanchangScreen() {
   const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const dayNamesHi = ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि'];
 
+  // Reusable Hindu Day Planner Section
+  const renderDayPlannerSection = () => (
+    <View style={styles.plannerSection}>
+      <View style={styles.plannerHeaderRow}>
+        <View style={{ flex: 1, paddingRight: 8, backgroundColor: 'transparent' }}>
+          <Text style={styles.plannerSectionTitle}>
+            {isHi ? '🗓️ आज की दिन योजना (Day Planner)' : '🗓️ Hindu Day Planner'}
+          </Text>
+          <Text style={styles.plannerSectionSub}>
+            {isHi
+              ? 'शास्त्रसम्मत शुभ काल के अनुसार अपने कार्यों का नियोजन करें'
+              : 'Schedule tasks aligned with auspicious cosmic timings'}
+          </Text>
+        </View>
+
+        {totalPlannedCount > 0 && (
+          <View style={styles.plannerProgressBadge}>
+            <Text style={styles.plannerProgressText}>
+              🎯 {totalCompletedCount}/{totalPlannedCount} {isHi ? 'सम्पन्न' : 'Done'}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Filter Tabs: Core vs All 24h vs Planned */}
+      <View style={styles.plannerFilterRow}>
+        <TouchableOpacity
+          testID="planner-tab-core"
+          style={[
+            styles.plannerFilterTab,
+            plannerFilter === 'core' && styles.plannerFilterTabActive,
+          ]}
+          onPress={() => setPlannerFilter('core')}
+        >
+          <Text
+            style={[
+              styles.plannerFilterTabText,
+              plannerFilter === 'core' && styles.plannerFilterTabTextActive,
+            ]}
+          >
+            {isHi ? '🌟 मुख्य मुहूर्त' : '🌟 Core Windows'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          testID="planner-tab-all"
+          style={[
+            styles.plannerFilterTab,
+            plannerFilter === 'all' && styles.plannerFilterTabActive,
+          ]}
+          onPress={() => setPlannerFilter('all')}
+        >
+          <Text
+            style={[
+              styles.plannerFilterTabText,
+              plannerFilter === 'all' && styles.plannerFilterTabTextActive,
+            ]}
+          >
+            {isHi ? '🕒 24h सम्पूर्ण' : '🕒 All 24h'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          testID="planner-tab-planned"
+          style={[
+            styles.plannerFilterTab,
+            plannerFilter === 'planned' && styles.plannerFilterTabActive,
+          ]}
+          onPress={() => setPlannerFilter('planned')}
+        >
+          <Text
+            style={[
+              styles.plannerFilterTabText,
+              plannerFilter === 'planned' && styles.plannerFilterTabTextActive,
+            ]}
+          >
+            {isHi
+              ? `✍️ नियोजित (${totalPlannedCount})`
+              : `✍️ Planned (${totalPlannedCount})`}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Slot Cards List */}
+      <View style={styles.plannerCardsContainer}>
+        {filteredSlots.length === 0 ? (
+          <View style={styles.plannerEmptyBox}>
+            <Text style={{ fontSize: 28, marginBottom: 8 }}>📝</Text>
+            <Text style={styles.plannerEmptyTitle}>
+              {isHi ? 'कोई कार्य नियोजित नहीं है' : 'No tasks planned yet'}
+            </Text>
+            <Text style={styles.plannerEmptySubtitle}>
+              {isHi
+                ? 'ऊपर "मुख्य मुहूर्त" टैब पर जाएँ और अपने कार्यों को शुभ समय अनुसार जोड़ें।'
+                : 'Switch to "Core Windows" above to plan tasks during auspicious hours.'}
+            </Text>
+          </View>
+        ) : (
+          filteredSlots.map((slot) => {
+            const plan = dayPlans[slot.id];
+            const todos: TodoItem[] =
+              plan?.todos && plan.todos.length > 0
+                ? plan.todos
+                : plan?.taskText
+                ? [
+                    {
+                      id: 'legacy',
+                      text: plan.taskText,
+                      isCompleted: Boolean(plan.isCompleted),
+                      createdAt: plan.updatedAt || Date.now(),
+                    },
+                  ]
+                : [];
+
+            const slotDoneCount = todos.filter((t) => t.isCompleted).length;
+            const slotTotalCount = todos.length;
+            const isAllDone = slotTotalCount > 0 && slotDoneCount === slotTotalCount;
+            const inputValue = editingInputs[slot.id] || '';
+
+            // Quality styling
+            const isAshubh = slot.quality === 'Ashubh';
+            const isMahashubh =
+              slot.quality === 'Mahashubh' || slot.quality === 'Amrit';
+
+            return (
+              <View
+                key={slot.id}
+                style={[
+                  styles.plannerSlotCard,
+                  slot.isCurrent && styles.plannerSlotCardCurrent,
+                  isAshubh && styles.plannerSlotCardAshubh,
+                  isAllDone && styles.plannerSlotCardDone,
+                ]}
+              >
+                {/* Top Time & Quality Row */}
+                <View style={styles.slotTopRow}>
+                  <View style={styles.slotTimeBlock}>
+                    <Text style={styles.slotTimeRange}>
+                      {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                    </Text>
+                    <Text style={styles.slotTitle} numberOfLines={1}>
+                      {isHi ? slot.titleHi : slot.title}
+                    </Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {slot.isCurrent && (
+                      <View style={styles.currentActiveBadge}>
+                        <Text style={styles.currentActiveBadgeText}>
+                          {isHi ? '● अभी सक्रिय' : '● LIVE NOW'}
+                        </Text>
+                      </View>
+                    )}
+
+                    {slotTotalCount > 0 && (
+                      <View
+                        style={[
+                          styles.slotProgressBadge,
+                          isAllDone && styles.slotProgressBadgeDone,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.slotProgressBadgeText,
+                            isAllDone && styles.slotProgressBadgeTextDone,
+                          ]}
+                        >
+                          {isAllDone
+                            ? isHi ? '✓ पूर्ण' : '✓ Done'
+                            : `🎯 ${slotDoneCount}/${slotTotalCount}`}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View
+                      style={[
+                        styles.qualityBadge,
+                        isMahashubh && styles.qualityBadgeMahashubh,
+                        isAshubh && styles.qualityBadgeAshubh,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.qualityBadgeText,
+                          isMahashubh && styles.qualityBadgeTextMahashubh,
+                          isAshubh && styles.qualityBadgeTextAshubh,
+                        ]}
+                      >
+                        {isAshubh
+                          ? isHi ? 'त्याज्य' : 'Avoid'
+                          : isMahashubh
+                          ? isHi ? 'महाशुभ' : 'Supreme'
+                          : isHi ? 'शुभ' : 'Shubh'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* For What this time is for (शास्त्रीय प्रयोजन) */}
+                <View
+                  style={[
+                    styles.suitabilityBox,
+                    isAshubh && styles.suitabilityBoxAshubh,
+                  ]}
+                >
+                  <Text style={styles.suitabilityHeading}>
+                    {isAshubh
+                      ? isHi ? '⚠️ इस समय क्या न करें:' : '⚠️ What to avoid now:'
+                      : isHi ? '💡 यह समय किस कार्य के लिए है:' : '💡 What this time is for:'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.suitabilityText,
+                      isAshubh && styles.suitabilityTextAshubh,
+                    ]}
+                  >
+                    {isHi ? slot.suitabilityHi : slot.suitability}
+                  </Text>
+                </View>
+
+                {/* Suggested Quick Chips (Tap to instantly add to To-Do list) */}
+                <View style={styles.quickChipsRow}>
+                  {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
+                    <TouchableOpacity
+                      key={sIdx}
+                      style={styles.suggestionChip}
+                      onPress={() => handleApplySuggestion(slot.id, suggestion)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.suggestionChipText}>+ {suggestion}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* To-Do Checklist Items */}
+                {todos.length > 0 && (
+                  <View style={styles.slotTodoList}>
+                    {todos.map((todo) => (
+                      <View key={todo.id} style={styles.todoItemRow}>
+                        <TouchableOpacity
+                          style={styles.todoCheckboxBtn}
+                          onPress={() => handleToggleTodo(slot.id, todo.id)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons
+                            name={todo.isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
+                            size={22}
+                            color={todo.isCompleted ? '#059669' : '#d97706'}
+                          />
+                        </TouchableOpacity>
+
+                        <Text
+                          style={[
+                            styles.todoItemText,
+                            todo.isCompleted && styles.todoItemTextDone,
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {todo.text}
+                        </Text>
+
+                        <TouchableOpacity
+                          style={styles.todoDeleteBtn}
+                          onPress={() => handleDeleteTodo(slot.id, todo.id)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons name="close" size={18} color="#a1a1aa" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Inline Add Task Input */}
+                <View style={styles.addTodoInputRow}>
+                  <Ionicons name="add" size={20} color="#b45309" style={{ marginLeft: 6 }} />
+                  <TextInput
+                    style={styles.addTodoTextInput}
+                    placeholder={
+                      isAshubh
+                        ? isHi
+                          ? 'इस समय हेतु शांत कार्य जोड़ें...'
+                          : 'Add quiet chore for this slot...'
+                        : isHi
+                        ? 'इस मुहूर्त में अपना कार्य जोड़ें...'
+                        : 'Add task for this auspicious window...'
+                    }
+                    placeholderTextColor="#a1a1aa"
+                    value={inputValue}
+                    onChangeText={(txt) => handleInputChange(slot.id, txt)}
+                    returnKeyType="done"
+                    onSubmitEditing={() => handleAddTodo(slot.id, inputValue)}
+                  />
+
+                  {inputValue.trim().length > 0 && (
+                    <TouchableOpacity
+                      style={styles.addTodoSubmitBtn}
+                      onPress={() => handleAddTodo(slot.id, inputValue)}
+                    >
+                      <Text style={styles.addTodoSubmitBtnText}>{isHi ? 'जोड़ें' : 'Add'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            );
+          })
+        )}
+      </View>
+
+      {/* Quick Astronomical Glance Bar */}
+      <View style={styles.quickAstroRow}>
+        <View style={styles.quickAstroItem}>
+          <Text style={styles.quickAstroEmoji}>🌅</Text>
+          <View style={{ backgroundColor: 'transparent' }}>
+            <Text style={styles.quickAstroLabel}>{isHi ? 'सूर्योदय' : 'Sunrise'}</Text>
+            <Text style={styles.quickAstroVal}>{formatTime(panchang.sunTimes.sunrise)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.quickAstroDivider} />
+
+        <View style={styles.quickAstroItem}>
+          <Text style={styles.quickAstroEmoji}>🌇</Text>
+          <View style={{ backgroundColor: 'transparent' }}>
+            <Text style={styles.quickAstroLabel}>{isHi ? 'सूर्यास्त' : 'Sunset'}</Text>
+            <Text style={styles.quickAstroVal}>{formatTime(panchang.sunTimes.sunset)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.quickAstroDivider} />
+
+        <View style={styles.quickAstroItem}>
+          <Text style={styles.quickAstroEmoji}>🌙</Text>
+          <View style={{ backgroundColor: 'transparent' }}>
+            <Text style={styles.quickAstroLabel}>{isHi ? 'चन्द्रोदय' : 'Moonrise'}</Text>
+            <Text style={styles.quickAstroVal}>
+              {panchang.moonTimes.moonrise
+                ? formatTime(panchang.moonTimes.moonrise)
+                : (isHi ? 'दिन में' : 'Day')}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.quickAstroDivider} />
+
+        <View style={styles.quickAstroItem}>
+          <Text style={styles.quickAstroEmoji}>⚠️</Text>
+          <View style={{ backgroundColor: 'transparent' }}>
+            <Text style={[styles.quickAstroLabel, { color: '#b91c1c' }]}>
+              {isHi ? 'राहु काल' : 'Rahu'}
+            </Text>
+            <Text style={[styles.quickAstroVal, { color: '#b91c1c' }]}>
+              {formatTime(panchang.muhurtas.rahuKaal.startTime)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
+  // Reusable Pan-Indian Inauspicious Triad Card
+  const renderInauspiciousTriad = () => (
+    <View style={styles.inauspiciousTriadCard} testID="inauspicious-triad-card">
+      <View style={styles.inauspiciousTriadHeader}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'transparent' }}>
+          <Text style={{ fontSize: 13 }}>⚠️</Text>
+          <Text style={styles.inauspiciousTriadTitle}>
+            {isHi ? 'त्रिकाल वर्ज्य (त्याज्य काल)' : 'Inauspicious Windows (To Avoid)'}
+          </Text>
+        </View>
+        <Text style={styles.inauspiciousTriadSub}>
+          {isHi ? 'दक्षिण एवं सर्व-भारतीय पञ्चाङ्ग' : 'South & Pan-Indian Panchangam'}
+        </Text>
+      </View>
+
+      <View style={styles.inauspiciousTriadRow}>
+        {/* 1. Rahu Kaal */}
+        <View style={styles.triadItem}>
+          <Text style={styles.triadBadgeTextRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
+          <Text style={styles.triadTimeText}>
+            {formatTime(panchang.muhurtas.rahuKaal.startTime)} - {formatTime(panchang.muhurtas.rahuKaal.endTime)}
+          </Text>
+          <Text style={styles.triadDescText}>
+            {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
+          </Text>
+        </View>
+
+        {/* 2. Yamagandam */}
+        <View style={styles.triadItem}>
+          <Text style={styles.triadBadgeTextOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
+          <Text style={styles.triadTimeText}>
+            {formatTime(panchang.muhurtas.yamaganda.startTime)} - {formatTime(panchang.muhurtas.yamaganda.endTime)}
+          </Text>
+          <Text style={styles.triadDescText}>
+            {isHi ? 'यात्रा व निवेश वर्जित' : 'Avoid travel & deals'}
+          </Text>
+        </View>
+
+        {/* 3. Gulika Kaal */}
+        <View style={styles.triadItem}>
+          <Text style={styles.triadBadgeTextPurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
+          <Text style={styles.triadTimeText}>
+            {formatTime(panchang.muhurtas.gulikaKaal.startTime)} - {formatTime(panchang.muhurtas.gulikaKaal.endTime)}
+          </Text>
+          <Text style={styles.triadDescText}>
+            {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: '#f8f8fa' }}
@@ -587,7 +999,7 @@ export default function PanchangScreen() {
             })}
           </View>
 
-          {/* View Mode Switcher: Daily vs Monthly Calendar Grid */}
+          {/* View Mode Switcher: Daily vs Planner vs Monthly Calendar Grid */}
           <View style={styles.viewModeSegment}>
             <TouchableOpacity
               testID="view-mode-daily-btn"
@@ -598,8 +1010,22 @@ export default function PanchangScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={[styles.viewModeBtnText, viewMode === 'daily' && styles.viewModeBtnTextActive]}>
-                {isHi ? '☀️ दैनिक पञ्चाङ्ग' : '☀️ Daily Panchang'}
+              <Text style={[styles.viewModeBtnText, viewMode === 'daily' && styles.viewModeBtnTextActive]} numberOfLines={1}>
+                {isHi ? '☀️ पञ्चाङ्ग' : '☀️ Panchang'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="view-mode-planner-btn"
+              style={[styles.viewModeBtn, viewMode === 'planner' && styles.viewModeBtnActive]}
+              onPress={async () => {
+                await triggerHaptic('tap', userProfile.hapticsEnabled);
+                setViewMode('planner');
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.viewModeBtnText, viewMode === 'planner' && styles.viewModeBtnTextActive]} numberOfLines={1}>
+                {isHi ? '🗓️ दिन योजना' : '🗓️ Day Planner'}
               </Text>
             </TouchableOpacity>
 
@@ -612,24 +1038,52 @@ export default function PanchangScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={[styles.viewModeBtnText, viewMode === 'monthly' && styles.viewModeBtnTextActive]}>
-                {isHi ? '📅 मासिक कैलेंडर' : '📅 Month Calendar'}
+              <Text style={[styles.viewModeBtnText, viewMode === 'monthly' && styles.viewModeBtnTextActive]} numberOfLines={1}>
+                {isHi ? '📅 मासिक' : '📅 Monthly'}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Conditional Monthly Calendar Grid */}
-          {viewMode === 'monthly' && (
-            <MonthlyCalendarGrid
-              currentDate={currentDate}
-              onSelectDate={(d) => {
-                handleSelectDate(d);
-                setViewMode('daily');
-              }}
-              location={location}
-              isHi={isHi}
-            />
-          )}
+          {/* 1. PLANNER VIEW MODE: Direct zero-scroll access */}
+          {viewMode === 'planner' ? (
+            <View testID="planner-view-mode-container" style={{ marginTop: 2 }}>
+              {isCalculating ? (
+                <LoadingIndicator
+                  message={isHi ? 'शुभ मुहूर्त दिनचर्या लोड हो रही है...' : 'Calculating Hindu Day Planner...'}
+                />
+              ) : (
+                <>
+                  {renderDayPlannerSection()}
+                  {renderInauspiciousTriad()}
+                  <TouchableOpacity
+                    style={styles.switchBackToDailyBtn}
+                    onPress={async () => {
+                      await triggerHaptic('tap', userProfile.hapticsEnabled);
+                      setViewMode('daily');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.switchBackToDailyBtnText}>
+                      {isHi ? '☀️ सम्पूर्ण दैनिक पञ्चाङ्ग देखें →' : '☀️ View Full Daily Panchang →'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          ) : (
+            <>
+              {/* Conditional Monthly Calendar Grid */}
+              {viewMode === 'monthly' && (
+                <MonthlyCalendarGrid
+                  currentDate={currentDate}
+                  onSelectDate={(d) => {
+                    handleSelectDate(d);
+                    setViewMode('daily');
+                  }}
+                  location={location}
+                  isHi={isHi}
+                />
+              )}
 
           {/* Sacred Vrat Hero Card (Sankashti Moonrise, Ekadashi, Pradosha, Purnima) */}
           {vratGuidance ? (
@@ -803,414 +1257,8 @@ export default function PanchangScreen() {
             />
           ) : (
             <>
-              <View style={styles.plannerSection}>
-              <View style={styles.plannerHeaderRow}>
-                <View style={{ flex: 1, paddingRight: 8, backgroundColor: 'transparent' }}>
-                  <Text style={styles.plannerSectionTitle}>
-                    {isHi ? '🗓️ आज की दिन योजना (Day Planner)' : '🗓️ Hindu Day Planner'}
-                  </Text>
-                  <Text style={styles.plannerSectionSub}>
-                    {isHi
-                      ? 'शास्त्रसम्मत शुभ काल के अनुसार अपने कार्यों का नियोजन करें'
-                      : 'Schedule tasks aligned with auspicious cosmic timings'}
-                  </Text>
-                </View>
-
-                {totalPlannedCount > 0 && (
-                  <View style={styles.plannerProgressBadge}>
-                    <Text style={styles.plannerProgressText}>
-                      🎯 {totalCompletedCount}/{totalPlannedCount} {isHi ? 'सम्पन्न' : 'Done'}
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Filter Tabs: Core vs All 24h vs Planned */}
-              <View style={styles.plannerFilterRow}>
-                <TouchableOpacity
-                  testID="planner-tab-core"
-                  style={[
-                    styles.plannerFilterTab,
-                    plannerFilter === 'core' && styles.plannerFilterTabActive,
-                  ]}
-                  onPress={() => setPlannerFilter('core')}
-                >
-                  <Text
-                    style={[
-                      styles.plannerFilterTabText,
-                      plannerFilter === 'core' && styles.plannerFilterTabTextActive,
-                    ]}
-                  >
-                    {isHi ? '🌟 मुख्य मुहूर्त' : '🌟 Core Windows'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  testID="planner-tab-all"
-                  style={[
-                    styles.plannerFilterTab,
-                    plannerFilter === 'all' && styles.plannerFilterTabActive,
-                  ]}
-                  onPress={() => setPlannerFilter('all')}
-                >
-                  <Text
-                    style={[
-                      styles.plannerFilterTabText,
-                      plannerFilter === 'all' && styles.plannerFilterTabTextActive,
-                    ]}
-                  >
-                    {isHi ? '🕒 24h सम्पूर्ण' : '🕒 All 24h'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  testID="planner-tab-planned"
-                  style={[
-                    styles.plannerFilterTab,
-                    plannerFilter === 'planned' && styles.plannerFilterTabActive,
-                  ]}
-                  onPress={() => setPlannerFilter('planned')}
-                >
-                  <Text
-                    style={[
-                      styles.plannerFilterTabText,
-                      plannerFilter === 'planned' && styles.plannerFilterTabTextActive,
-                    ]}
-                  >
-                    {isHi
-                      ? `✍️ नियोजित (${totalPlannedCount})`
-                      : `✍️ Planned (${totalPlannedCount})`}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Slot Cards List */}
-              <View style={styles.plannerCardsContainer}>
-                {filteredSlots.length === 0 ? (
-                  <View style={styles.plannerEmptyBox}>
-                    <Text style={{ fontSize: 28, marginBottom: 8 }}>📝</Text>
-                    <Text style={styles.plannerEmptyTitle}>
-                      {isHi ? 'कोई कार्य नियोजित नहीं है' : 'No tasks planned yet'}
-                    </Text>
-                    <Text style={styles.plannerEmptySubtitle}>
-                      {isHi
-                        ? 'ऊपर "मुख्य मुहूर्त" टैब पर जाएँ और अपने कार्यों को शुभ समय अनुसार जोड़ें।'
-                        : 'Switch to "Core Windows" above to plan tasks during auspicious hours.'}
-                    </Text>
-                  </View>
-                ) : (
-                  filteredSlots.map((slot) => {
-                    const plan = dayPlans[slot.id];
-                    const todos: TodoItem[] =
-                      plan?.todos && plan.todos.length > 0
-                        ? plan.todos
-                        : plan?.taskText
-                        ? [
-                            {
-                              id: 'legacy',
-                              text: plan.taskText,
-                              isCompleted: Boolean(plan.isCompleted),
-                              createdAt: plan.updatedAt || Date.now(),
-                            },
-                          ]
-                        : [];
-
-                    const slotDoneCount = todos.filter((t) => t.isCompleted).length;
-                    const slotTotalCount = todos.length;
-                    const isAllDone = slotTotalCount > 0 && slotDoneCount === slotTotalCount;
-                    const inputValue = editingInputs[slot.id] || '';
-
-                    // Quality styling
-                    const isAshubh = slot.quality === 'Ashubh';
-                    const isMahashubh =
-                      slot.quality === 'Mahashubh' || slot.quality === 'Amrit';
-
-                    return (
-                      <View
-                        key={slot.id}
-                        style={[
-                          styles.plannerSlotCard,
-                          slot.isCurrent && styles.plannerSlotCardCurrent,
-                          isAshubh && styles.plannerSlotCardAshubh,
-                          isAllDone && styles.plannerSlotCardDone,
-                        ]}
-                      >
-                        {/* Top Time & Quality Row */}
-                        <View style={styles.slotTopRow}>
-                          <View style={styles.slotTimeBlock}>
-                            <Text style={styles.slotTimeRange}>
-                              {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                            </Text>
-                            <Text style={styles.slotTitle} numberOfLines={1}>
-                              {isHi ? slot.titleHi : slot.title}
-                            </Text>
-                          </View>
-
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            {slot.isCurrent && (
-                              <View style={styles.currentActiveBadge}>
-                                <Text style={styles.currentActiveBadgeText}>
-                                  {isHi ? '● अभी सक्रिय' : '● LIVE NOW'}
-                                </Text>
-                              </View>
-                            )}
-
-                            {slotTotalCount > 0 && (
-                              <View
-                                style={[
-                                  styles.slotProgressBadge,
-                                  isAllDone && styles.slotProgressBadgeDone,
-                                ]}
-                              >
-                                <Text
-                                  style={[
-                                    styles.slotProgressBadgeText,
-                                    isAllDone && styles.slotProgressBadgeTextDone,
-                                  ]}
-                                >
-                                  {isAllDone
-                                    ? isHi ? '✓ पूर्ण' : '✓ Done'
-                                    : `🎯 ${slotDoneCount}/${slotTotalCount}`}
-                                </Text>
-                              </View>
-                            )}
-
-                            <View
-                              style={[
-                                styles.qualityBadge,
-                                isMahashubh && styles.qualityBadgeMahashubh,
-                                isAshubh && styles.qualityBadgeAshubh,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.qualityBadgeText,
-                                  isMahashubh && styles.qualityBadgeTextMahashubh,
-                                  isAshubh && styles.qualityBadgeTextAshubh,
-                                ]}
-                              >
-                                {isAshubh
-                                  ? isHi ? 'त्याज्य' : 'Avoid'
-                                  : isMahashubh
-                                  ? isHi ? 'महाशुभ' : 'Supreme'
-                                  : isHi ? 'शुभ' : 'Shubh'}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-
-                        {/* For What this time is for (शास्त्रीय प्रयोजन) */}
-                        <View
-                          style={[
-                            styles.suitabilityBox,
-                            isAshubh && styles.suitabilityBoxAshubh,
-                          ]}
-                        >
-                          <Text style={styles.suitabilityHeading}>
-                            {isAshubh
-                              ? isHi ? '⚠️ इस समय क्या न करें:' : '⚠️ What to avoid now:'
-                              : isHi ? '💡 यह समय किस कार्य के लिए है:' : '💡 What this time is for:'}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.suitabilityText,
-                              isAshubh && styles.suitabilityTextAshubh,
-                            ]}
-                          >
-                            {isHi ? slot.suitabilityHi : slot.suitability}
-                          </Text>
-                        </View>
-
-                        {/* Suggested Quick Chips (Tap to instantly add to To-Do list) */}
-                        <View style={styles.quickChipsRow}>
-                          {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
-                            <TouchableOpacity
-                              key={sIdx}
-                              style={styles.suggestionChip}
-                              onPress={() => handleApplySuggestion(slot.id, suggestion)}
-                              activeOpacity={0.7}
-                            >
-                              <Text style={styles.suggestionChipText}>+ {suggestion}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-
-                        {/* To-Do Checklist Items */}
-                        {todos.length > 0 && (
-                          <View style={styles.slotTodoList}>
-                            {todos.map((todo) => (
-                              <View key={todo.id} style={styles.todoItemRow}>
-                                <TouchableOpacity
-                                  style={styles.todoCheckboxBtn}
-                                  onPress={() => handleToggleTodo(slot.id, todo.id)}
-                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                >
-                                  <Ionicons
-                                    name={todo.isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
-                                    size={22}
-                                    color={todo.isCompleted ? '#059669' : '#d97706'}
-                                  />
-                                </TouchableOpacity>
-
-                                <Text
-                                  style={[
-                                    styles.todoItemText,
-                                    todo.isCompleted && styles.todoItemTextDone,
-                                  ]}
-                                  numberOfLines={2}
-                                >
-                                  {todo.text}
-                                </Text>
-
-                                <TouchableOpacity
-                                  style={styles.todoDeleteBtn}
-                                  onPress={() => handleDeleteTodo(slot.id, todo.id)}
-                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                >
-                                  <Ionicons name="close" size={18} color="#a1a1aa" />
-                                </TouchableOpacity>
-                              </View>
-                            ))}
-                          </View>
-                        )}
-
-                        {/* Inline Add Task Input */}
-                        <View style={styles.addTodoInputRow}>
-                          <Ionicons name="add" size={20} color="#b45309" style={{ marginLeft: 6 }} />
-                          <TextInput
-                            style={styles.addTodoTextInput}
-                            placeholder={
-                              isAshubh
-                                ? isHi
-                                  ? 'इस समय हेतु शांत कार्य जोड़ें...'
-                                  : 'Add quiet chore for this slot...'
-                                : isHi
-                                ? 'इस मुहूर्त में अपना कार्य जोड़ें...'
-                                : 'Add task for this auspicious window...'
-                            }
-                            placeholderTextColor="#a1a1aa"
-                            value={inputValue}
-                            onChangeText={(txt) => handleInputChange(slot.id, txt)}
-                            returnKeyType="done"
-                            onSubmitEditing={() => handleAddTodo(slot.id, inputValue)}
-                          />
-
-                          {inputValue.trim().length > 0 && (
-                            <TouchableOpacity
-                              style={styles.addTodoSubmitBtn}
-                              onPress={() => handleAddTodo(slot.id, inputValue)}
-                            >
-                              <Text style={styles.addTodoSubmitBtnText}>{isHi ? 'जोड़ें' : 'Add'}</Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      </View>
-                    );
-                  })
-                )}
-              </View>
-
-              {/* ======================================================= */}
-              {/* 5. QUICK ASTRONOMICAL GLANCE BAR                        */}
-              {/* ======================================================= */}
-              <View style={styles.quickAstroRow}>
-                <View style={styles.quickAstroItem}>
-                  <Text style={styles.quickAstroEmoji}>🌅</Text>
-                  <View style={{ backgroundColor: 'transparent' }}>
-                    <Text style={styles.quickAstroLabel}>{isHi ? 'सूर्योदय' : 'Sunrise'}</Text>
-                    <Text style={styles.quickAstroVal}>{formatTime(panchang.sunTimes.sunrise)}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.quickAstroDivider} />
-
-                <View style={styles.quickAstroItem}>
-                  <Text style={styles.quickAstroEmoji}>🌇</Text>
-                  <View style={{ backgroundColor: 'transparent' }}>
-                    <Text style={styles.quickAstroLabel}>{isHi ? 'सूर्यास्त' : 'Sunset'}</Text>
-                    <Text style={styles.quickAstroVal}>{formatTime(panchang.sunTimes.sunset)}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.quickAstroDivider} />
-
-                <View style={styles.quickAstroItem}>
-                  <Text style={styles.quickAstroEmoji}>🌙</Text>
-                  <View style={{ backgroundColor: 'transparent' }}>
-                    <Text style={styles.quickAstroLabel}>{isHi ? 'चन्द्रोदय' : 'Moonrise'}</Text>
-                    <Text style={styles.quickAstroVal}>
-                      {panchang.moonTimes.moonrise
-                        ? formatTime(panchang.moonTimes.moonrise)
-                        : (isHi ? 'दिन में' : 'Day')}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.quickAstroDivider} />
-
-                <View style={styles.quickAstroItem}>
-                  <Text style={styles.quickAstroEmoji}>⚠️</Text>
-                  <View style={{ backgroundColor: 'transparent' }}>
-                    <Text style={[styles.quickAstroLabel, { color: '#b91c1c' }]}>
-                      {isHi ? 'राहु काल' : 'Rahu'}
-                    </Text>
-                    <Text style={[styles.quickAstroVal, { color: '#b91c1c' }]}>
-                      {formatTime(panchang.muhurtas.rahuKaal.startTime)}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Pan-Indian Inauspicious Triad (त्रिकाल वर्ज्य: राहु काल, यमगण्ड, एवं गुलिक काल) */}
-            <View style={styles.inauspiciousTriadCard} testID="inauspicious-triad-card">
-              <View style={styles.inauspiciousTriadHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'transparent' }}>
-                  <Text style={{ fontSize: 13 }}>⚠️</Text>
-                  <Text style={styles.inauspiciousTriadTitle}>
-                    {isHi ? 'त्रिकाल वर्ज्य (त्याज्य काल)' : 'Inauspicious Windows (To Avoid)'}
-                  </Text>
-                </View>
-                <Text style={styles.inauspiciousTriadSub}>
-                  {isHi ? 'दक्षिण एवं सर्व-भारतीय पञ्चाङ्ग' : 'South & Pan-Indian Panchangam'}
-                </Text>
-              </View>
-
-              <View style={styles.inauspiciousTriadRow}>
-                {/* 1. Rahu Kaal */}
-                <View style={styles.triadItem}>
-                  <Text style={styles.triadBadgeTextRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
-                  <Text style={styles.triadTimeText}>
-                    {formatTime(panchang.muhurtas.rahuKaal.startTime)} - {formatTime(panchang.muhurtas.rahuKaal.endTime)}
-                  </Text>
-                  <Text style={styles.triadDescText}>
-                    {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
-                  </Text>
-                </View>
-
-                {/* 2. Yamagandam */}
-                <View style={styles.triadItem}>
-                  <Text style={styles.triadBadgeTextOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
-                  <Text style={styles.triadTimeText}>
-                    {formatTime(panchang.muhurtas.yamaganda.startTime)} - {formatTime(panchang.muhurtas.yamaganda.endTime)}
-                  </Text>
-                  <Text style={styles.triadDescText}>
-                    {isHi ? 'यात्रा व निवेश वर्जित' : 'Avoid travel & deals'}
-                  </Text>
-                </View>
-
-                {/* 3. Gulika Kaal */}
-                <View style={styles.triadItem}>
-                  <Text style={styles.triadBadgeTextPurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
-                  <Text style={styles.triadTimeText}>
-                    {formatTime(panchang.muhurtas.gulikaKaal.startTime)} - {formatTime(panchang.muhurtas.gulikaKaal.endTime)}
-                  </Text>
-                  <Text style={styles.triadDescText}>
-                    {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
-                  </Text>
-                </View>
-              </View>
-            </View>
+              {renderDayPlannerSection()}
+              {renderInauspiciousTriad()}
 
               {/* ======================================================= */}
               {/* 5 SACRED LIMBS (PANCHA-ANGA) EXPANDABLE ACCORDION       */}
@@ -1370,6 +1418,8 @@ export default function PanchangScreen() {
               )}
             </>
           )}
+        </>
+      )}
 
         </ScrollView>
 
@@ -1799,13 +1849,36 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   viewModeBtnText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
     color: '#71717a',
+    textAlign: 'center',
   },
   viewModeBtnTextActive: {
     color: '#b45309',
     fontWeight: '800',
+  },
+  switchBackToDailyBtn: {
+    marginTop: 14,
+    marginBottom: 20,
+    backgroundColor: '#ffffff',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#f59e0b',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  switchBackToDailyBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#b45309',
   },
 
   // Ekadashi Vrat Parana Banner

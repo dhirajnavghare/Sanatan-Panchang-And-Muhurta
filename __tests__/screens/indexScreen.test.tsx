@@ -159,4 +159,30 @@ describe('Home Screen (Panchang / Index) - Complete UI Interaction Tests', () =>
     expect(screen.getByTestId('inauspicious-triad-card')).toBeTruthy();
     expect(screen.getByTestId('daily-rashi-card')).toBeTruthy();
   });
+
+  it('should switch directly to Day Planner zero-scroll tab when user clicks view-mode-planner-btn', async () => {
+    await renderScreen();
+
+    const plannerBtn = screen.getByTestId('view-mode-planner-btn');
+    expect(plannerBtn).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(plannerBtn);
+    });
+
+    // Planner view mode container should be rendered at the top
+    expect(screen.getByTestId('planner-view-mode-container')).toBeTruthy();
+    expect(screen.getByTestId('planner-tab-core')).toBeTruthy();
+
+    // Haptics triggered
+    expect(sacredAudio.triggerHaptic).toHaveBeenCalledWith('tap', expect.any(Boolean));
+
+    // Can switch back to daily panchang using daily button
+    const dailyBtn = screen.getByTestId('view-mode-daily-btn');
+    await act(async () => {
+      fireEvent.press(dailyBtn);
+    });
+
+    expect(screen.queryByTestId('planner-view-mode-container')).toBeNull();
+  });
 });
