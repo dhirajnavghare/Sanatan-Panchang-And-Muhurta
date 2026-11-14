@@ -28,7 +28,7 @@ describe('Home Screen (Panchang / Index) - Complete UI Interaction Tests', () =>
 
     expect(screen.getByTestId('header-bell-btn')).toBeTruthy();
     expect(screen.getByTestId('header-share-btn')).toBeTruthy();
-    expect(screen.getByTestId('header-city-btn')).toBeTruthy();
+    expect(screen.getByTestId('header-lang-btn')).toBeTruthy();
     expect(screen.getByTestId('hero-challenge-card')).toBeTruthy();
   });
 
@@ -56,16 +56,19 @@ describe('Home Screen (Panchang / Index) - Complete UI Interaction Tests', () =>
     expect(screen.getByText('दैनिक पञ्चाङ्ग शेयर कार्ड')).toBeTruthy();
   });
 
-  it('should open the City Selector Modal when user clicks the city search button', async () => {
+  it('should toggle language when user clicks language button in header', async () => {
     await renderScreen();
 
-    const cityBtn = screen.getByTestId('header-city-btn');
+    const langBtn = screen.getByTestId('header-lang-btn');
     await act(async () => {
-      fireEvent.press(cityBtn);
+      fireEvent.press(langBtn);
     });
+    expect(langBtn).toBeTruthy();
 
-    // City modal header is now visible
-    expect(screen.getByText('तीर्थ अथवा नगर चुनें')).toBeTruthy();
+    // Toggle back so subsequent tests keep their default Hindi state
+    await act(async () => {
+      fireEvent.press(langBtn);
+    });
   });
 
   it('should open the Daily Sadhana Checklist modal when user taps the Hero Challenge card', async () => {

@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Text, View, Switch, Platform, Linking } from 'react-native';
+import {
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+  View,
+  Switch,
+  Platform,
+  Linking,
+  Modal,
+  FlatList,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
@@ -7,6 +21,7 @@ import {
   loadUserProfile,
   loadUserLocation,
   saveUserProfile,
+  saveUserLocation,
   UserSacredProfile,
   UserNotificationPreferences,
   DEFAULT_USER_PROFILE,
@@ -31,11 +46,67 @@ export default function SettingsScreen() {
   const [userLocation, setUserLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isTourModalOpen, setIsTourModalOpen] = useState(false);
+  const [isCityModalVisible, setIsCityModalVisible] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
     loadUserProfile().then(setUserProfile);
     loadUserLocation().then(setUserLocation);
   }, []);
+
+  const handleSelectCity = async (city: GeoLocation) => {
+    await triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+    setIsCityModalVisible(false);
+    setUserLocation(city);
+    await saveUserLocation(city);
+    const panchang = calculatePanchang(new Date(), city);
+    const plans = await getDayPlans(getDateKey(new Date()));
+    await scheduleDailySacredReminders(panchang, userProfile, plans, city.timezone, 7, city, language);
+  };
+
+  const handleGpsDetect = async () => {
+    try {
+      setIsLocating(true);
+      await triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          isHi ? 'अनुमति अस्वीकृत' : 'Permission Denied',
+          isHi
+            ? 'सटीक सूर्योदय व पञ्चाङ्ग गणना हेतु कृपया स्थान अनुमति प्रदान करें।'
+            : 'Location permission is required to detect coordinates for astronomical sunrise.'
+        );
+        setIsLocating(false);
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const { latitude, longitude, altitude } = loc.coords;
+      const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
+
+      const detectedLocation: GeoLocation = {
+        name: isHi ? 'वर्तमान जीपीएस स्थान' : 'Current GPS Location',
+        latitude,
+        longitude,
+        altitude: altitude ?? 0,
+        timezone: detectedTz,
+      };
+      await saveUserLocation(detectedLocation);
+      setUserLocation(detectedLocation);
+      setIsLocating(false);
+      setIsCityModalVisible(false);
+
+      const panchang = calculatePanchang(new Date(), detectedLocation);
+      const plans = await getDayPlans(getDateKey(new Date()));
+      await scheduleDailySacredReminders(panchang, userProfile, plans, detectedTz, 7, detectedLocation, language);
+    } catch {
+      setIsLocating(false);
+      Alert.alert(
+        isHi ? 'स्थान त्रुटि' : 'Location Error',
+        isHi ? 'जीपीएस स्थान प्राप्त नहीं हो सका।' : 'Could not detect GPS location.'
+      );
+    }
+  };
 
   const handleSaveProfile = async (updated: UserSacredProfile) => {
     setUserProfile(updated);
@@ -240,6 +311,32 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Prime Meridian & Location Selection */}
+        <TouchableOpacity
+          testID="settings-meridian-btn"
+          style={styles.settingRow}
+          onPress={async () => {
+            await triggerHaptic('tap', userProfile.hapticsEnabled);
+            setIsCityModalVisible(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={{ backgroundColor: 'transparent', flex: 1, marginRight: 8 }}>
+            <Text style={styles.settingTitle}>
+              {isHi ? 'प्रधान देशान्तर एवं नगर (Meridian)' : 'Prime Meridian & City Location'}
+            </Text>
+            <Text style={styles.settingDesc} numberOfLines={1}>
+              📍 {userLocation.name} ({userLocation.latitude.toFixed(2)}°, {userLocation.longitude.toFixed(2)}°)
+            </Text>
+          </View>
+          <View style={styles.meridianPill}>
+            <Ionicons name="compass-outline" size={16} color="#b45309" />
+            <Text style={styles.meridianPillText}>
+              {isHi ? 'बदलें' : 'Change'}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Replay App Tour */}
         <TouchableOpacity
@@ -620,6 +717,101 @@ export default function SettingsScreen() {
         onClose={() => setIsTourModalOpen(false)}
         isHi={isHi}
       />
+
+      {/* City / Tirtha / Prime Meridian Selector Modal */}
+      <Modal visible={isCityModalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={{ backgroundColor: 'transparent', flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="compass" size={20} color="#b45309" />
+                  <Text style={styles.modalTitle}>
+                    {isHi ? 'प्रधान देशान्तर अथवा नगर चुनें' : 'Select Prime Meridian or City'}
+                  </Text>
+                </View>
+                <Text style={styles.modalSubtitle}>
+                  {isHi
+                    ? 'स्थानिक सूर्योदय, सूर्यास्त व पञ्चाङ्ग गणना हेतु'
+                    : 'Astronomical coordinates for local sunrise & muhurta'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsCityModalVisible(false)}
+                testID="city-modal-close-btn"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={26} color="#71717a" />
+              </TouchableOpacity>
+            </View>
+
+            {/* GPS Auto-Detection Bar */}
+            <TouchableOpacity
+              testID="settings-gps-detect-btn"
+              style={styles.gpsBanner}
+              onPress={handleGpsDetect}
+              disabled={isLocating}
+              activeOpacity={0.7}
+            >
+              {isLocating ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Ionicons name="navigate" size={16} color="#ffffff" />
+                  <Text style={styles.gpsBannerText}>
+                    {isHi ? 'वर्तमान जीपीएस स्थान स्वतः पता करें' : 'Auto-detect Current GPS Location'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <FlatList
+              data={PRESET_CITIES}
+              keyExtractor={(item) => item.name}
+              style={{ maxHeight: 360 }}
+              renderItem={({ item }) => {
+                const isSelected = item.name === userLocation.name;
+                const isPrimeMeridian = item.name.includes('Standard Meridian') || item.name.includes('Ujjain');
+                return (
+                  <TouchableOpacity
+                    testID={`city-option-${item.name.split(',')[0].replace(/\s+/g, '-').toLowerCase()}`}
+                    style={[
+                      styles.cityRow,
+                      isSelected && styles.cityRowSelected,
+                    ]}
+                    onPress={() => handleSelectCity(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text
+                          style={[
+                            styles.cityName,
+                            isSelected && styles.cityNameSelected,
+                          ]}
+                        >
+                          {item.name}
+                        </Text>
+                        {isPrimeMeridian && (
+                          <View style={styles.meridianTag}>
+                            <Text style={styles.meridianTagText}>0° MERIDIAN</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.cityCoords}>
+                        {item.latitude.toFixed(2)}°, {item.longitude.toFixed(2)}° • {item.timezone}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={20} color="#b45309" />
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -933,5 +1125,107 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#b45309',
     marginTop: 2,
+  },
+  meridianPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    gap: 4,
+  },
+  meridianPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 20,
+    paddingBottom: 32,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+    backgroundColor: 'transparent',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#18181b',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#71717a',
+    marginTop: 2,
+  },
+  gpsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#d97706',
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  gpsBannerText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  cityRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f4f4f5',
+  },
+  cityRowSelected: {
+    backgroundColor: '#fffbeb',
+    borderRadius: 10,
+  },
+  cityName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#18181b',
+  },
+  cityNameSelected: {
+    color: '#d97706',
+    fontWeight: '800',
+  },
+  cityCoords: {
+    fontSize: 11,
+    color: '#a1a1aa',
+    marginTop: 2,
+  },
+  meridianTag: {
+    backgroundColor: '#fef3c7',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  meridianTagText: {
+    color: '#92400e',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

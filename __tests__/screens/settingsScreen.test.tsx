@@ -31,6 +31,7 @@ describe('Settings Screen - Preferences, Notifications & Profile Tests', () => {
     expect(screen.getByTestId('cal-toggle-purnimanta')).toBeTruthy();
     expect(screen.getByTestId('cal-toggle-amanta')).toBeTruthy();
     expect(screen.getByTestId('settings-replay-tour-btn')).toBeTruthy();
+    expect(screen.getByTestId('settings-meridian-btn')).toBeTruthy();
     expect(screen.getByTestId('notif-master-switch')).toBeTruthy();
     expect(screen.getByTestId('settings-toggle-audio')).toBeTruthy();
     expect(screen.getByTestId('settings-toggle-haptics')).toBeTruthy();
@@ -186,5 +187,26 @@ describe('Settings Screen - Preferences, Notifications & Profile Tests', () => {
     expect(openURLSpy).toHaveBeenCalledWith('https://dhirajnavghare.com/contact');
 
     openURLSpy.mockRestore();
+  });
+
+  it('should open the Prime Meridian & City Selector Modal and allow selecting a city', async () => {
+    await renderScreen();
+
+    const meridianBtn = screen.getByTestId('settings-meridian-btn');
+    await act(async () => {
+      fireEvent.press(meridianBtn);
+    });
+
+    // Modal elements are now visible
+    expect(screen.getByText('प्रधान देशान्तर अथवा नगर चुनें')).toBeTruthy();
+    expect(screen.getByTestId('settings-gps-detect-btn')).toBeTruthy();
+
+    // Select a city option (Ujjain)
+    const ujjainOption = screen.getByTestId('city-option-ujjain');
+    await act(async () => {
+      fireEvent.press(ujjainOption);
+    });
+
+    expect(screen.getByTestId('settings-meridian-btn')).toBeTruthy();
   });
 });
