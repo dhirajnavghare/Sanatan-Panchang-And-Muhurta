@@ -55,7 +55,7 @@ export function SacredProfileEditorModal({
 
   const handleSave = async () => {
     await triggerHaptic('tap', hapticsEnabled);
-    if (audioEnabled) playTempleBell(0.6);
+    if (audioEnabled) playTempleBell(1.0);
     const updated: UserSacredProfile = {
       ...profile,
       name: name.trim() || (isHi ? 'साधक' : 'Sadhak'),
