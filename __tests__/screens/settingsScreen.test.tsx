@@ -35,6 +35,9 @@ describe('Settings Screen - Preferences, Notifications & Profile Tests', () => {
     expect(screen.getByTestId('settings-toggle-audio')).toBeTruthy();
     expect(screen.getByTestId('settings-toggle-haptics')).toBeTruthy();
     expect(screen.getByTestId('settings-offline-card')).toBeTruthy();
+    expect(screen.getByTestId('settings-feedback-card')).toBeTruthy();
+    expect(screen.getByTestId('feedback-link-sanatan')).toBeTruthy();
+    expect(screen.getByTestId('feedback-link-developer')).toBeTruthy();
   });
 
   it('should open the Sacred Profile Editor Modal when user clicks edit profile', async () => {
@@ -162,5 +165,26 @@ describe('Settings Screen - Preferences, Notifications & Profile Tests', () => {
 
     expect(audioSwitch).toBeTruthy();
     expect(hapticsSwitch).toBeTruthy();
+  });
+
+  it('should trigger feedback links to open URLs', async () => {
+    const { Linking } = require('react-native');
+    const openURLSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+
+    await renderScreen();
+
+    const sanatanLink = screen.getByTestId('feedback-link-sanatan');
+    await act(async () => {
+      fireEvent.press(sanatanLink);
+    });
+    expect(openURLSpy).toHaveBeenCalledWith('https://sanatan.cc/contact');
+
+    const devLink = screen.getByTestId('feedback-link-developer');
+    await act(async () => {
+      fireEvent.press(devLink);
+    });
+    expect(openURLSpy).toHaveBeenCalledWith('https://dhirajnavghare.com/contact');
+
+    openURLSpy.mockRestore();
   });
 });

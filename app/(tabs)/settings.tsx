@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Text, View, Switch, Platform } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Text, View, Switch, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
@@ -114,6 +114,15 @@ export default function SettingsScreen() {
         ? 'भगवान विष्णु का परम प्रिय काल • समस्त शुभ कार्य, महत्वपूर्ण निर्णय व आरम्भ हेतु सर्वोत्तम • 🎯 आपके नियोजित कार्य: नया अनुबंध हस्ताक्षर'
         : 'Auspicious hour of Lord Vishnu • Supreme for vital launches & agreements • 🎯 Your tasks: Sign agreement'
     );
+  };
+
+  const handleOpenFeedback = async (url: string) => {
+    await triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+    try {
+      await Linking.openURL(url);
+    } catch {
+      // Non-blocking fallback
+    }
   };
 
   return (
@@ -540,6 +549,62 @@ export default function SettingsScreen() {
         <Text style={styles.aboutVersion}>Version 1.0.0 • Open Source Dharma</Text>
       </View>
 
+      {/* 7. Feedback & Contact Card */}
+      <View testID="settings-feedback-card" style={styles.feedbackCard}>
+        <View style={styles.feedbackHeaderRow}>
+          <Ionicons name="chatbubbles-outline" size={18} color="#d97706" />
+          <Text style={styles.feedbackHeaderTitle}>
+            {isHi ? 'प्रतिक्रिया एवं सुझाव (Feedback & Contact)' : 'Feedback & Contact'}
+          </Text>
+        </View>
+
+        <Text style={styles.feedbackDesc}>
+          {isHi
+            ? 'सनातन दिनचर्या को और उत्तम बनाने हेतु आपके विचार, त्रुटि निवारण अथवा सुझाव सादर आमंत्रित हैं:'
+            : 'We welcome your thoughts, suggestions, and feedback to improve this sacred seva:'}
+        </Text>
+
+        <TouchableOpacity
+          testID="feedback-link-sanatan"
+          style={styles.feedbackLinkBtn}
+          onPress={() => handleOpenFeedback('https://sanatan.cc/contact')}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel="Sanatan Portal Feedback"
+        >
+          <View style={styles.feedbackLinkIconBox}>
+            <Ionicons name="globe-outline" size={18} color="#d97706" />
+          </View>
+          <View style={styles.feedbackLinkTextBox}>
+            <Text style={styles.feedbackLinkTitle}>
+              {isHi ? 'सनातन सम्पर्क एवं सुझाव' : 'Sanatan Portal Feedback'}
+            </Text>
+            <Text style={styles.feedbackLinkUrl}>https://sanatan.cc/contact</Text>
+          </View>
+          <Ionicons name="open-outline" size={16} color="#a1a1aa" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          testID="feedback-link-developer"
+          style={styles.feedbackLinkBtn}
+          onPress={() => handleOpenFeedback('https://dhirajnavghare.com/contact')}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel="Developer Contact"
+        >
+          <View style={styles.feedbackLinkIconBox}>
+            <Ionicons name="person-circle-outline" size={18} color="#d97706" />
+          </View>
+          <View style={styles.feedbackLinkTextBox}>
+            <Text style={styles.feedbackLinkTitle}>
+              {isHi ? 'डेवलपर सम्पर्क (Dhiraj Navghare)' : 'Developer Contact (Dhiraj Navghare)'}
+            </Text>
+            <Text style={styles.feedbackLinkUrl}>https://dhirajnavghare.com/contact</Text>
+          </View>
+          <Ionicons name="open-outline" size={16} color="#a1a1aa" />
+        </TouchableOpacity>
+      </View>
+
       {/* Sacred Profile Editor Modal */}
       <SacredProfileEditorModal
         visible={isProfileModalOpen}
@@ -802,5 +867,71 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#166534',
+  },
+  feedbackCard: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  feedbackHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+    backgroundColor: 'transparent',
+  },
+  feedbackHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+  feedbackDesc: {
+    fontSize: 12,
+    color: '#71717a',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  feedbackLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: Radius.md,
+    padding: 10,
+    marginBottom: 8,
+    gap: 10,
+  },
+  feedbackLinkIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  feedbackLinkTextBox: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  feedbackLinkTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  feedbackLinkUrl: {
+    fontSize: 11,
+    color: '#b45309',
+    marginTop: 2,
   },
 });
