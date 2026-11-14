@@ -152,7 +152,7 @@ function playShankhNaadWeb(volume: number): void {
  * - On Native (iOS/Android): Plays authentic offline brass Ghanti audio with haptic immersion.
  * - On Web: Uses Web Audio API harmonic oscillator synthesis.
  */
-export function playTempleBell(volume: number = 0.5): void {
+export function playTempleBell(volume: number = 1.0): void {
   try {
     if (Platform.OS === 'web') {
       playTempleBellWeb(volume);
@@ -183,7 +183,7 @@ export function playTempleBell(volume: number = 0.5): void {
  * - On Native (iOS/Android): Plays sacred acoustic Shankha conch resonance.
  * - On Web: Uses Web Audio API lowpass resonant oscillator synthesis.
  */
-export function playShankhNaad(volume: number = 0.6): void {
+export function playShankhNaad(volume: number = 1.0): void {
   try {
     if (Platform.OS === 'web') {
       playShankhNaadWeb(volume);

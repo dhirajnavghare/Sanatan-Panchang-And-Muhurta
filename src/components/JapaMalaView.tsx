@@ -31,7 +31,7 @@ export function JapaMalaView({
       setCurrentBead(0);
       setCompletedMalas((prev) => prev + 1);
       if (hapticsEnabled) await triggerHaptic('malaComplete');
-      if (audioEnabled) playTempleBell(0.7);
+      if (audioEnabled) playTempleBell(1.0);
     } else {
       setCurrentBead(nextBead);
       // Milestone haptics at 27, 54, 81
