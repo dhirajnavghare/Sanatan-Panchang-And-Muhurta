@@ -31,10 +31,14 @@ describe('Settings Screen - Preferences, Notifications & Profile Tests', () => {
     expect(screen.getByTestId('cal-toggle-purnimanta')).toBeTruthy();
     expect(screen.getByTestId('cal-toggle-amanta')).toBeTruthy();
     expect(screen.getByTestId('settings-replay-tour-btn')).toBeTruthy();
+    expect(screen.getByTestId('settings-meridian-btn')).toBeTruthy();
     expect(screen.getByTestId('notif-master-switch')).toBeTruthy();
     expect(screen.getByTestId('settings-toggle-audio')).toBeTruthy();
     expect(screen.getByTestId('settings-toggle-haptics')).toBeTruthy();
     expect(screen.getByTestId('settings-offline-card')).toBeTruthy();
+    expect(screen.getByTestId('settings-feedback-card')).toBeTruthy();
+    expect(screen.getByTestId('feedback-link-sanatan')).toBeTruthy();
+    expect(screen.getByTestId('feedback-link-developer')).toBeTruthy();
   });
 
   it('should open the Sacred Profile Editor Modal when user clicks edit profile', async () => {
@@ -162,5 +166,47 @@ describe('Settings Screen - Preferences, Notifications & Profile Tests', () => {
 
     expect(audioSwitch).toBeTruthy();
     expect(hapticsSwitch).toBeTruthy();
+  });
+
+  it('should trigger feedback links to open URLs', async () => {
+    const { Linking } = require('react-native');
+    const openURLSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+
+    await renderScreen();
+
+    const sanatanLink = screen.getByTestId('feedback-link-sanatan');
+    await act(async () => {
+      fireEvent.press(sanatanLink);
+    });
+    expect(openURLSpy).toHaveBeenCalledWith('https://sanatan.cc/contact');
+
+    const devLink = screen.getByTestId('feedback-link-developer');
+    await act(async () => {
+      fireEvent.press(devLink);
+    });
+    expect(openURLSpy).toHaveBeenCalledWith('https://dhirajnavghare.com/contact');
+
+    openURLSpy.mockRestore();
+  });
+
+  it('should open the Prime Meridian & City Selector Modal and allow selecting a city', async () => {
+    await renderScreen();
+
+    const meridianBtn = screen.getByTestId('settings-meridian-btn');
+    await act(async () => {
+      fireEvent.press(meridianBtn);
+    });
+
+    // Modal elements are now visible
+    expect(screen.getByText('प्रधान देशान्तर अथवा नगर चुनें')).toBeTruthy();
+    expect(screen.getByTestId('settings-gps-detect-btn')).toBeTruthy();
+
+    // Select a city option (Ujjain)
+    const ujjainOption = screen.getByTestId('city-option-ujjain');
+    await act(async () => {
+      fireEvent.press(ujjainOption);
+    });
+
+    expect(screen.getByTestId('settings-meridian-btn')).toBeTruthy();
   });
 });

@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
 
@@ -85,8 +85,6 @@ export default function PanchangScreen() {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [viewMode, setViewMode] = useState<'daily' | 'planner' | 'monthly'>('daily');
   const [location, setLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
-  const [isLocating, setIsLocating] = useState(false);
-  const [isCityModalVisible, setIsCityModalVisible] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
 
   // Sacred Profile & Audio
@@ -185,9 +183,23 @@ export default function PanchangScreen() {
     return WEEKDAY_DEVATAS[day] || WEEKDAY_DEVATAS[0];
   }, [currentDate]);
 
-  useEffect(() => {
-    loadUserLocation().then(setLocation);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadUserLocation().then((loc) => {
+        setLocation((prev) => {
+          if (
+            prev.name !== loc.name ||
+            prev.latitude !== loc.latitude ||
+            prev.longitude !== loc.longitude
+          ) {
+            return loc;
+          }
+          return prev;
+        });
+      });
+      loadUserProfile().then(setUserProfile);
+    }, [])
+  );
 
   useEffect(() => {
     loadUserProfile().then((p) => {
@@ -366,58 +378,6 @@ export default function PanchangScreen() {
       setCurrentDate(d);
       setIsCalculating(false);
     }, 80);
-  };
-
-  const handleSelectCity = (city: GeoLocation) => {
-    setIsCityModalVisible(false);
-    setIsCalculating(true);
-    saveUserLocation(city).catch(() => {});
-    setTimeout(() => {
-      setLocation(city);
-      setIsCalculating(false);
-    }, 80);
-  };
-
-  const handleGpsDetect = async () => {
-    try {
-      setIsLocating(true);
-      setIsCalculating(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          isHi ? 'अनुमति अस्वीकृत' : 'Permission Denied',
-          isHi
-            ? 'सटीक सूर्योदय व पञ्चाङ्ग गणना हेतु कृपया स्थान अनुमति प्रदान करें।'
-            : 'Location permission is required to detect coordinates for astronomical sunrise.'
-        );
-        setIsLocating(false);
-        setIsCalculating(false);
-        return;
-      }
-
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const { latitude, longitude, altitude } = loc.coords;
-      const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
-
-      const detectedLocation: GeoLocation = {
-        name: isHi ? 'वर्तमान स्थान' : 'Current GPS City',
-        latitude,
-        longitude,
-        altitude: altitude ?? 0,
-        timezone: detectedTz,
-      };
-      saveUserLocation(detectedLocation).catch(() => {});
-      setLocation(detectedLocation);
-      setIsLocating(false);
-      setIsCalculating(false);
-    } catch {
-      setIsLocating(false);
-      setIsCalculating(false);
-      Alert.alert(
-        isHi ? 'स्थान त्रुटि' : 'Location Error',
-        isHi ? 'जीपीएस स्थान प्राप्त नहीं हो सका।' : 'Could not detect GPS location.'
-      );
-    }
   };
 
   // 1-Tap Viral WhatsApp Daily Panchang Share
@@ -893,15 +853,22 @@ export default function PanchangScreen() {
                   ? `${spiritualPeriod.greetingHi}${userProfile.name ? `, ${userProfile.name}` : ''}`
                   : `${spiritualPeriod.greetingEn}${userProfile.name ? `, ${userProfile.name}` : ''}`}
               </Text>
-              <Text style={styles.greetingSubtitle} numberOfLines={1}>
-                {isHi ? 'आज ' : 'Today '}
-                {currentDate.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', {
-                  day: 'numeric',
-                  month: 'short',
-                })}
-                {' • '}
-                {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
-              </Text>
+              <TouchableOpacity
+                onPress={() => router.navigate('/(tabs)/settings' as any)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.greetingSubtitle} numberOfLines={1}>
+                  {isHi ? 'आज ' : 'Today '}
+                  {currentDate.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', {
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                  {' • '}
+                  {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
+                  {' • 🧭 '}
+                  {location.name.split(',')[0]}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.headerActionsGroup}>
@@ -947,16 +914,6 @@ export default function PanchangScreen() {
                 <Text style={styles.whatsAppShareBtnText}>
                   {isHi ? 'शेयर कार्ड' : 'Share'}
                 </Text>
-              </TouchableOpacity>
-
-              {/* City selector search button */}
-              <TouchableOpacity
-                testID="header-city-btn"
-                style={styles.cityActionBtn}
-                onPress={() => setIsCityModalVisible(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="search-outline" size={18} color="#18181b" />
               </TouchableOpacity>
             </View>
           </View>
@@ -1602,74 +1559,6 @@ export default function PanchangScreen() {
               >
                 <Text style={styles.doneBtnText}>{isHi ? 'बन्द करें' : 'Close'}</Text>
               </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        {/* ========================================================= */}
-        {/* MODAL 4: CITY / TIRTHA SELECTOR                           */}
-        {/* ========================================================= */}
-        <Modal visible={isCityModalVisible} animationType="slide" transparent>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <View style={{ backgroundColor: 'transparent' }}>
-                  <Text style={styles.modalTitle}>
-                    {isHi ? 'तीर्थ अथवा नगर चुनें' : 'Select City or Tirtha'}
-                  </Text>
-                  <Text style={styles.modalSubtitle}>
-                    {isHi ? 'सटीक स्थानिक सूर्योदय व पञ्चाङ्ग' : 'Local coordinates for true astronomical timings'}
-                  </Text>
-                </View>
-                <TouchableOpacity onPress={() => setIsCityModalVisible(false)}>
-                  <Ionicons name="close-circle" size={26} color="#71717a" />
-                </TouchableOpacity>
-              </View>
-
-              {/* GPS Detection Bar */}
-              <TouchableOpacity
-                style={styles.gpsBanner}
-                onPress={handleGpsDetect}
-                disabled={isLocating}
-              >
-                {isLocating ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="navigate" size={16} color="#ffffff" />
-                    <Text style={styles.gpsBannerText}>
-                      {isHi ? 'वर्तमान जीपीएस स्थान स्वतः पता करें' : 'Auto-detect Current GPS Location'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <FlatList
-                data={PRESET_CITIES}
-                keyExtractor={(item) => item.name}
-                style={{ maxHeight: 340 }}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.cityRow,
-                      item.name === location.name && styles.cityRowSelected,
-                    ]}
-                    onPress={() => handleSelectCity(item)}
-                  >
-                    <Text
-                      style={[
-                        styles.cityName,
-                        item.name === location.name && styles.cityNameSelected,
-                      ]}
-                    >
-                      {item.name}
-                    </Text>
-                    <Text style={styles.cityCoords}>
-                      {item.latitude.toFixed(2)}°, {item.longitude.toFixed(2)}°
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
             </View>
           </View>
         </Modal>
