@@ -700,6 +700,26 @@ export default function SettingsScreen() {
           </View>
           <Ionicons name="open-outline" size={16} color="#a1a1aa" />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          testID="feedback-link-privacy"
+          style={styles.feedbackLinkBtn}
+          onPress={() => handleOpenFeedback('https://sanatan.cc/privacy')}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel="Privacy Policy"
+        >
+          <View style={styles.feedbackLinkIconBox}>
+            <Ionicons name="shield-checkmark-outline" size={18} color="#15803d" />
+          </View>
+          <View style={styles.feedbackLinkTextBox}>
+            <Text style={styles.feedbackLinkTitle}>
+              {isHi ? 'गोपनीयता नीति (Privacy Policy)' : 'Privacy Policy & Data Safety'}
+            </Text>
+            <Text style={styles.feedbackLinkUrl}>https://sanatan.cc/privacy</Text>
+          </View>
+          <Ionicons name="open-outline" size={16} color="#a1a1aa" />
+        </TouchableOpacity>
       </View>
 
       {/* Sacred Profile Editor Modal */}
