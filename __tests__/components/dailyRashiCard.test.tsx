@@ -53,4 +53,38 @@ describe('DailyRashiCard Component', () => {
 
     expect(onSaveRashiMock).toHaveBeenCalledWith(0);
   });
+
+  it('should trigger WhatsApp share with horoscope and app link when share button is tapped', async () => {
+    const shareSpy = jest.spyOn(require('react-native').Share, 'share').mockImplementation(() =>
+      Promise.resolve({ action: 'sharedAction' })
+    );
+
+    await render(
+      <DailyRashiCard
+        moonRashiIndex={0}
+        savedRashiIndex={0}
+        isHi={true}
+      />
+    );
+
+    const shareBtn = screen.getByTestId('rashi-share-whatsapp-btn');
+    expect(shareBtn).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(shareBtn);
+    });
+
+    expect(shareSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('https://play.google.com/store/apps/details?id=cc.sanatan.app'),
+      })
+    );
+    expect(shareSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('https://sanatan.cc'),
+      })
+    );
+
+    shareSpy.mockRestore();
+  });
 });

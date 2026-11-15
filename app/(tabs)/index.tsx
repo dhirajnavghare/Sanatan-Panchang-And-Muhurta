@@ -399,7 +399,7 @@ export default function PanchangScreen() {
   const handleShareSankalpa = async () => {
     try {
       await Share.share({
-        message: `${dailySankalpa.sanskrit}\n\n[अर्थ]: ${dailySankalpa.hindi}\n\n— सनातन पञ्चाङ्ग (sanatan.cc)`,
+        message: `${dailySankalpa.sanskrit}\n\n[अर्थ]: ${dailySankalpa.hindi}\n\n📲 *सनातन ऍप डाउनलोड करें (Google Play):*\nhttps://play.google.com/store/apps/details?id=cc.sanatan.app\n🌐 https://sanatan.cc\n\n— सनातन पञ्चाङ्ग: हर सनातनी का प्रामाणिक दैनिक साथी`,
       });
     } catch {
       // ignore

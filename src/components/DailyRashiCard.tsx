@@ -5,6 +5,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ALL_RASHIS, getDailyRashiOutlook } from '../services/rashiBhavishya';
@@ -45,6 +46,61 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
     }
   };
 
+  const handleShareHoroscopeWhatsApp = async () => {
+    triggerHaptic('tap', hapticsEnabled).catch(() => {});
+    try {
+      const rashiName = isHi
+        ? `${outlook.rashi.nameHi} (${outlook.rashi.symbol})`
+        : `${outlook.rashi.nameEn} (${outlook.rashi.symbol})`;
+      const lord = isHi
+        ? `${outlook.rashi.lordHi} • ${outlook.rashi.elementHi}`
+        : `${outlook.rashi.lordEn} • ${outlook.rashi.elementEn}`;
+      const energy = isHi ? outlook.energyLevelHi : outlook.energyLevelEn;
+      const transitTitle = isHi ? outlook.houseTitleHi : outlook.houseTitleEn;
+      const guidance = isHi ? outlook.guidanceHi : outlook.guidanceEn;
+      const luckyColor = isHi ? outlook.luckyColorHi : outlook.luckyColorEn;
+      const ishtadev = isHi ? outlook.rashi.ishtadevHi : outlook.rashi.ishtadevEn;
+      const satvikUpay = isHi ? outlook.satvikActionHi : outlook.satvikActionEn;
+
+      const message = isHi
+        ? `🕉️ *दैनिक वैदिक राशिफल एवं उपाय* 🕉️\n\n` +
+          `✨ *राशि:* ${rashiName}\n` +
+          `🪐 *स्वामी:* ${lord}\n` +
+          `⚡ *ऊर्जा व प्रभाव:* ${energy}\n\n` +
+          `📜 *गोचर फल:* ${transitTitle}\n` +
+          `${guidance}\n\n` +
+          `🎨 *शुभ रंग:* ${luckyColor} | 🔢 *शुभ अंक:* ${outlook.luckyNumber}\n` +
+          `🙏 *आराध्य देव:* ${ishtadev}\n` +
+          `🌸 *दैनिक सात्विक उपाय:* ${satvikUpay}\n` +
+          `🕉️ *दैनिक मन्त्र:* ${outlook.rashi.seedMantra}\n\n` +
+          `📲 *सनातन ऍप डाउनलोड करें (Google Play):*\n` +
+          `https://play.google.com/store/apps/details?id=cc.sanatan.app\n` +
+          `🌐 https://sanatan.cc\n\n` +
+          `_प्रामाणिक वैदिक दिनचर्या, पञ्चाङ्ग व मुहूर्त साथी_ 🙏`
+        : `🕉️ *Daily Vedic Horoscope & Remedy* 🕉️\n\n` +
+          `✨ *Sign:* ${rashiName}\n` +
+          `🪐 *Ruler:* ${lord}\n` +
+          `⚡ *Energy Level:* ${energy}\n\n` +
+          `📜 *Transit Outlook:* ${transitTitle}\n` +
+          `${guidance}\n\n` +
+          `🎨 *Lucky Color:* ${luckyColor} | 🔢 *Lucky Number:* ${outlook.luckyNumber}\n` +
+          `🙏 *Ishta Deity:* ${ishtadev}\n` +
+          `🌸 *Daily Satvik Remedy:* ${satvikUpay}\n` +
+          `🕉️ *Seed Mantra:* ${outlook.rashi.seedMantra}\n\n` +
+          `📲 *Download Sanatan App (Google Play):*\n` +
+          `https://play.google.com/store/apps/details?id=cc.sanatan.app\n` +
+          `🌐 https://sanatan.cc\n\n` +
+          `_Your authentic daily Vedic companion_ 🙏`;
+
+      await Share.share({
+        message,
+        title: isHi ? 'दैनिक राशिफल शेयर करें' : 'Share Daily Horoscope',
+      });
+    } catch {
+      // ignore
+    }
+  };
+
   const isMyRashi = savedRashiIndex === selectedRashi;
 
   return (
@@ -65,18 +121,32 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
           </Text>
         </View>
 
-        {onSaveRashi && (
+        <View style={styles.headerActionBtns}>
           <TouchableOpacity
-            testID="rashi-set-my-btn"
-            style={[styles.myRashiPill, isMyRashi && styles.myRashiPillActive]}
-            onPress={handleSetAsMyRashi}
-            activeOpacity={0.7}
+            testID="rashi-share-whatsapp-header-btn"
+            style={styles.whatsAppHeaderBtn}
+            onPress={handleShareHoroscopeWhatsApp}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.myRashiText, isMyRashi && styles.myRashiTextActive]}>
-              {isMyRashi ? (isHi ? '✓ मेरी राशि' : '✓ My Sign') : (isHi ? '+ मेरी राशि चुनें' : '+ Set My Sign')}
+            <Ionicons name="logo-whatsapp" size={14} color="#ffffff" />
+            <Text style={styles.whatsAppHeaderBtnText}>
+              {isHi ? 'शेयर' : 'Share'}
             </Text>
           </TouchableOpacity>
-        )}
+
+          {onSaveRashi && (
+            <TouchableOpacity
+              testID="rashi-set-my-btn"
+              style={[styles.myRashiPill, isMyRashi && styles.myRashiPillActive]}
+              onPress={handleSetAsMyRashi}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.myRashiText, isMyRashi && styles.myRashiTextActive]}>
+                {isMyRashi ? (isHi ? '✓ मेरी राशि' : '✓ My Sign') : (isHi ? '+ मेरी राशि चुनें' : '+ Set My Sign')}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* 12 Rashi Horizontal Pill Selector */}
@@ -206,6 +276,19 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
           <Text style={styles.mantraLabel}>{isHi ? 'दैनिक मन्त्र:' : 'Daily Mantra:'}</Text>
           <Text style={styles.mantraText}>{outlook.rashi.seedMantra}</Text>
         </View>
+
+        {/* WhatsApp Share Daily Horoscope Button */}
+        <TouchableOpacity
+          testID="rashi-share-whatsapp-btn"
+          style={styles.whatsAppShareRashiBtn}
+          onPress={handleShareHoroscopeWhatsApp}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
+          <Text style={styles.whatsAppShareRashiText}>
+            {isHi ? 'WhatsApp पर राशिफल शेयर करें' : 'Share Horoscope on WhatsApp'}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -251,6 +334,47 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#6b7280',
     fontWeight: '500',
+  },
+  headerActionBtns: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'transparent',
+  },
+  whatsAppHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#25D366',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  whatsAppHeaderBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  whatsAppShareRashiBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#25D366',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 10,
+    shadowColor: '#25D366',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  whatsAppShareRashiText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   myRashiPill: {
     backgroundColor: '#f3f4f6',
