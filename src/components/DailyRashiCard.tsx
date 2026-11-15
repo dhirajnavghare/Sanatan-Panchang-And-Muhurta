@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   Share,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { ALL_RASHIS, getDailyRashiOutlook } from '../services/rashiBhavishya';
 import { triggerHaptic } from '../services/sacredAudio';
+
+export const SELECTED_RASHI_STORAGE_KEY = '@sanatan_selected_rashi_v1';
 
 interface DailyRashiCardProps {
   moonRashiIndex: number;
@@ -30,6 +33,24 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
     savedRashiIndex !== undefined ? savedRashiIndex : (moonRashiIndex || 0)
   );
 
+  // Sync state whenever savedRashiIndex changes (e.g. after async AsyncStorage loading)
+  useEffect(() => {
+    if (savedRashiIndex !== undefined) {
+      setSelectedRashi(savedRashiIndex);
+    } else {
+      AsyncStorage.getItem(SELECTED_RASHI_STORAGE_KEY)
+        .then((val) => {
+          if (val !== null) {
+            const parsed = parseInt(val, 10);
+            if (!isNaN(parsed) && parsed >= 0 && parsed < ALL_RASHIS.length) {
+              setSelectedRashi(parsed);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [savedRashiIndex]);
+
   const outlook = useMemo(() => {
     return getDailyRashiOutlook(selectedRashi, moonRashiIndex, new Date());
   }, [selectedRashi, moonRashiIndex]);
@@ -37,10 +58,12 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
   const handleSelectRashi = (idx: number) => {
     triggerHaptic('tap', hapticsEnabled).catch(() => {});
     setSelectedRashi(idx);
+    AsyncStorage.setItem(SELECTED_RASHI_STORAGE_KEY, String(idx)).catch(() => {});
   };
 
   const handleSetAsMyRashi = () => {
     triggerHaptic('tap', hapticsEnabled).catch(() => {});
+    AsyncStorage.setItem(SELECTED_RASHI_STORAGE_KEY, String(selectedRashi)).catch(() => {});
     if (onSaveRashi) {
       onSaveRashi(selectedRashi);
     }
