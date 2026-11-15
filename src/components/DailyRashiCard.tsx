@@ -121,32 +121,18 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
           </Text>
         </View>
 
-        <View style={styles.headerActionBtns}>
+        {onSaveRashi && (
           <TouchableOpacity
-            testID="rashi-share-whatsapp-header-btn"
-            style={styles.whatsAppHeaderBtn}
-            onPress={handleShareHoroscopeWhatsApp}
-            activeOpacity={0.8}
+            testID="rashi-set-my-btn"
+            style={[styles.myRashiPill, isMyRashi && styles.myRashiPillActive]}
+            onPress={handleSetAsMyRashi}
+            activeOpacity={0.7}
           >
-            <Ionicons name="logo-whatsapp" size={14} color="#ffffff" />
-            <Text style={styles.whatsAppHeaderBtnText}>
-              {isHi ? 'शेयर' : 'Share'}
+            <Text style={[styles.myRashiText, isMyRashi && styles.myRashiTextActive]}>
+              {isMyRashi ? (isHi ? '✓ मेरी राशि' : '✓ My Sign') : (isHi ? '+ मेरी राशि चुनें' : '+ Set My Sign')}
             </Text>
           </TouchableOpacity>
-
-          {onSaveRashi && (
-            <TouchableOpacity
-              testID="rashi-set-my-btn"
-              style={[styles.myRashiPill, isMyRashi && styles.myRashiPillActive]}
-              onPress={handleSetAsMyRashi}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.myRashiText, isMyRashi && styles.myRashiTextActive]}>
-                {isMyRashi ? (isHi ? '✓ मेरी राशि' : '✓ My Sign') : (isHi ? '+ मेरी राशि चुनें' : '+ Set My Sign')}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        )}
       </View>
 
       {/* 12 Rashi Horizontal Pill Selector */}
@@ -334,26 +320,6 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#6b7280',
     fontWeight: '500',
-  },
-  headerActionBtns: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'transparent',
-  },
-  whatsAppHeaderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#25D366',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
-  whatsAppHeaderBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#ffffff',
   },
   whatsAppShareRashiBtn: {
     flexDirection: 'row',
