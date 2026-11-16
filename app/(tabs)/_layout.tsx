@@ -124,6 +124,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="community"
+        options={{
+          title: isHi ? 'प्रोजेक्ट' : 'Project',
+          headerTitle: isHi ? 'प्रोजेक्ट हब एवं प्रतिक्रिया' : 'Project Hub & Feedback',
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name={focused ? 'people' : 'people-outline'}
+              size={22}
+              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: isHi ? 'सेटिंग्स' : 'Settings',

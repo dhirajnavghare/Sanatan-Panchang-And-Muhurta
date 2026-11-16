@@ -24,37 +24,26 @@ describe('DailyPanchangCardModal - Viral Share Card UI Tests', () => {
     verse: SACRED_DAILY_VERSES[0],
   };
 
-  it('should render modal with Tithi, Deity, and Shloka information', async () => {
+  it('should render modal with Tithi, Deity, and single WhatsApp share button', async () => {
     await render(<DailyPanchangCardModal {...defaultProps} />);
 
     expect(screen.getByText('दैनिक पञ्चाङ्ग शेयर कार्ड')).toBeTruthy();
     expect(screen.getByText('WhatsApp स्टेटस व परिवार ग्रुप्स के लिए')).toBeTruthy();
-    expect(screen.getByTestId('share-image-btn')).toBeTruthy();
-    expect(screen.getByTestId('share-text-btn')).toBeTruthy();
+    expect(screen.getByTestId('share-card-btn')).toBeTruthy();
     expect(screen.getByTestId('share-card-close-btn')).toBeTruthy();
   });
 
-  it('should trigger sharing image when user clicks WhatsApp Share Card button', async () => {
+  it('should trigger sharing image and app link in a single click', async () => {
+    const shareAsyncSpy = jest.spyOn(Sharing, 'shareAsync').mockImplementation(() => Promise.resolve());
     await render(<DailyPanchangCardModal {...defaultProps} />);
 
-    const shareImgBtn = screen.getByTestId('share-image-btn');
+    const shareBtn = screen.getByTestId('share-card-btn');
     await act(async () => {
-      fireEvent.press(shareImgBtn);
+      fireEvent.press(shareBtn);
     });
 
-    // Sharing.shareAsync or fallback Share.share was triggered
-    expect(shareImgBtn).toBeTruthy();
-  });
-
-  it('should trigger text copy/share when user clicks copy text button', async () => {
-    await render(<DailyPanchangCardModal {...defaultProps} />);
-
-    const shareTxtBtn = screen.getByTestId('share-text-btn');
-    await act(async () => {
-      fireEvent.press(shareTxtBtn);
-    });
-
-    expect(shareTxtBtn).toBeTruthy();
+    expect(shareBtn).toBeTruthy();
+    shareAsyncSpy.mockRestore();
   });
 
   it('should close modal when user clicks the close button', async () => {

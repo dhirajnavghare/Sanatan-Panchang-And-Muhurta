@@ -795,7 +795,9 @@ export function generateWhatsAppPanchangShare(
 • *Rahu Kaal:* ${rahuStr}
 
 🎯 *Plan your day according to Vedic Muhurta:*
-👉 https://sanatan.cc
+📲 *Download Sanatan App (Google Play):*
+https://play.google.com/store/apps/details?id=cc.sanatan.app
+🌐 https://sanatan.cc
 
 _May the Supreme Divine bless your day!_ 🙏`;
   }
@@ -822,7 +824,9 @@ _May the Supreme Divine bless your day!_ 🙏`;
 • *राहु काल:* ${rahuStr}
 
 🎯 *मुहूर्तानुसार आज की दिनचर्या बनाएं:*
-👉 https://sanatan.cc
+📲 *सनातन ऍप डाउनलोड करें (Google Play):*
+https://play.google.com/store/apps/details?id=cc.sanatan.app
+🌐 https://sanatan.cc
 
 _सर्वे भवन्तु सुखिनः सर्वे सन्तु निरामयाः_ 🙏`;
 }

@@ -9,6 +9,7 @@ import {
   Share,
   Platform,
   ActivityIndicator,
+  NativeModules,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { captureRef } from 'react-native-view-shot';
@@ -45,16 +46,56 @@ export function DailyPanchangCardModal({
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const handleShareImage = async () => {
+  const handleShareCard = async () => {
     await triggerHaptic('tap');
     setIsSharing(true);
     try {
+      const sunrise = formatTime(panchang.sunTimes.sunrise);
+      const moonrise = panchang.moonTimes.moonrise
+        ? formatTime(panchang.moonTimes.moonrise)
+        : 'दिन में';
+      const senderText = userName ? `\n🙏 प्रेषक: ${userName}` : '';
+
+      const text = `॥ ॐ श्री गणेशाय नमः ॥\n\n🌅 *आज का पञ्चाङ्ग एवं सुविचार*\n📍 स्थान: ${cityName}\n📅 तिथि: ${panchang.tithi.current.pakshaDevanagari} ${panchang.tithi.current.nameDevanagari}\n⭐ नक्षत्र: ${panchang.nakshatra.current.nameDevanagari}\n🧘 योग: ${panchang.yoga.current.nameDevanagari}\n\n🌅 *सूर्योदय:* ${sunrise} | 🌙 *चन्द्रोदय:* ${moonrise}\n🚩 *आज के वार अधिष्ठाता:* ${devataInfo.deityNameHi}\n✨ *मन्त्र:* ${devataInfo.mantraDevanagari}\n\n🌟 *अभिजित मुहूर्त:* ${panchang.muhurtas.abhijitMuhurta ? `${formatTime(panchang.muhurtas.abhijitMuhurta.startTime)} - ${formatTime(panchang.muhurtas.abhijitMuhurta.endTime)}` : 'आज वर्जित'}\n⚠️ *राहु काल:* ${formatTime(panchang.muhurtas.rahuKaal.startTime)} - ${formatTime(panchang.muhurtas.rahuKaal.endTime)}\n\n📖 *आज का श्लोक:*\n${verse.shloka}\n\n[अर्थ]: ${verse.meaningHi}${senderText}\n\n📲 *सनातन ऍप डाउनलोड करें (Google Play):*\nhttps://play.google.com/store/apps/details?id=cc.sanatan.app\n🌐 https://sanatan.cc\n\n— सनातन पञ्चाङ्ग: हर सनातनी का प्रामाणिक दैनिक साथी`;
+
       if (Platform.OS !== 'web' && cardRef.current) {
         const uri = await captureRef(cardRef, {
           format: 'png',
           quality: 1.0,
           result: 'tmpfile',
         });
+
+        // 1. Android Native custom share (sends Image + Text caption with URL in a single click)
+        if (Platform.OS === 'android' && NativeModules.SanatanShare?.shareImageWithText) {
+          try {
+            await NativeModules.SanatanShare.shareImageWithText(
+              uri,
+              text,
+              'आज का पञ्चाङ्ग WhatsApp पर शेयर करें'
+            );
+            setIsSharing(false);
+            return;
+          } catch {
+            // fallback
+          }
+        }
+
+        // 2. iOS Native Share (sends Image file URL + Message text with URL in a single click)
+        if (Platform.OS === 'ios') {
+          try {
+            await Share.share({
+              url: uri,
+              message: text,
+              title: 'आज का पञ्चाङ्ग',
+            });
+            setIsSharing(false);
+            return;
+          } catch {
+            // fallback
+          }
+        }
+
+        // 3. Fallback: Share Image via Expo Sharing
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(uri, {
             mimeType: 'image/png',
@@ -65,29 +106,12 @@ export function DailyPanchangCardModal({
         }
       }
 
-      // Fallback for Web or if native sharing is unavailable: Share formatted text
-      await handleShareText();
-    } catch {
-      await handleShareText();
-    } finally {
-      setIsSharing(false);
-    }
-  };
-
-  const handleShareText = async () => {
-    await triggerHaptic('tap');
-    try {
-      const sunrise = formatTime(panchang.sunTimes.sunrise);
-      const moonrise = panchang.moonTimes.moonrise
-        ? formatTime(panchang.moonTimes.moonrise)
-        : 'दिन में';
-      const senderText = userName ? `\n🙏 प्रेषक: ${userName}` : '';
-
-      const text = `॥ ॐ श्री गणेशाय नमः ॥\n\n🌅 *आज का पञ्चाङ्ग एवं सुविचार*\n📍 स्थान: ${cityName}\n📅 तिथि: ${panchang.tithi.current.pakshaDevanagari} ${panchang.tithi.current.nameDevanagari}\n⭐ नक्षत्र: ${panchang.nakshatra.current.nameDevanagari}\n🧘 योग: ${panchang.yoga.current.nameDevanagari}\n\n🌅 *सूर्योदय:* ${sunrise} | 🌙 *चन्द्रोदय:* ${moonrise}\n🚩 *आज के वार अधिष्ठाता:* ${devataInfo.deityNameHi}\n✨ *मन्त्र:* ${devataInfo.mantraDevanagari}\n\n🌟 *अभिजित मुहूर्त:* ${panchang.muhurtas.abhijitMuhurta ? `${formatTime(panchang.muhurtas.abhijitMuhurta.startTime)} - ${formatTime(panchang.muhurtas.abhijitMuhurta.endTime)}` : 'आज वर्जित'}\n⚠️ *राहु काल:* ${formatTime(panchang.muhurtas.rahuKaal.startTime)} - ${formatTime(panchang.muhurtas.rahuKaal.endTime)}\n\n📖 *आज का श्लोक:*\n${verse.shloka}\n\n[अर्थ]: ${verse.meaningHi}${senderText}\n\n— सनातन पञ्चाङ्ग (sanatan.cc)\nहर सनातनी का प्रामाणिक दैनिक साथी`;
-
+      // Web or fallback: Share formatted text with URLs
       await Share.share({ message: text });
     } catch {
       // ignore
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -108,6 +132,26 @@ export function DailyPanchangCardModal({
               activeOpacity={0.7}
             >
               <Ionicons name="close" size={22} color="#71717a" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Action Button: Fixed at the TOP right below header */}
+          <View style={styles.topActionContainer}>
+            <TouchableOpacity
+              testID="share-card-btn"
+              style={styles.shareBtnPrimary}
+              onPress={handleShareCard}
+              activeOpacity={0.8}
+              disabled={isSharing}
+            >
+              {isSharing ? (
+                <ActivityIndicator color="#ffffff" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="logo-whatsapp" size={22} color="#ffffff" />
+                  <Text style={styles.shareBtnPrimaryText}>WhatsApp पर कार्ड शेयर करें</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -208,38 +252,11 @@ export function DailyPanchangCardModal({
                 <View style={styles.cardFooter}>
                   <Text style={styles.footerBrand}>सनातन पञ्चाङ्ग • sanatan.cc</Text>
                   <Text style={styles.footerTagline}>प्रामाणिक वैदिक दिनचर्या एवं शुभ मुहूर्त</Text>
+                  <View style={styles.footerAppBadge}>
+                    <Text style={styles.footerAppBadgeText}>📲 Google Play: Sanatan (cc.sanatan.app)</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.actionRow}>
-              <TouchableOpacity
-                testID="share-image-btn"
-                style={styles.shareBtnPrimary}
-                onPress={handleShareImage}
-                activeOpacity={0.8}
-                disabled={isSharing}
-              >
-                {isSharing ? (
-                  <ActivityIndicator color="#ffffff" size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="logo-whatsapp" size={20} color="#ffffff" />
-                    <Text style={styles.shareBtnPrimaryText}>WhatsApp पर कार्ड शेयर करें</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                testID="share-text-btn"
-                style={styles.shareBtnSecondary}
-                onPress={handleShareText}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="copy-outline" size={18} color="#d97706" />
-                <Text style={styles.shareBtnSecondaryText}>टेक्स्ट कॉपी करें</Text>
-              </TouchableOpacity>
             </View>
           </ScrollView>
         </View>
@@ -526,6 +543,28 @@ const styles = StyleSheet.create({
     color: '#a1a1aa',
     marginTop: 1,
   },
+  footerAppBadge: {
+    backgroundColor: '#fffbeb',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    marginTop: 4,
+  },
+  footerAppBadgeText: {
+    fontSize: 8.5,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  topActionContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 10,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f4f4f5',
+  },
   actionRow: {
     width: '100%',
     maxWidth: 380,
@@ -552,6 +591,23 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
+  shareBtnTextCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  shareBtnSubtext: {
+    color: '#dcfce7',
+    fontSize: 10.5,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  shareBtnSubtextSecondary: {
+    color: '#b45309',
+    fontSize: 10.5,
+    fontWeight: '500',
+    marginTop: 1,
+  },
   shareBtnSecondary: {
     backgroundColor: '#fffbeb',
     borderRadius: 14,
@@ -561,7 +617,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    gap: 6,
+    gap: 8,
   },
   shareBtnSecondaryText: {
     color: '#b45309',

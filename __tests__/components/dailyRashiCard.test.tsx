@@ -53,4 +53,108 @@ describe('DailyRashiCard Component', () => {
 
     expect(onSaveRashiMock).toHaveBeenCalledWith(0);
   });
+
+  it('should trigger WhatsApp share with horoscope and app link when share button is tapped', async () => {
+    const shareSpy = jest.spyOn(require('react-native').Share, 'share').mockImplementation(() =>
+      Promise.resolve({ action: 'sharedAction' })
+    );
+
+    await render(
+      <DailyRashiCard
+        moonRashiIndex={0}
+        savedRashiIndex={0}
+        isHi={true}
+      />
+    );
+
+    const shareBtn = screen.getByTestId('rashi-share-whatsapp-btn');
+    expect(shareBtn).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(shareBtn);
+    });
+
+    expect(shareSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('https://play.google.com/store/apps/details?id=cc.sanatan.app'),
+      })
+    );
+    expect(shareSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('https://sanatan.cc'),
+      })
+    );
+
+    shareSpy.mockRestore();
+  });
+
+  it('should sync selectedRashi when savedRashiIndex updates asynchronously', async () => {
+    const onSaveRashiMock = jest.fn();
+    const { rerender } = await render(
+      <DailyRashiCard
+        moonRashiIndex={0}
+        savedRashiIndex={undefined}
+        onSaveRashi={onSaveRashiMock}
+        isHi={true}
+      />
+    );
+
+    expect(screen.getByText(/मेष राशि/i)).toBeTruthy();
+
+    // Asynchronous profile load completes and passes savedRashiIndex = 2 (Mithun)
+    await act(async () => {
+      rerender(
+        <DailyRashiCard
+          moonRashiIndex={0}
+          savedRashiIndex={2}
+          onSaveRashi={onSaveRashiMock}
+          isHi={true}
+        />
+      );
+    });
+
+    expect(screen.getByText(/मिथुन राशि/i)).toBeTruthy();
+    expect(screen.getByText(/✓ मेरी राशि/i)).toBeTruthy();
+  });
+
+  it('should restore selected Rashi from AsyncStorage when savedRashiIndex is undefined', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage');
+    await AsyncStorage.setItem('@sanatan_selected_rashi_v1', '2');
+
+    await render(
+      <DailyRashiCard
+        moonRashiIndex={0}
+        savedRashiIndex={undefined}
+        isHi={true}
+      />
+    );
+
+    await act(async () => {
+      // allow async storage promise to resolve
+    });
+
+    expect(screen.getByText(/मिथुन राशि/i)).toBeTruthy();
+  });
+
+  it('should persist selected Rashi to AsyncStorage when a pill is tapped', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage');
+    await AsyncStorage.clear();
+
+    await render(
+      <DailyRashiCard
+        moonRashiIndex={0}
+        savedRashiIndex={undefined}
+        isHi={true}
+      />
+    );
+
+    const taurusPill = screen.getByTestId('rashi-pill-1');
+    await act(async () => {
+      fireEvent.press(taurusPill);
+    });
+
+    const stored = await AsyncStorage.getItem('@sanatan_selected_rashi_v1');
+    expect(stored).toBe('1');
+  });
 });
+

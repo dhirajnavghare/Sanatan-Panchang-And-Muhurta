@@ -70,7 +70,7 @@ export const DEFAULT_USER_PROFILE: UserSacredProfile = {
   ishtaDevata: 'Lord Shiva / Mahadeva',
   kuldeviOrDevata: '',
   city: 'Ujjain, India (Standard Meridian)',
-  rashi: 0, // Mesha default
+  rashi: undefined,
   audioEnabled: true,
   hapticsEnabled: true,
   notificationsEnabled: true,
