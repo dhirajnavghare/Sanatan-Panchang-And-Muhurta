@@ -22,7 +22,8 @@
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -50,6 +51,12 @@
       ],
       "expo-sharing",
       "expo-audio",
+      [
+        "expo-notifications",
+        {
+          "color": "#b45309"
+        }
+      ],
       "expo-asset",
       "expo-status-bar",
       "expo-web-browser"
