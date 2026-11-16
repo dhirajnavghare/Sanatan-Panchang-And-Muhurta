@@ -87,24 +87,6 @@ export interface IssueResponse {
   issueId?: number;
 }
 
-export interface LeadPayload {
-  name: string;
-  email: string;
-  phone?: string;
-  company?: string;
-  service_needed?: string;
-  estimated_budget?: string;
-  message: string;
-}
-
-export interface LeadResponse {
-  success: boolean;
-  lead_id?: number;
-  reference_no?: string;
-  message?: string;
-  project?: ProjectInfo;
-}
-
 /**
  * 1. Submit User Feedback (POST /api/v1/public/feedback)
  */
@@ -186,27 +168,6 @@ export async function fetchPublicContributors(): Promise<ContributorsResponse> {
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Network error');
     throw new Error(`Failed to fetch contributors (${response.status}): ${errorText}`);
-  }
-
-  return response.json();
-}
-
-/**
- * 5. Project Enquiry & Lead Generation (POST /api/v1/public/leads)
- */
-export async function submitProjectLead(payload: LeadPayload): Promise<LeadResponse> {
-  const response = await fetch(`${BASE_URL}/leads`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-project-key': PROJECT_KEY,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Network error');
-    throw new Error(`Lead inquiry failed (${response.status}): ${errorText}`);
   }
 
   return response.json();

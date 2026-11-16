@@ -22,7 +22,6 @@ import {
   fetchPublicContributors,
   submitUserFeedback,
   submitReportedIssue,
-  submitProjectLead,
   ChangelogItem,
   ContributorItem,
   FeedbackCategory,
@@ -31,7 +30,7 @@ import {
 import { loadUserProfile } from '@/src/services/userProfile';
 import { triggerHaptic } from '@/src/services/sacredAudio';
 
-type TabSegment = 'changelog' | 'contributors' | 'feedback' | 'issues' | 'leads';
+type TabSegment = 'changelog' | 'contributors' | 'feedback' | 'issues';
 
 export default function CommunityScreen() {
   const { language } = useLanguage();
@@ -76,17 +75,6 @@ export default function CommunityScreen() {
   const [isIssueSubmitting, setIsIssueSubmitting] = useState(false);
   const [issueSuccess, setIssueSuccess] = useState<string | null>(null);
 
-  // 3. Lead / Inquiry Form State
-  const [leadName, setLeadName] = useState('');
-  const [leadEmail, setLeadEmail] = useState('');
-  const [leadPhone, setLeadPhone] = useState('');
-  const [leadCompany, setLeadCompany] = useState('');
-  const [leadService, setLeadService] = useState('Custom Implementation');
-  const [leadBudget, setLeadBudget] = useState('$10,000 - $25,000');
-  const [leadMessage, setLeadMessage] = useState('');
-  const [isLeadSubmitting, setIsLeadSubmitting] = useState(false);
-  const [leadSuccess, setLeadSuccess] = useState<string | null>(null);
-
   // Load User Profile for auto-filling name
   useEffect(() => {
     loadUserProfile().then((prof) => {
@@ -94,7 +82,6 @@ export default function CommunityScreen() {
         setProfileName(prof.name);
         setFeedbackName(prof.name);
         setIssueName(prof.name);
-        setLeadName(prof.name);
       }
     });
   }, []);
@@ -234,53 +221,6 @@ export default function CommunityScreen() {
     }
   };
 
-  // Submit Lead Handler
-  const handleSubmitLead = async () => {
-    if (!leadName.trim()) {
-      Alert.alert(isHi ? 'त्रुटि' : 'Missing Name', isHi ? 'कृपया अपना नाम दर्ज करें।' : 'Please enter your name.');
-      return;
-    }
-    if (!leadEmail.trim()) {
-      Alert.alert(isHi ? 'त्रुटि' : 'Missing Email', isHi ? 'कृपया अपना ईमेल दर्ज करें।' : 'Please enter your email.');
-      return;
-    }
-    if (!leadMessage.trim()) {
-      Alert.alert(isHi ? 'त्रुटि' : 'Missing Message', isHi ? 'कृपया अपनी आवश्यकता का विवरण दें।' : 'Please outline your project needs.');
-      return;
-    }
-
-    try {
-      setIsLeadSubmitting(true);
-      await triggerHaptic('tap', true).catch(() => {});
-      const res = await submitProjectLead({
-        name: leadName.trim(),
-        email: leadEmail.trim(),
-        phone: leadPhone.trim() || undefined,
-        company: leadCompany.trim() || undefined,
-        service_needed: leadService,
-        estimated_budget: leadBudget,
-        message: leadMessage.trim(),
-      });
-
-      setLeadSuccess(
-        isHi
-          ? `परामर्श अनुरोध प्राप्त! सन्दर्भ संख्या: ${res.reference_no ?? 'LEAD-OK'}`
-          : `Project inquiry submitted! Reference No: ${res.reference_no ?? 'LEAD-OK'}`
-      );
-      setLeadMessage('');
-      Alert.alert(
-        isHi ? 'अनुरोध प्राप्त' : 'Inquiry Received',
-        isHi
-          ? `सन्दर्भ संख्या ${res.reference_no ?? ''}। हमारी टीम २४ घण्टों के भीतर आपसे सम्पर्क करेगी।`
-          : `Reference #${res.reference_no ?? ''}. Our engineering team will reach out within 24 hours.`
-      );
-    } catch (err: any) {
-      Alert.alert(isHi ? 'विफल' : 'Submission Failed', err.message || 'Failed to submit project inquiry.');
-    } finally {
-      setIsLeadSubmitting(false);
-    }
-  };
-
   // Helper date formatter
   const formatDate = (isoStr: string) => {
     try {
@@ -365,7 +305,6 @@ export default function CommunityScreen() {
             { id: 'contributors', icon: 'people-outline', labelHi: 'टीम', labelEn: 'Contributors', badge: totalContributors },
             { id: 'feedback', icon: 'chatbubbles-outline', labelHi: 'प्रतिक्रिया', labelEn: 'Feedback' },
             { id: 'issues', icon: 'bug-outline', labelHi: 'समस्या', labelEn: 'Report Bug' },
-            { id: 'leads', icon: 'briefcase-outline', labelHi: 'परामर्श', labelEn: 'Consulting' },
           ].map((tab) => {
             const isActive = activeSegment === tab.id;
             return (
@@ -924,190 +863,6 @@ export default function CommunityScreen() {
             </View>
           </View>
         )}
-
-        {/* =========================================================================
-            SEGMENT 5: PROJECT ENQUIRY & LEADS (POST /api/v1/public/leads)
-           ========================================================================= */}
-        {activeSegment === 'leads' && (
-          <View style={styles.sectionWrap}>
-            <View style={[styles.formCard, dynamicStyles.card]}>
-              <View style={styles.formHeaderRow}>
-                <Ionicons name="briefcase" size={20} color={Palette.accent} />
-                <Text style={[styles.formTitle, dynamicStyles.textPrimary]}>
-                  {isHi ? 'प्रोजेक्ट परामर्श एवं पूछताछ' : 'Project Consultation & Enterprise Inquiry'}
-                </Text>
-              </View>
-              <Text style={[styles.formSub, dynamicStyles.textSecondary]}>
-                {isHi
-                  ? 'खगोलीय पञ्चाङ्ग गणना एपीआई, मोबाइल ऍप कस्टमाइजेशन या संस्थागत तैनाती हेतु सीधी परामर्श सेवा।'
-                  : 'Interested in offline astronomical engines, custom Vedic integrations, or commercial licensing? Connect with our lead engineering team.'}
-              </Text>
-
-              {leadSuccess && (
-                <View style={styles.successBanner}>
-                  <Ionicons name="checkmark-circle" size={18} color="#047857" />
-                  <Text style={styles.successBannerText}>{leadSuccess}</Text>
-                </View>
-              )}
-
-              {/* Name & Email */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '१. पूरा नाम *' : '1. Full Name *'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, dynamicStyles.input]}
-                  value={leadName}
-                  onChangeText={setLeadName}
-                  placeholder={isHi ? 'नाम' : 'Your Full Name'}
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                />
-              </View>
-
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '२. व्यावसायिक ईमेल *' : '2. Business / Personal Email *'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, dynamicStyles.input]}
-                  value={leadEmail}
-                  onChangeText={setLeadEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder="client@organization.com"
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                />
-              </View>
-
-              {/* Phone & Company */}
-              <View style={styles.twoColumnRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                    {isHi ? '३. फोन (ऐच्छिक)' : '3. Phone (Optional)'}
-                  </Text>
-                  <TextInput
-                    style={[styles.inputField, dynamicStyles.input]}
-                    value={leadPhone}
-                    onChangeText={setLeadPhone}
-                    keyboardType="phone-pad"
-                    placeholder="+91-98765-43210"
-                    placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                    {isHi ? '४. संस्था/कम्पनी' : '4. Company (Optional)'}
-                  </Text>
-                  <TextInput
-                    style={[styles.inputField, dynamicStyles.input]}
-                    value={leadCompany}
-                    onChangeText={setLeadCompany}
-                    placeholder="Acme Ltd."
-                    placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                  />
-                </View>
-              </View>
-
-              {/* Service Needed Chips */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '५. आवश्यक सेवा (Service Needed)' : '5. Service Needed'}
-                </Text>
-                <View style={styles.chipsRow}>
-                  {[
-                    'Custom Implementation',
-                    'Mobile App Development',
-                    'Astronomical API Integration',
-                    'Enterprise Deployment',
-                    'Consultation',
-                  ].map((svc) => {
-                    const isSelected = leadService === svc;
-                    return (
-                      <TouchableOpacity
-                        key={svc}
-                        style={[
-                          styles.chipOption,
-                          dynamicStyles.subCard,
-                          isSelected && styles.chipOptionActive,
-                        ]}
-                        onPress={() => setLeadService(svc)}
-                      >
-                        <Text style={[styles.chipOptionText, isSelected && styles.chipOptionTextActive]}>
-                          {svc}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Estimated Budget Chips */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '६. अनुमानित बजट (Estimated Budget)' : '6. Estimated Budget'}
-                </Text>
-                <View style={styles.chipsRow}>
-                  {['< $5,000', '$5,000 - $10,000', '$10,000 - $25,000', '$25,000+'].map((b) => {
-                    const isSelected = leadBudget === b;
-                    return (
-                      <TouchableOpacity
-                        key={b}
-                        style={[
-                          styles.chipOption,
-                          dynamicStyles.subCard,
-                          isSelected && styles.chipOptionActive,
-                        ]}
-                        onPress={() => setLeadBudget(b)}
-                      >
-                        <Text style={[styles.chipOptionText, isSelected && styles.chipOptionTextActive]}>
-                          {b}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Message */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '७. परियोजना विवरण व आवश्यकताएं *' : '7. Requirements & Scope *'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, styles.textArea, dynamicStyles.input]}
-                  value={leadMessage}
-                  onChangeText={setLeadMessage}
-                  multiline
-                  numberOfLines={4}
-                  placeholder={
-                    isHi
-                      ? 'अपनी आवश्यकता, समय-सीमा तथा अपेक्षित तकनीकी विवरण लिखें...'
-                      : 'Outline your timeline, target platforms, and scope of integration...'
-                  }
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                />
-              </View>
-
-              {/* Submit Button */}
-              <TouchableOpacity
-                style={[styles.submitButton, isLeadSubmitting && { opacity: 0.7 }]}
-                onPress={handleSubmitLead}
-                disabled={isLeadSubmitting}
-              >
-                {isLeadSubmitting ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="send" size={16} color="#ffffff" />
-                    <Text style={styles.submitButtonText}>
-                      {isHi ? 'परामर्श अनुरोध भेजें' : 'Send Project Inquiry'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -1503,10 +1258,6 @@ const styles = StyleSheet.create({
   },
   chipOptionTextActive: {
     color: '#ffffff',
-  },
-  twoColumnRow: {
-    flexDirection: 'row',
-    gap: 10,
   },
   submitButton: {
     flexDirection: 'row',
