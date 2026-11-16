@@ -189,8 +189,8 @@ export default function PrayersScreen() {
               testID="prayers-shankh-btn"
               style={styles.soundBtn}
               onPress={async () => {
-                await triggerHaptic('tap', userProfile.hapticsEnabled);
-                playShankhNaad(0.7);
+                await triggerHaptic('heavy', userProfile.hapticsEnabled);
+                playShankhNaad(1.0);
               }}
               activeOpacity={0.7}
             >

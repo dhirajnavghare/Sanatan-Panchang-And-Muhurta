@@ -386,6 +386,62 @@ export async function scheduleDailySacredReminders(
           }
         }
       }
+
+      // 8. Pradosha Vrat Alert (on Trayodashi evening sunset)
+      if (profile.notifications.pradoshAlert && currentPanchang.sunTimes.sunset) {
+        const isTrayodashi = currentPanchang.tithi.current.pakshaIndex === 12;
+        if (isTrayodashi) {
+          const sunsetTime = new Date(currentPanchang.sunTimes.sunset);
+          if (sunsetTime.getTime() > nowMs) {
+            const secondsUntil = Math.max(10, Math.floor((sunsetTime.getTime() - nowMs) / 1000));
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: isHi
+                  ? `🔱 प्रदोष काल शिव आराधना वेला (${formatTime(sunsetTime)})`
+                  : `🔱 Pradosha Kaal Lord Shiva Vrat Window (${formatTime(sunsetTime)})`,
+                body: isHi
+                  ? 'आज प्रदोष व्रत का परम पावन काल है। सांध्य काल में भगवान सदाशिव का पूजन व "ॐ नमः शिवाय" का जप करें।'
+                  : 'Sacred Pradosha twilight window is active. Perform Lord Shiva puja and mantra japa.',
+                sound: true,
+                data: { type: 'pradosha', dayOffset },
+              },
+              trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                seconds: secondsUntil,
+                repeats: false,
+                channelId: 'sacred_muhurta_alerts',
+              },
+            });
+          }
+        }
+      }
+
+      // 9. Chandrodaya Moonrise Alert (for Sankashti / Purnima Arghya)
+      if (profile.notifications.chandrodayaAlert && currentPanchang.moonTimes?.moonrise) {
+        const moonrise = new Date(currentPanchang.moonTimes.moonrise);
+        const alertTime = new Date(moonrise.getTime() - 10 * 60000); // 10 min advance
+        if (alertTime.getTime() > nowMs) {
+          const secondsUntil = Math.max(10, Math.floor((alertTime.getTime() - nowMs) / 1000));
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: isHi
+                ? `🌙 चन्द्रोदय अर्घ्य वेला (${formatTime(moonrise)})`
+                : `🌙 Moonrise Arghya Window (${formatTime(moonrise)})`,
+              body: isHi
+                ? 'चन्द्र देव का उदय होने वाला है। जल, अक्षत व श्वेत पुष्प के साथ चन्द्र अर्घ्य अर्पित करें।'
+                : 'Moonrise is approaching. Prepare sacred water, akshata & white flowers for Chandra Arghya.',
+              sound: true,
+              data: { type: 'chandrodaya', dayOffset },
+            },
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+              seconds: secondsUntil,
+              repeats: false,
+              channelId: 'sacred_muhurta_alerts',
+            },
+          });
+        }
+      }
     }
   } catch {
     // Non-blocking offline notification scheduling
