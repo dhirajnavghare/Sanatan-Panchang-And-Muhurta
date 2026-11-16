@@ -65,7 +65,7 @@ describe('Prayers Screen - Comprehensive UI & Clicks Tests', () => {
       fireEvent.press(shankhBtn);
     });
 
-    expect(playShankhNaadSpy).toHaveBeenCalledWith(0.7);
+    expect(playShankhNaadSpy).toHaveBeenCalledWith(1.0);
   });
 
   it('should switch prayer when user clicks another prayer pill', async () => {
