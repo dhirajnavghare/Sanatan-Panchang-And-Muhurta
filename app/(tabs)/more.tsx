@@ -233,13 +233,15 @@ export default function MoreScreen() {
 
           {filteredTemples.map((temple: TempleRecord) => (
             <View key={temple.id} style={styles.card}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardTitle}>
+              <View style={styles.templeHeader}>
+                <Text style={styles.templeTitle}>
                   {isHi ? temple.nameDevanagari : temple.name}
                 </Text>
-                <Text style={styles.cardLocation}>
-                  📍 {temple.location.city}, {temple.location.state}
-                </Text>
+                <View style={styles.templeLocationRow}>
+                  <Text style={styles.cardLocation}>
+                    📍 {temple.location.city}, {temple.location.state}
+                  </Text>
+                </View>
               </View>
 
               <Text style={styles.cardSubText}>
@@ -818,6 +820,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
     marginBottom: 6,
     backgroundColor: 'transparent',
   },
@@ -825,12 +829,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#18181b',
-    flex: 1,
+    flexShrink: 1,
     marginRight: 8,
+  },
+  templeHeader: {
+    marginBottom: 8,
+  },
+  templeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#18181b',
+    lineHeight: 22,
+    marginBottom: 4,
+  },
+  templeLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   cardLocation: {
     fontSize: 12,
     color: '#71717a',
+    lineHeight: 16,
+    flexShrink: 1,
   },
   cardSubText: {
     fontSize: 12,
