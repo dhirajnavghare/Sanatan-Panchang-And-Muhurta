@@ -88,6 +88,37 @@ describe('DailyRashiCard Component', () => {
     shareSpy.mockRestore();
   });
 
+  it('should call NativeModules.SanatanShare.shareImageWithText on Android when available', async () => {
+    const { Platform, NativeModules } = require('react-native');
+    const originalOS = Platform.OS;
+    Platform.OS = 'android';
+    NativeModules.SanatanShare = {
+      shareImageWithText: jest.fn().mockResolvedValue(true),
+    };
+
+    await render(
+      <DailyRashiCard
+        moonRashiIndex={0}
+        savedRashiIndex={0}
+        isHi={true}
+      />
+    );
+
+    const shareBtn = screen.getByTestId('rashi-share-whatsapp-btn');
+    await act(async () => {
+      fireEvent.press(shareBtn);
+    });
+
+    expect(NativeModules.SanatanShare.shareImageWithText).toHaveBeenCalledWith(
+      'file:///mock/path/panchang.png',
+      expect.stringContaining('दैनिक वैदिक राशिफल'),
+      'दैनिक राशिफल WhatsApp पर शेयर करें'
+    );
+
+    Platform.OS = originalOS;
+    delete NativeModules.SanatanShare;
+  });
+
   it('should sync selectedRashi when savedRashiIndex updates asynchronously', async () => {
     const onSaveRashiMock = jest.fn();
     const { rerender } = await render(

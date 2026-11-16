@@ -1037,7 +1037,6 @@ export default function PanchangScreen() {
                   currentDate={currentDate}
                   onSelectDate={(d) => {
                     handleSelectDate(d);
-                    setViewMode('daily');
                   }}
                   location={location}
                   isHi={isHi}
