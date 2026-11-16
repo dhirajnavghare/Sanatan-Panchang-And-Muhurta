@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "cc.sanatan.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#16173d",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
