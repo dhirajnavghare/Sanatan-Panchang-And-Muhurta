@@ -56,6 +56,11 @@ adb install -r android/app/build/outputs/apk/release/app-release.apk && adb shel
 --------------------------------------------------------------------------------
 5. BUILD SIGNED ANDROID APP BUNDLE (.AAB) (For Google Play Console)
 --------------------------------------------------------------------------------
+Note: Every upload to Google Play requires a higher `versionCode` (integer: 1, 2, 3...).
+Update `versionCode` before building in:
+  1) `app.json` -> "expo.android.versionCode"
+  2) `android/app/build.gradle` -> "defaultConfig.versionCode"
+
 From project root:
 
 cd android
