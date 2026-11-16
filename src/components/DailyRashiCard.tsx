@@ -295,19 +295,17 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
 
         {/* Rashi & Energy Header */}
         <View style={styles.bodyTopRow}>
-          <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-            <View style={styles.rashiIdentityRow}>
-              <Text style={styles.rashiSymbolLarge}>{outlook.rashi.symbol}</Text>
-              <View style={{ backgroundColor: 'transparent' }}>
-                <Text style={styles.rashiNameTitle}>
-                  {isHi ? `${outlook.rashi.nameHi} राशि` : `${outlook.rashi.nameEn} (Sign)`}
-                </Text>
-                <Text style={styles.rashiLordText}>
-                  {isHi
-                    ? `स्वामी: ${outlook.rashi.lordHi} • ${outlook.rashi.elementHi}`
-                    : `Ruler: ${outlook.rashi.lordEn} • ${outlook.rashi.elementEn}`}
-                </Text>
-              </View>
+          <View style={styles.rashiIdentityRow}>
+            <Text style={styles.rashiSymbolLarge}>{outlook.rashi.symbol}</Text>
+            <View style={styles.rashiTextCol}>
+              <Text style={styles.rashiNameTitle}>
+                {isHi ? `${outlook.rashi.nameHi} राशि` : `${outlook.rashi.nameEn} (Sign)`}
+              </Text>
+              <Text style={styles.rashiLordText}>
+                {isHi
+                  ? `स्वामी: ${outlook.rashi.lordHi} • ${outlook.rashi.elementHi}`
+                  : `Ruler: ${outlook.rashi.lordEn} • ${outlook.rashi.elementEn}`}
+              </Text>
             </View>
           </View>
 
@@ -328,32 +326,35 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
           </Text>
         </View>
 
-        {/* Lucky Attributes Row */}
-        <View style={styles.attributesRow}>
-          {/* Lucky Color */}
-          <View style={styles.attrCard}>
-            <Text style={styles.attrEmoji}>🎨</Text>
-            <View style={{ backgroundColor: 'transparent' }}>
-              <Text style={styles.attrLabel}>{isHi ? 'शुभ रंग' : 'Lucky Color'}</Text>
-              <Text style={styles.attrValue}>{isHi ? outlook.luckyColorHi : outlook.luckyColorEn}</Text>
+        {/* Lucky Attributes Grid */}
+        <View style={styles.attributesContainer}>
+          {/* Row 1: Lucky Color & Lucky Number */}
+          <View style={styles.attributesRow}>
+            {/* Lucky Color */}
+            <View style={[styles.attrCard, { flex: 1.6 }]}>
+              <Text style={styles.attrEmoji}>🎨</Text>
+              <View style={styles.attrTextCol}>
+                <Text style={styles.attrLabel}>{isHi ? 'शुभ रंग' : 'Lucky Color'}</Text>
+                <Text style={styles.attrValue}>{isHi ? outlook.luckyColorHi : outlook.luckyColorEn}</Text>
+              </View>
+            </View>
+
+            {/* Lucky Number */}
+            <View style={[styles.attrCard, { flex: 1 }]}>
+              <Text style={styles.attrEmoji}>🔢</Text>
+              <View style={styles.attrTextCol}>
+                <Text style={styles.attrLabel}>{isHi ? 'शुभ अंक' : 'Lucky No.'}</Text>
+                <Text style={styles.attrValue}>{outlook.luckyNumber}</Text>
+              </View>
             </View>
           </View>
 
-          {/* Lucky Number */}
-          <View style={styles.attrCard}>
-            <Text style={styles.attrEmoji}>🔢</Text>
-            <View style={{ backgroundColor: 'transparent' }}>
-              <Text style={styles.attrLabel}>{isHi ? 'शुभ अंक' : 'Lucky No.'}</Text>
-              <Text style={styles.attrValue}>{outlook.luckyNumber}</Text>
-            </View>
-          </View>
-
-          {/* Ishtadev */}
-          <View style={[styles.attrCard, { flex: 1.3 }]}>
+          {/* Row 2: Ishtadev (Full prominence) */}
+          <View style={[styles.attrCard, styles.attrCardFull]}>
             <Text style={styles.attrEmoji}>🕉️</Text>
-            <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+            <View style={styles.attrTextCol}>
               <Text style={styles.attrLabel}>{isHi ? 'आराध्य देव' : 'Ishta Deity'}</Text>
-              <Text style={styles.attrValue} numberOfLines={1}>
+              <Text style={styles.attrValue}>
                 {isHi ? outlook.rashi.ishtadevHi : outlook.rashi.ishtadevEn}
               </Text>
             </View>
@@ -579,6 +580,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    rowGap: 8,
+    columnGap: 8,
     marginBottom: 10,
     backgroundColor: 'transparent',
   },
@@ -586,6 +591,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 1,
+    backgroundColor: 'transparent',
+  },
+  rashiTextCol: {
+    flexShrink: 1,
     backgroundColor: 'transparent',
   },
   rashiSymbolLarge: {
@@ -608,6 +618,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#fde68a',
+    alignSelf: 'flex-start',
   },
   energyBadgeText: {
     fontSize: 11,
@@ -633,26 +644,37 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     lineHeight: 17,
   },
-  attributesRow: {
-    flexDirection: 'row',
+  attributesContainer: {
     gap: 6,
     marginBottom: 10,
     backgroundColor: 'transparent',
   },
+  attributesRow: {
+    flexDirection: 'row',
+    gap: 6,
+    backgroundColor: 'transparent',
+  },
   attrCard: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#ffffff',
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
+  attrCardFull: {
+    width: '100%',
+  },
+  attrTextCol: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   attrEmoji: {
-    fontSize: 14,
+    fontSize: 16,
   },
   attrLabel: {
     fontSize: 9.5,
@@ -664,6 +686,7 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '800',
     color: '#1f2937',
+    flexShrink: 1,
   },
   upayCard: {
     backgroundColor: '#fefce8',
@@ -696,6 +719,7 @@ const styles = StyleSheet.create({
   mantraRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
     backgroundColor: '#ffffff',
     paddingHorizontal: 10,
@@ -714,5 +738,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#7c2d12',
     fontFamily: 'serif',
+    flexShrink: 1,
   },
 });
