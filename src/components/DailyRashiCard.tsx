@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,9 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   Share,
+  Platform,
+  ActivityIndicator,
+  NativeModules,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { ALL_RASHIS, getDailyRashiOutlook } from '../services/rashiBhavishya';
 import { triggerHaptic } from '../services/sacredAudio';
 
@@ -32,6 +37,8 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
   const [selectedRashi, setSelectedRashi] = useState<number>(
     savedRashiIndex !== undefined ? savedRashiIndex : (moonRashiIndex || 0)
   );
+  const cardRef = useRef<any>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   // Sync state whenever savedRashiIndex changes (e.g. after async AsyncStorage loading)
   useEffect(() => {
@@ -55,6 +62,24 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
     return getDailyRashiOutlook(selectedRashi, moonRashiIndex, new Date());
   }, [selectedRashi, moonRashiIndex]);
 
+  const formattedDate = useMemo(() => {
+    const d = new Date();
+    if (isHi) {
+      const monthsHi = [
+        'जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून',
+        'जुलाई', 'अगस्त', 'सितम्बर', 'अक्टूबर', 'नवम्बर', 'दिसम्बर'
+      ];
+      const daysHi = ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+      return `${daysHi[d.getDay()]}, ${d.getDate()} ${monthsHi[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    return d.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }, [isHi]);
+
   const handleSelectRashi = (idx: number) => {
     triggerHaptic('tap', hapticsEnabled).catch(() => {});
     setSelectedRashi(idx);
@@ -71,6 +96,7 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
 
   const handleShareHoroscopeWhatsApp = async () => {
     triggerHaptic('tap', hapticsEnabled).catch(() => {});
+    setIsSharing(true);
     try {
       const rashiName = isHi
         ? `${outlook.rashi.nameHi} (${outlook.rashi.symbol})`
@@ -86,7 +112,8 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
       const satvikUpay = isHi ? outlook.satvikActionHi : outlook.satvikActionEn;
 
       const message = isHi
-        ? `🕉️ *दैनिक वैदिक राशिफल एवं उपाय* 🕉️\n\n` +
+        ? `🕉️ *दैनिक वैदिक राशिफल — ${rashiName}* 🕉️\n` +
+          `📅 ${formattedDate}\n\n` +
           `✨ *राशि:* ${rashiName}\n` +
           `🪐 *स्वामी:* ${lord}\n` +
           `⚡ *ऊर्जा व प्रभाव:* ${energy}\n\n` +
@@ -100,7 +127,8 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
           `https://play.google.com/store/apps/details?id=cc.sanatan.app\n` +
           `🌐 https://sanatan.cc\n\n` +
           `_प्रामाणिक वैदिक दिनचर्या, पञ्चाङ्ग व मुहूर्त साथी_ 🙏`
-        : `🕉️ *Daily Vedic Horoscope & Remedy* 🕉️\n\n` +
+        : `🕉️ *Daily Vedic Horoscope — ${rashiName}* 🕉️\n` +
+          `📅 ${formattedDate}\n\n` +
           `✨ *Sign:* ${rashiName}\n` +
           `🪐 *Ruler:* ${lord}\n` +
           `⚡ *Energy Level:* ${energy}\n\n` +
@@ -115,12 +143,67 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
           `🌐 https://sanatan.cc\n\n` +
           `_Your authentic daily Vedic companion_ 🙏`;
 
-      await Share.share({
-        message,
-        title: isHi ? 'दैनिक राशिफल शेयर करें' : 'Share Daily Horoscope',
-      });
+      if (Platform.OS !== 'web' && cardRef.current) {
+        let uri: string | null = null;
+        try {
+          uri = await captureRef(cardRef, {
+            format: 'png',
+            quality: 1.0,
+            result: 'tmpfile',
+          });
+        } catch {
+          uri = null;
+        }
+
+        if (uri) {
+          // 1. Android Native custom share (sends Image + Text caption with URL in a single click)
+          if (Platform.OS === 'android' && NativeModules.SanatanShare?.shareImageWithText) {
+            try {
+              await NativeModules.SanatanShare.shareImageWithText(
+                uri,
+                message,
+                isHi ? 'दैनिक राशिफल WhatsApp पर शेयर करें' : 'Share Daily Horoscope on WhatsApp'
+              );
+              setIsSharing(false);
+              return;
+            } catch {
+              // fallback
+            }
+          }
+
+          // 2. iOS Native Share (sends Image file URL + Message text with URL in a single click)
+          if (Platform.OS === 'ios') {
+            try {
+              await Share.share({
+                url: uri,
+                message,
+                title: isHi ? 'दैनिक राशिफल' : 'Daily Horoscope',
+              });
+              setIsSharing(false);
+              return;
+            } catch {
+              // fallback
+            }
+          }
+
+          // 3. Fallback: Share Image via Expo Sharing
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(uri, {
+              mimeType: 'image/png',
+              dialogTitle: isHi ? 'दैनिक राशिफल WhatsApp पर शेयर करें' : 'Share Daily Horoscope on WhatsApp',
+            });
+            setIsSharing(false);
+            return;
+          }
+        }
+      }
+
+      // Web or fallback: Share formatted text with URLs (omit title to prevent OEM link-only stripping on Android)
+      await Share.share({ message });
     } catch {
       // ignore
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -198,8 +281,18 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
         })}
       </ScrollView>
 
-      {/* Detailed Card Body */}
-      <View style={styles.outlookBody}>
+      {/* Detailed Card Body - Capturable for High-Res WhatsApp Visual Card */}
+      <View
+        ref={cardRef}
+        collapsable={false}
+        style={styles.outlookBody}
+      >
+        {/* Sacred Card Header for Visual Share */}
+        <View style={styles.cardShareHeader}>
+          <Text style={styles.cardSacredMantra}>॥ ॐ श्री सूर्याय नमः ॥</Text>
+          <Text style={styles.cardDateText}>{formattedDate}</Text>
+        </View>
+
         {/* Rashi & Energy Header */}
         <View style={styles.bodyTopRow}>
           <View style={{ flex: 1, backgroundColor: 'transparent' }}>
@@ -286,19 +379,34 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
           <Text style={styles.mantraText}>{outlook.rashi.seedMantra}</Text>
         </View>
 
-        {/* WhatsApp Share Daily Horoscope Button */}
-        <TouchableOpacity
-          testID="rashi-share-whatsapp-btn"
-          style={styles.whatsAppShareRashiBtn}
-          onPress={handleShareHoroscopeWhatsApp}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
-          <Text style={styles.whatsAppShareRashiText}>
-            {isHi ? 'WhatsApp पर राशिफल शेयर करें' : 'Share Horoscope on WhatsApp'}
+        {/* Card Footer for Visual Share (Branding) */}
+        <View style={styles.cardShareFooter}>
+          <Text style={styles.cardBrandTitle}>
+            🚩 {isHi ? 'सनातन — प्रामाणिक वैदिक पञ्चाङ्ग व मुहूर्त साथी' : 'Sanatan — Authentic Vedic Panchang & Muhurta'}
           </Text>
-        </TouchableOpacity>
+          <Text style={styles.cardBrandUrl}>sanatan.cc</Text>
+        </View>
       </View>
+
+      {/* WhatsApp Share Daily Horoscope Button */}
+      <TouchableOpacity
+        testID="rashi-share-whatsapp-btn"
+        style={styles.whatsAppShareRashiBtn}
+        onPress={handleShareHoroscopeWhatsApp}
+        activeOpacity={0.8}
+        disabled={isSharing}
+      >
+        {isSharing ? (
+          <ActivityIndicator size="small" color="#ffffff" />
+        ) : (
+          <>
+            <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
+            <Text style={styles.whatsAppShareRashiText}>
+              {isHi ? 'WhatsApp पर राशिफल शेयर करें' : 'Share Horoscope on WhatsApp'}
+            </Text>
+          </>
+        )}
+      </TouchableOpacity>
     </View>
   );
 };
@@ -420,11 +528,52 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   outlookBody: {
-    backgroundColor: '#fbfbfb',
+    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#f3f4f6',
+  },
+  cardShareHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 8,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    backgroundColor: 'transparent',
+  },
+  cardSacredMantra: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#b45309',
+    fontFamily: 'serif',
+  },
+  cardDateText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  cardShareFooter: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  cardBrandTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+  cardBrandUrl: {
+    fontSize: 9.5,
+    fontWeight: '600',
+    color: '#9ca3af',
   },
   bodyTopRow: {
     flexDirection: 'row',
