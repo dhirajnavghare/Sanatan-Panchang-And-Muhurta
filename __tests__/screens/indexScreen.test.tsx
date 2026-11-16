@@ -150,6 +150,27 @@ describe('Home Screen (Panchang / Index) - Complete UI Interaction Tests', () =>
     expect(screen.getByTestId('view-mode-daily-btn')).toBeTruthy();
   });
 
+  it('should stay in monthly (masik) view when a date cell is pressed in the calendar grid', async () => {
+    await renderScreen();
+
+    const monthlyBtn = screen.getByTestId('view-mode-monthly-btn');
+    await act(async () => {
+      fireEvent.press(monthlyBtn);
+    });
+
+    // Monthly calendar grid should be visible
+    expect(screen.getByTestId('monthly-calendar-grid')).toBeTruthy();
+
+    // Click date 15 cell
+    const cell15 = screen.getByTestId('calendar-cell-15');
+    await act(async () => {
+      fireEvent.press(cell15);
+    });
+
+    // Must stay in monthly calendar grid, NOT jump to daily
+    expect(screen.getByTestId('monthly-calendar-grid')).toBeTruthy();
+  });
+
   it('should display Moonrise in celestial glance row', async () => {
     await renderScreen();
 
