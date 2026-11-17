@@ -90,4 +90,4 @@ sanatan.cc.react.native/
 ---
 
 ## 📜 License
-This project is dedicated to the public domain under the **Creative Commons CC0 1.0 Universal** legal code, fully following [sanatan.cc License](https://github.com/dhirajnavghare/sanatan.cc/blob/main/LICENSE).
+This project is free and unencumbered software released into the public domain under The Unlicense.

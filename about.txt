@@ -16,7 +16,7 @@ A complete forensic audit of the codebase, dependencies, permissions, and URLs c
 | **Donation / External Payment Links** | Searched all `Linking.openURL` calls. **Zero** donation buttons, PayPal, UPI, "Buy Me a Coffee", Patreon, or crypto addresses. | **Clean** (No external transactions) |
 | **Advertising ID (`AD_ID`)** | [app.json](file:///Users/dhirajnavghare/Developer/sanatan.cc.react.native/app.json) does **not** request `com.google.android.gms.permission.AD_ID`. | **Clean** (No ad tracking) |
 | **Data Commercialization** | **100% On-Device**: Zero network requests (`fetch` = 0), zero analytics brokers, zero user data sold or transmitted to third parties. | **Clean** (No commercial data usage) |
-| **External URLs Linked** | Only 3 static links exist in the entire app: [github.com/dhirajnavghare/sanatan.cc](https://github.com/dhirajnavghare/sanatan.cc) (code repository), [sanatan.cc](https://sanatan.cc) (free public web app), and [creativecommons.org/publicdomain/zero/1.0/](https://creativecommons.org/publicdomain/zero/1.0/legalcode) (CC0 legal code). | **Clean** (Zero commercial redirects) |
+| **External URLs Linked** | Only 2 static destinations exist in the entire app: [github.com/dhirajnavghare/sanatan.cc](https://github.com/dhirajnavghare/sanatan.cc) (code repository) and [sanatan.cc](https://sanatan.cc) (free public web portal, contact & privacy). | **Clean** (Zero commercial redirects) |
 
 ---
 
