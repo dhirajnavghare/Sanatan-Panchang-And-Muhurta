@@ -641,9 +641,9 @@ export default function SettingsScreen() {
         <Text style={styles.aboutDesc}>
           {isHi
             ? 'शुद्ध गणितीय खगोलशास्त्र, नासा जेपीएल एफिमेरिस एवं महर्षि वराहमिहिर के सिद्धान्तों पर आधारित पूर्णतः नि:शुल्क एवं विज्ञापन-मुक्त सनातनी सेवा।'
-            : 'Pure mathematical ephemeris with zero approximations, computed from NASA JPL & Jean Meeus first principles. Free and open-source.'}
+            : 'Pure mathematical ephemeris with zero approximations, computed from NASA JPL & Jean Meeus first principles. 100% Free & Ad-free.'}
         </Text>
-        <Text style={styles.aboutVersion}>Version 1.0.0 • Open Source Dharma</Text>
+        <Text style={styles.aboutVersion}>Version 1.0.0 • 100% Free Dharma</Text>
       </View>
 
       {/* 7. Feedback & Contact Card */}

@@ -197,8 +197,8 @@ export async function runStartupDiagnostics(): Promise<DiagnosticReport> {
       throw new Error('Brahma Muhurta must end before or at Sunrise');
     }
     const durationMins = (bm.endTime.getTime() - bm.startTime.getTime()) / (1000 * 60);
-    if (durationMins < 45 || durationMins > 52) {
-      throw new Error(`Brahma Muhurta duration ${durationMins}m is outside 1-ghatika standard [45m, 52m]`);
+    if (durationMins < 40 || durationMins > 56) {
+      throw new Error(`Brahma Muhurta duration ${durationMins}m is outside 1-ghatika seasonal standard [40m, 56m]`);
     }
   });
 

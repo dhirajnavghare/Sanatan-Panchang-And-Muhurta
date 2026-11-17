@@ -233,13 +233,15 @@ export default function MoreScreen() {
 
           {filteredTemples.map((temple: TempleRecord) => (
             <View key={temple.id} style={styles.card}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardTitle}>
+              <View style={styles.templeHeader}>
+                <Text style={styles.templeTitle}>
                   {isHi ? temple.nameDevanagari : temple.name}
                 </Text>
-                <Text style={styles.cardLocation}>
-                  📍 {temple.location.city}, {temple.location.state}
-                </Text>
+                <View style={styles.templeLocationRow}>
+                  <Text style={styles.cardLocation}>
+                    📍 {temple.location.city}, {temple.location.state}
+                  </Text>
+                </View>
               </View>
 
               <Text style={styles.cardSubText}>
@@ -473,8 +475,8 @@ export default function MoreScreen() {
         <Text style={styles.aboutTitle}>sanatan.cc</Text>
         <Text style={styles.aboutSubtitle}>
           {isHi
-            ? '१००% मुक्त-स्रोत एवं शास्त्रीय वैदिक खगोल विज्ञान (CC0 1.0 Universal)'
-            : '100% Free & Open-Source Vedic Ephemeris (CC0 1.0 Universal)'}
+            ? '१००% निःशुल्क शास्त्रीय वैदिक खगोल विज्ञान'
+            : '100% Free Vedic Ephemeris'}
         </Text>
         <Text style={styles.aboutDesc}>
           {isHi
@@ -489,7 +491,7 @@ export default function MoreScreen() {
           >
             <Ionicons name="information-circle" size={16} color="#ffffff" />
             <Text style={styles.modalBtnText}>
-              {isHi ? 'विस्तृत परिचय एवं CC0 समर्पण' : 'About & CC0 License'}
+              {isHi ? 'विस्तृत परिचय' : 'About'}
             </Text>
           </TouchableOpacity>
 
@@ -818,6 +820,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
     marginBottom: 6,
     backgroundColor: 'transparent',
   },
@@ -825,12 +829,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#18181b',
-    flex: 1,
+    flexShrink: 1,
     marginRight: 8,
+  },
+  templeHeader: {
+    marginBottom: 8,
+  },
+  templeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#18181b',
+    lineHeight: 22,
+    marginBottom: 4,
+  },
+  templeLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   cardLocation: {
     fontSize: 12,
     color: '#71717a',
+    lineHeight: 16,
+    flexShrink: 1,
   },
   cardSubText: {
     fontSize: 12,
