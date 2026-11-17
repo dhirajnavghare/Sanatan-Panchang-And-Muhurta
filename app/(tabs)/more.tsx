@@ -475,8 +475,8 @@ export default function MoreScreen() {
         <Text style={styles.aboutTitle}>sanatan.cc</Text>
         <Text style={styles.aboutSubtitle}>
           {isHi
-            ? '१००% मुक्त-स्रोत एवं शास्त्रीय वैदिक खगोल विज्ञान (CC0 1.0 Universal)'
-            : '100% Free & Open-Source Vedic Ephemeris (CC0 1.0 Universal)'}
+            ? '१००% निःशुल्क शास्त्रीय वैदिक खगोल विज्ञान'
+            : '100% Free Vedic Ephemeris'}
         </Text>
         <Text style={styles.aboutDesc}>
           {isHi
@@ -491,7 +491,7 @@ export default function MoreScreen() {
           >
             <Ionicons name="information-circle" size={16} color="#ffffff" />
             <Text style={styles.modalBtnText}>
-              {isHi ? 'विस्तृत परिचय एवं CC0 समर्पण' : 'About & CC0 License'}
+              {isHi ? 'विस्तृत परिचय' : 'About'}
             </Text>
           </TouchableOpacity>
 

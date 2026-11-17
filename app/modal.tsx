@@ -19,7 +19,7 @@ export default function AboutModalScreen() {
           <Text style={styles.badgeText}>ॐ sanatan.cc</Text>
         </View>
         <View style={[styles.badge, styles.badgeGold]}>
-          <Text style={[styles.badgeText, styles.badgeGoldText]}>CC0 1.0 Universal</Text>
+          <Text style={[styles.badgeText, styles.badgeGoldText]}>100% Free</Text>
         </View>
       </View>
 
@@ -31,8 +31,8 @@ export default function AboutModalScreen() {
 
       <Text style={styles.leadPara}>
         {isHi
-          ? 'sanatan.cc एक गैर-व्यावसायिक, मुक्त-स्रोत प्रकल्प है, जो सनातन हिन्दू धर्म के प्रामाणिक आध्यात्मिक ग्रन्थों, दार्शनिक सिद्धान्तों तथा उच्च-सटीक खगोलीय वैदिक पञ्चाङ्ग गणनाओं को विश्वभर में जन-जन तक पहुँचाने हेतु समर्पित है।'
-          : 'sanatan.cc is a non-commercial, open-source initiative dedicated to preserving and sharing authentic Hindu Dharma spiritual texts, philosophical treatises, and world-class mathematical Vedic ephemeris applications.'}
+          ? 'sanatan.cc एक गैर-व्यावसायिक, १००% निःशुल्क प्रकल्प है, जो सनातन हिन्दू धर्म के प्रामाणिक आध्यात्मिक ग्रन्थों, दार्शनिक सिद्धान्तों तथा उच्च-सटीक खगोलीय वैदिक पञ्चाङ्ग गणनाओं को विश्वभर में जन-जन तक पहुँचाने हेतु समर्पित है।'
+          : 'sanatan.cc is a non-commercial, 100% free initiative dedicated to preserving and sharing authentic Hindu Dharma spiritual texts, philosophical treatises, and world-class mathematical Vedic ephemeris applications.'}
       </Text>
 
       {/* 4 Core Pillars */}
@@ -80,12 +80,12 @@ export default function AboutModalScreen() {
         <View style={styles.pillarCard}>
           <Text style={styles.pillarIcon}>🌐</Text>
           <Text style={styles.pillarHeading}>
-            {isHi ? 'सार्वजनिक अधिकार समर्पण (CC0 1.0)' : 'Creative Commons CC0 1.0 Universal'}
+            {isHi ? '१००% निःशुल्क सार्वजनिक सेवा' : '100% Free for Everyone'}
           </Text>
           <Text style={styles.pillarDesc}>
             {isHi
-              ? 'यह सम्पूर्ण प्रकल्प ज्ञान की सार्वजनिक धरोहर (Public Domain) के रूप में बिना किसी प्रतिबन्ध के समर्पित है। कोई भी व्यक्ति, शोधकर्ता अथवा संस्था इसे निःशुल्क उपयोग, अध्ययन एवं संवर्धित करने हेतु स्वतंत्र है।'
-              : 'Dedicated to the public domain under Creative Commons CC0 1.0 Universal. Anyone is free to use, copy, modify, distribute, or incorporate this work for personal, educational, or commercial purposes worldwide without restrictions.'}
+              ? 'यह सम्पूर्ण प्रकल्प ज्ञान की सार्वजनिक धरोहर के रूप में बिना किसी प्रतिबन्ध के समर्पित है। कोई भी व्यक्ति, शोधकर्ता अथवा संस्था इसे निःशुल्क उपयोग, अध्ययन एवं संवर्धित करने हेतु स्वतंत्र है।'
+              : 'This app is completely free with no ads, no in-app purchases, and no paywalls. Anyone is free to use it for personal, educational, or spiritual purposes without any restrictions.'}
           </Text>
         </View>
       </View>
@@ -108,13 +108,6 @@ export default function AboutModalScreen() {
           <Text style={styles.actionBtnSecondaryText}>sanatan.cc Web Portal</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.actionBtnSecondary}
-          onPress={() => Linking.openURL('https://creativecommons.org/publicdomain/zero/1.0/legalcode')}
-        >
-          <Ionicons name="document-text-outline" size={18} color="#d97706" />
-          <Text style={styles.actionBtnSecondaryText}>CC0 1.0 Legal Code</Text>
-        </TouchableOpacity>
       </View>
 
       <Text style={styles.footerNote}>

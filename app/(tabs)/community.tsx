@@ -279,8 +279,8 @@ export default function CommunityScreen() {
                 {isHi ? 'सार्वजनिक प्रोजेक्ट हब' : 'Live Community & Project Hub'}
               </Text>
             </View>
-            <View style={styles.openSourcePill}>
-              <Text style={styles.openSourceText}>OpenSource</Text>
+            <View style={styles.freeBadgePill}>
+              <Text style={styles.freeBadgeText}>{isHi ? '१००% निःशुल्क' : '100% Free'}</Text>
             </View>
           </View>
 
@@ -908,13 +908,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#047857',
   },
-  openSourcePill: {
+  freeBadgePill: {
     backgroundColor: '#eff6ff',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radius.pill,
   },
-  openSourceText: {
+  freeBadgeText: {
     fontSize: 10,
     fontWeight: '700',
     color: '#1d4ed8',
