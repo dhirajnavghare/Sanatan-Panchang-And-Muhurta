@@ -1,0 +1,34 @@
+name: 🪔 Festival or Vrat Addition / Correction
+description: Propose adding or correcting a regional festival, fast, or auspicious date.
+labels: ["festivals", "shastra-verification"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us make our annual festivals timeline the most complete and authentic in the world.
+  - type: input
+    id: festival_name
+    attributes:
+      label: Festival / Vrat Name
+      placeholder: e.g. Chhath Puja (छठ पूजा) or Guru Purnima (गुरु पूर्णिमा)
+    validations:
+      required: true
+  - type: input
+    id: tithi_masa
+    attributes:
+      label: Tithi, Masa & Paksha
+      placeholder: e.g. Kartika Shukla Shashti (कार्तिक शुक्ल षष्ठी)
+    validations:
+      required: true
+  - type: textarea
+    id: tradition
+    attributes:
+      label: Regional Tradition
+      description: Is this Purnimanta, Amanta, Solar (Sankranti-based), or specific to a sampradaya / state?
+    validations:
+      required: true
+  - type: textarea
+    id: scriptures
+    attributes:
+      label: Canonical Reference / Shastra
+      description: e.g. Nirnaya Sindhu, Dharmasindhu, Bhavishya Purana, or regional temple tradition.

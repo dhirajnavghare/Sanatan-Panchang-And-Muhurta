@@ -1,12 +1,9 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
-  Alert,
   Modal,
-  FlatList,
   Platform,
   Share,
   TextInput,
@@ -17,8 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import * as Location from 'expo-location';
-import { Palette, Radius, Spacing } from '@/constants/Colors';
+import { TourTarget } from '@/src/components/TourTarget';
 
 import {
   calculatePanchang,
@@ -76,6 +72,7 @@ import { calculateEkadashiParana, VratParanaDetails } from '@/src/services/vratP
 import { getTodayVratGuidance } from '@/src/services/vratGuidelines';
 import { VratHeroCard } from '@/src/components/VratHeroCard';
 import { DailyRashiCard } from '@/src/components/DailyRashiCard';
+import { useTour } from '@/src/services/appTourContext';
 
 export default function PanchangScreen() {
   const insets = useSafeAreaInsets();
@@ -84,12 +81,60 @@ export default function PanchangScreen() {
 
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [viewMode, setViewMode] = useState<'daily' | 'planner' | 'monthly'>('daily');
+  const [plannerFilter, setPlannerFilter] = useState<'core' | 'all' | 'planned'>('core');
   const [location, setLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
   const [isCalculating, setIsCalculating] = useState(false);
 
   // Sacred Profile & Audio
   const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
   const [isShareCardModalVisible, setIsShareCardModalVisible] = useState(false);
+
+  // Tour & Contextual Guidance
+  const { isInteractiveTourActive, currentTourStep, openHelp } = useTour();
+  const mainScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+
+  // Synchronize view mode and smooth auto-scroll with active tour step
+  useEffect(() => {
+    if (isInteractiveTourActive && currentTourStep) {
+      if (currentTourStep.viewMode) {
+        setViewMode(currentTourStep.viewMode);
+      }
+      if (currentTourStep.plannerSubTab) {
+        setPlannerFilter(currentTourStep.plannerSubTab);
+      }
+      if (
+        currentTourStep.targetTestID === 'hero-challenge-card' ||
+        currentTourStep.targetTestID === 'bento-tall-card'
+      ) {
+        mainScrollRef.current?.scrollTo({ y: 140, animated: true });
+      } else if (currentTourStep.targetTestID === 'daily-rashi-card') {
+        mainScrollRef.current?.scrollTo({ y: 320, animated: true });
+      } else if (
+        currentTourStep.targetTestID === 'planner-view-mode-container' ||
+        currentTourStep.targetTestID === 'planner-tab-core'
+      ) {
+        mainScrollRef.current?.scrollTo({ y: 180, animated: true });
+      } else if (
+        currentTourStep.targetTestID === 'planner-tab-all' ||
+        currentTourStep.targetTestID === 'planner-tab-planned'
+      ) {
+        mainScrollRef.current?.scrollTo({ y: 240, animated: true });
+      } else if (currentTourStep.targetTestID === 'inauspicious-triad-card') {
+        mainScrollRef.current?.scrollTo({ y: 560, animated: true });
+      } else if (currentTourStep.targetTestID === 'live-cosmic-banner') {
+        mainScrollRef.current?.scrollTo({ y: 40, animated: true });
+      } else if (
+        currentTourStep.targetTestID === 'header-bar' ||
+        currentTourStep.targetTestID === 'header-lang-btn' ||
+        currentTourStep.targetTestID === 'header-bell-btn' ||
+        currentTourStep.targetTestID === 'header-share-btn' ||
+        currentTourStep.targetTestID === 'day-pill-selected' ||
+        currentTourStep.targetTestID === 'view-mode-daily-btn'
+      ) {
+        mainScrollRef.current?.scrollTo({ y: 0, animated: true });
+      }
+    }
+  }, [isInteractiveTourActive, currentTourStep]);
 
   // First-Time App Tour state
   const [isTourModalVisible, setIsTourModalVisible] = useState(false);
@@ -120,7 +165,6 @@ export default function PanchangScreen() {
 
   // Day Planner state: 'core' (default clean), 'all' (24h), 'planned' (my tasks)
   const [dayPlans, setDayPlans] = useState<DayPlansMap>({});
-  const [plannerFilter, setPlannerFilter] = useState<'core' | 'all' | 'planned'>('core');
   const [editingInputs, setEditingInputs] = useState<Record<string, string>>({});
 
   const dateKey = useMemo(() => getDateKey(currentDate), [currentDate]);
@@ -237,14 +281,14 @@ export default function PanchangScreen() {
 
   // Day Planner Slots
   const plannerSlots = useMemo(() => {
-    return buildDayPlannerSlots(panchang, new Date());
-  }, [panchang]);
+    return buildDayPlannerSlots(panchang, currentDate);
+  }, [panchang, currentDate]);
 
   // Tasks planned for the active cosmic window (if any)
   const activeSlotTodos = useMemo(() => {
-    const nowMs = Date.now();
+    const targetMs = currentDate.getTime();
     const currentSlot = plannerSlots.find(
-      (s) => nowMs >= s.startTime.getTime() && nowMs <= s.endTime.getTime()
+      (s) => targetMs >= s.startTime.getTime() && targetMs <= s.endTime.getTime()
     );
     if (!currentSlot) return null;
     const plan = dayPlans[currentSlot.id];
@@ -259,7 +303,7 @@ export default function PanchangScreen() {
       slot: currentSlot,
       tasks: pendingTodos,
     };
-  }, [plannerSlots, dayPlans]);
+  }, [plannerSlots, dayPlans, currentDate]);
 
   const totalPlannedCount = useMemo(() => {
     return Object.values(dayPlans).reduce((acc, plan) => {
@@ -413,86 +457,96 @@ export default function PanchangScreen() {
 
   // Reusable Hindu Day Planner Section
   const renderDayPlannerSection = () => (
-    <View style={styles.plannerSection}>
-      <View style={styles.plannerHeaderRow}>
-        <View style={{ flex: 1, paddingRight: 8, backgroundColor: 'transparent' }}>
-          <Text style={styles.plannerSectionTitle}>
-            {isHi ? '🗓️ आज की दिन योजना (Day Planner)' : '🗓️ Hindu Day Planner'}
-          </Text>
-          <Text style={styles.plannerSectionSub}>
-            {isHi
-              ? 'शास्त्रसम्मत शुभ काल के अनुसार अपने कार्यों का नियोजन करें'
-              : 'Schedule tasks aligned with auspicious cosmic timings'}
-          </Text>
-        </View>
-
-        {totalPlannedCount > 0 && (
-          <View style={styles.plannerProgressBadge}>
-            <Text style={styles.plannerProgressText}>
-              🎯 {totalCompletedCount}/{totalPlannedCount} {isHi ? 'सम्पन्न' : 'Done'}
+    <TourTarget targetId="planner-view-mode-container" borderRadius={22}>
+      <View style={styles.plannerSection}>
+        <View style={styles.plannerHeaderRow}>
+          <View style={{ flex: 1, paddingRight: 8, backgroundColor: 'transparent' }}>
+            <Text style={styles.plannerSectionTitle}>
+              {isHi ? '🗓️ आज की दिन योजना (Day Planner)' : '🗓️ Hindu Day Planner'}
+            </Text>
+            <Text style={styles.plannerSectionSub}>
+              {isHi
+                ? 'शास्त्रसम्मत शुभ काल के अनुसार अपने कार्यों का नियोजन करें'
+                : 'Schedule tasks aligned with auspicious cosmic timings'}
             </Text>
           </View>
-        )}
-      </View>
 
-      {/* Filter Tabs: Core vs All 24h vs Planned */}
-      <View style={styles.plannerFilterRow}>
-        <TouchableOpacity
-          testID="planner-tab-core"
-          style={[
-            styles.plannerFilterTab,
-            plannerFilter === 'core' && styles.plannerFilterTabActive,
-          ]}
-          onPress={() => setPlannerFilter('core')}
-        >
-          <Text
-            style={[
-              styles.plannerFilterTabText,
-              plannerFilter === 'core' && styles.plannerFilterTabTextActive,
-            ]}
-          >
-            {isHi ? '🌟 मुख्य मुहूर्त' : '🌟 Core Windows'}
-          </Text>
-        </TouchableOpacity>
+          {totalPlannedCount > 0 && (
+            <View style={styles.plannerProgressBadge}>
+              <Text style={styles.plannerProgressText}>
+                🎯 {totalCompletedCount}/{totalPlannedCount} {isHi ? 'सम्पन्न' : 'Done'}
+              </Text>
+            </View>
+          )}
+        </View>
 
-        <TouchableOpacity
-          testID="planner-tab-all"
-          style={[
-            styles.plannerFilterTab,
-            plannerFilter === 'all' && styles.plannerFilterTabActive,
-          ]}
-          onPress={() => setPlannerFilter('all')}
-        >
-          <Text
-            style={[
-              styles.plannerFilterTabText,
-              plannerFilter === 'all' && styles.plannerFilterTabTextActive,
-            ]}
-          >
-            {isHi ? '🕒 24h सम्पूर्ण' : '🕒 All 24h'}
-          </Text>
-        </TouchableOpacity>
+        {/* Filter Tabs: Core vs All 24h vs Planned */}
+        <View style={styles.plannerFilterRow}>
+          <TourTarget targetId="planner-tab-core" borderRadius={12} style={{ flex: 1 }}>
+            <TouchableOpacity
+              testID="planner-tab-core"
+              style={[
+                styles.plannerFilterTab,
+                { width: '100%' },
+                plannerFilter === 'core' && styles.plannerFilterTabActive,
+              ]}
+              onPress={() => setPlannerFilter('core')}
+            >
+              <Text
+                style={[
+                  styles.plannerFilterTabText,
+                  plannerFilter === 'core' && styles.plannerFilterTabTextActive,
+                ]}
+              >
+                {isHi ? '🌟 मुख्य मुहूर्त' : '🌟 Core Windows'}
+              </Text>
+            </TouchableOpacity>
+          </TourTarget>
 
-        <TouchableOpacity
-          testID="planner-tab-planned"
-          style={[
-            styles.plannerFilterTab,
-            plannerFilter === 'planned' && styles.plannerFilterTabActive,
-          ]}
-          onPress={() => setPlannerFilter('planned')}
-        >
-          <Text
-            style={[
-              styles.plannerFilterTabText,
-              plannerFilter === 'planned' && styles.plannerFilterTabTextActive,
-            ]}
-          >
-            {isHi
-              ? `✍️ नियोजित (${totalPlannedCount})`
-              : `✍️ Planned (${totalPlannedCount})`}
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <TourTarget targetId="planner-tab-all" borderRadius={12} style={{ flex: 1 }}>
+            <TouchableOpacity
+              testID="planner-tab-all"
+              style={[
+                styles.plannerFilterTab,
+                { width: '100%' },
+                plannerFilter === 'all' && styles.plannerFilterTabActive,
+              ]}
+              onPress={() => setPlannerFilter('all')}
+            >
+              <Text
+                style={[
+                  styles.plannerFilterTabText,
+                  plannerFilter === 'all' && styles.plannerFilterTabTextActive,
+                ]}
+              >
+                {isHi ? '🕒 24h सम्पूर्ण' : '🕒 All 24h'}
+              </Text>
+            </TouchableOpacity>
+          </TourTarget>
+
+          <TourTarget targetId="planner-tab-planned" borderRadius={12} style={{ flex: 1 }}>
+            <TouchableOpacity
+              testID="planner-tab-planned"
+              style={[
+                styles.plannerFilterTab,
+                { width: '100%' },
+                plannerFilter === 'planned' && styles.plannerFilterTabActive,
+              ]}
+              onPress={() => setPlannerFilter('planned')}
+            >
+              <Text
+                style={[
+                  styles.plannerFilterTabText,
+                  plannerFilter === 'planned' && styles.plannerFilterTabTextActive,
+                ]}
+              >
+                {isHi
+                  ? `✍️ नियोजित (${totalPlannedCount})`
+                  : `✍️ Planned (${totalPlannedCount})`}
+              </Text>
+            </TouchableOpacity>
+          </TourTarget>
+        </View>
 
       {/* Slot Cards List */}
       <View style={styles.plannerCardsContainer}>
@@ -636,6 +690,7 @@ export default function PanchangScreen() {
                   {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
                     <TouchableOpacity
                       key={sIdx}
+                      testID={`planner-subtask-chip-${sIdx}`}
                       style={styles.suggestionChip}
                       onPress={() => handleApplySuggestion(slot.id, suggestion)}
                       activeOpacity={0.7}
@@ -688,6 +743,7 @@ export default function PanchangScreen() {
                 <View style={styles.addTodoInputRow}>
                   <Ionicons name="add" size={20} color="#b45309" style={{ marginLeft: 6 }} />
                   <TextInput
+                    testID="planner-custom-task-input"
                     style={styles.addTodoTextInput}
                     placeholder={
                       isAshubh
@@ -769,58 +825,61 @@ export default function PanchangScreen() {
         </View>
       </View>
     </View>
+  </TourTarget>
   );
 
   // Reusable Pan-Indian Inauspicious Triad Card
   const renderInauspiciousTriad = () => (
-    <View style={styles.inauspiciousTriadCard} testID="inauspicious-triad-card">
-      <View style={styles.inauspiciousTriadHeader}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'transparent' }}>
-          <Text style={{ fontSize: 13 }}>⚠️</Text>
-          <Text style={styles.inauspiciousTriadTitle}>
-            {isHi ? 'त्रिकाल वर्ज्य (त्याज्य काल)' : 'Inauspicious Windows (To Avoid)'}
+    <TourTarget targetId="inauspicious-triad-card" borderRadius={20}>
+      <View style={styles.inauspiciousTriadCard} testID="inauspicious-triad-card">
+        <View style={styles.inauspiciousTriadHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'transparent' }}>
+            <Text style={{ fontSize: 13 }}>⚠️</Text>
+            <Text style={styles.inauspiciousTriadTitle}>
+              {isHi ? 'त्रिकाल वर्ज्य (त्याज्य काल)' : 'Inauspicious Windows (To Avoid)'}
+            </Text>
+          </View>
+          <Text style={styles.inauspiciousTriadSub}>
+            {isHi ? 'दक्षिण एवं सर्व-भारतीय पञ्चाङ्ग' : 'South & Pan-Indian Panchangam'}
           </Text>
         </View>
-        <Text style={styles.inauspiciousTriadSub}>
-          {isHi ? 'दक्षिण एवं सर्व-भारतीय पञ्चाङ्ग' : 'South & Pan-Indian Panchangam'}
-        </Text>
+
+        <View style={styles.inauspiciousTriadRow}>
+          {/* 1. Rahu Kaal */}
+          <View style={styles.triadItem}>
+            <Text style={styles.triadBadgeTextRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
+            <Text style={styles.triadTimeText}>
+              {formatTime(panchang.muhurtas.rahuKaal.startTime)} - {formatTime(panchang.muhurtas.rahuKaal.endTime)}
+            </Text>
+            <Text style={styles.triadDescText}>
+              {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
+            </Text>
+          </View>
+
+          {/* 2. Yamagandam */}
+          <View style={styles.triadItem}>
+            <Text style={styles.triadBadgeTextOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
+            <Text style={styles.triadTimeText}>
+              {formatTime(panchang.muhurtas.yamaganda.startTime)} - {formatTime(panchang.muhurtas.yamaganda.endTime)}
+            </Text>
+            <Text style={styles.triadDescText}>
+              {isHi ? 'यात्रा व निवेश वर्जित' : 'Avoid travel & deals'}
+            </Text>
+          </View>
+
+          {/* 3. Gulika Kaal */}
+          <View style={styles.triadItem}>
+            <Text style={styles.triadBadgeTextPurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
+            <Text style={styles.triadTimeText}>
+              {formatTime(panchang.muhurtas.gulikaKaal.startTime)} - {formatTime(panchang.muhurtas.gulikaKaal.endTime)}
+            </Text>
+            <Text style={styles.triadDescText}>
+              {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
+            </Text>
+          </View>
+        </View>
       </View>
-
-      <View style={styles.inauspiciousTriadRow}>
-        {/* 1. Rahu Kaal */}
-        <View style={styles.triadItem}>
-          <Text style={styles.triadBadgeTextRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
-          <Text style={styles.triadTimeText}>
-            {formatTime(panchang.muhurtas.rahuKaal.startTime)} - {formatTime(panchang.muhurtas.rahuKaal.endTime)}
-          </Text>
-          <Text style={styles.triadDescText}>
-            {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
-          </Text>
-        </View>
-
-        {/* 2. Yamagandam */}
-        <View style={styles.triadItem}>
-          <Text style={styles.triadBadgeTextOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
-          <Text style={styles.triadTimeText}>
-            {formatTime(panchang.muhurtas.yamaganda.startTime)} - {formatTime(panchang.muhurtas.yamaganda.endTime)}
-          </Text>
-          <Text style={styles.triadDescText}>
-            {isHi ? 'यात्रा व निवेश वर्जित' : 'Avoid travel & deals'}
-          </Text>
-        </View>
-
-        {/* 3. Gulika Kaal */}
-        <View style={styles.triadItem}>
-          <Text style={styles.triadBadgeTextPurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
-          <Text style={styles.triadTimeText}>
-            {formatTime(panchang.muhurtas.gulikaKaal.startTime)} - {formatTime(panchang.muhurtas.gulikaKaal.endTime)}
-          </Text>
-          <Text style={styles.triadDescText}>
-            {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
-          </Text>
-        </View>
-      </View>
-    </View>
+    </TourTarget>
   );
 
   return (
@@ -830,6 +889,7 @@ export default function PanchangScreen() {
     >
       <View style={styles.container}>
         <ScrollView
+          ref={mainScrollRef}
           style={styles.container}
           contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top, 16) }]}
           showsVerticalScrollIndicator={false}
@@ -838,87 +898,150 @@ export default function PanchangScreen() {
           {/* ========================================================= */}
           {/* TOP PROFILE, GREETING & VIRAL SHARE BAR                  */}
           {/* ========================================================= */}
-          <View style={styles.headerBar}>
-            <TouchableOpacity
-              style={styles.avatarContainer}
-              onPress={() => router.navigate('/(tabs)/more' as any)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.avatarInner}>
-                <Text style={styles.avatarGlyph}>🕉️</Text>
-              </View>
-            </TouchableOpacity>
+          {/* 0. IMMERSIVE SACRED APP HEADER                            */}
+          {/* ========================================================= */}
+          <TourTarget targetId="header-bar" borderRadius={18}>
+            <View style={styles.headerBar} testID="header-bar">
+              {/* Row 1: Profile Avatar, Greeting Title, and Action Buttons */}
+              <View style={styles.headerTopRow}>
+                {/* Profile Avatar / Quick Nav to Profile */}
+                <TouchableOpacity
+                  style={styles.avatarContainer}
+                  onPress={() => router.navigate('/(tabs)/more' as any)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={isHi ? 'प्रोफ़ाइल व अधिक' : 'Profile & More'}
+                >
+                  <View style={styles.avatarInner}>
+                    <Text style={styles.avatarGlyph}>🕉️</Text>
+                  </View>
+                </TouchableOpacity>
 
-            <View style={styles.greetingContainer}>
-              <Text style={styles.greetingTitle}>
-                {isHi
-                  ? `${spiritualPeriod.greetingHi}${userProfile.name ? `, ${userProfile.name}` : ''}`
-                  : `${spiritualPeriod.greetingEn}${userProfile.name ? `, ${userProfile.name}` : ''}`}
-              </Text>
+                <View style={styles.greetingContainer}>
+                  <Text style={styles.greetingTitle} numberOfLines={1}>
+                    {isHi
+                      ? `${spiritualPeriod.greetingHi}${userProfile.name ? `, ${userProfile.name}` : ''}`
+                      : `${spiritualPeriod.greetingEn}${userProfile.name ? `, ${userProfile.name}` : ''}`}
+                  </Text>
+                </View>
+
+                <View style={styles.headerActionsGroup}>
+                  {/* Contextual Help Button (?) */}
+                  <TouchableOpacity
+                    testID="header-help-btn"
+                    style={styles.helpActionBtn}
+                    onPress={async () => {
+                      await triggerHaptic('tap', userProfile.hapticsEnabled);
+                      openHelp(viewMode === 'planner' ? 'dayplanner' : 'dinacharya');
+                    }}
+                    activeOpacity={0.7}
+                    accessibilityLabel={isHi ? 'मदद व गाइड' : 'Help & Guide'}
+                  >
+                    <Ionicons name="help-circle-outline" size={17} color="#b45309" />
+                  </TouchableOpacity>
+
+                  {/* 1-Tap Language Switcher (हिं / EN) */}
+                  <TourTarget targetId="header-lang-btn" borderRadius={17}>
+                    <TouchableOpacity
+                      testID="header-lang-btn"
+                      style={styles.langActionBtn}
+                      onPress={async () => {
+                        await triggerHaptic('tap', userProfile.hapticsEnabled);
+                        setLanguage(language === 'hi' ? 'en' : 'hi');
+                      }}
+                      activeOpacity={0.7}
+                      accessibilityLabel={
+                        isHi ? 'अंग्रेज़ी भाषा चुनें (EN)' : 'Switch to Hindi (हिन्दी)'
+                      }
+                    >
+                      <Text style={styles.langActionBtnText}>
+                        {language === 'hi' ? 'EN' : 'हिं'}
+                      </Text>
+                    </TouchableOpacity>
+                  </TourTarget>
+
+                  {/* Sacred Temple Brass Bell Chime */}
+                  <TourTarget targetId="header-bell-btn" borderRadius={17}>
+                    <TouchableOpacity
+                      testID="header-bell-btn"
+                      style={styles.bellActionBtn}
+                      onPress={async () => {
+                        await triggerHaptic('tap', userProfile.hapticsEnabled);
+                        playTempleBell(0.8);
+                      }}
+                      activeOpacity={0.7}
+                      accessibilityLabel={isHi ? 'मन्दिर घंटी बजाएं' : 'Ring Temple Bell'}
+                    >
+                      <Text style={{ fontSize: 16 }}>🔔</Text>
+                    </TouchableOpacity>
+                  </TourTarget>
+
+                  {/* Viral 1-Tap WhatsApp Daily Share Card Button */}
+                  <TourTarget targetId="header-share-btn" borderRadius={17}>
+                    <TouchableOpacity
+                      testID="header-share-btn"
+                      style={styles.whatsAppShareBtn}
+                      onPress={async () => {
+                        await triggerHaptic('tap', userProfile.hapticsEnabled);
+                        setIsShareCardModalVisible(true);
+                      }}
+                      activeOpacity={0.8}
+                      accessibilityLabel={isHi ? 'WhatsApp शेयर कार्ड' : 'WhatsApp Share Card'}
+                    >
+                      <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
+                    </TouchableOpacity>
+                  </TourTarget>
+                </View>
+              </View>
+
+              {/* Row 2: Dedicated Panchang & Location Context Bar */}
               <TouchableOpacity
+                style={styles.headerSubBar}
                 onPress={() => router.navigate('/(tabs)/settings' as any)}
                 activeOpacity={0.7}
+                accessibilityLabel={
+                  isHi ? 'तिथि व स्थान विवरण (सेटिंग्स)' : 'Tithi and location details (Settings)'
+                }
               >
-                <Text style={styles.greetingSubtitle} numberOfLines={1}>
-                  {isHi ? 'आज ' : 'Today '}
-                  {currentDate.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                  {' • '}
-                  {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
-                  {' • 🧭 '}
-                  {location.name.split(',')[0]}
-                </Text>
+                <View style={styles.subBarPanchang}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={13}
+                    color="#d97706"
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={styles.subBarDateText}>
+                    {isHi ? 'आज ' : 'Today '}
+                    {currentDate.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </Text>
+                  <Text style={styles.subBarBullet}>•</Text>
+                  <Text style={styles.subBarTithiText} numberOfLines={1}>
+                    {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
+                  </Text>
+                </View>
+
+                <View style={styles.subBarLocation}>
+                  <Ionicons
+                    name="location-sharp"
+                    size={12}
+                    color="#ea580c"
+                    style={{ marginRight: 3 }}
+                  />
+                  <Text style={styles.subBarLocationText} numberOfLines={1}>
+                    {location.name.split(',')[0]}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={12}
+                    color="#94a3b8"
+                    style={{ marginLeft: 2 }}
+                  />
+                </View>
               </TouchableOpacity>
             </View>
-
-            <View style={styles.headerActionsGroup}>
-              {/* 1-Tap Language Switcher (हिं / EN) */}
-              <TouchableOpacity
-                testID="header-lang-btn"
-                style={styles.langActionBtn}
-                onPress={async () => {
-                  await triggerHaptic('tap', userProfile.hapticsEnabled);
-                  setLanguage(language === 'hi' ? 'en' : 'hi');
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.langActionBtnText}>
-                  {language === 'hi' ? 'EN' : 'हिं'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Sacred Temple Brass Bell Chime */}
-              <TouchableOpacity
-                testID="header-bell-btn"
-                style={styles.bellActionBtn}
-                onPress={async () => {
-                  await triggerHaptic('tap', userProfile.hapticsEnabled);
-                  playTempleBell(0.8);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={{ fontSize: 16 }}>🔔</Text>
-              </TouchableOpacity>
-
-              {/* Viral 1-Tap WhatsApp Daily Share Card Button */}
-              <TouchableOpacity
-                testID="header-share-btn"
-                style={styles.whatsAppShareBtn}
-                onPress={async () => {
-                  await triggerHaptic('tap', userProfile.hapticsEnabled);
-                  setIsShareCardModalVisible(true);
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="logo-whatsapp" size={16} color="#ffffff" />
-                <Text style={styles.whatsAppShareBtnText}>
-                  {isHi ? 'शेयर कार्ड' : 'Share'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          </TourTarget>
 
           {/* ========================================================= */}
           {/* 1. HORIZONTAL 7-DAY SACRED HORIZON STRIP (Top Level)      */}
@@ -929,7 +1052,7 @@ export default function PanchangScreen() {
               const dayNum = d.getDate();
               const isToday = d.toDateString() === new Date().toDateString();
 
-              return (
+              const pillNode = (
                 <TouchableOpacity
                   key={index}
                   testID={isSelected ? 'day-pill-selected' : `day-pill-${index}`}
@@ -955,24 +1078,34 @@ export default function PanchangScreen() {
                   </Text>
                 </TouchableOpacity>
               );
+
+              return isSelected ? (
+                <TourTarget key={index} targetId="day-pill-selected" borderRadius={18}>
+                  {pillNode}
+                </TourTarget>
+              ) : (
+                pillNode
+              );
             })}
           </View>
 
           {/* View Mode Switcher: Daily vs Planner vs Monthly Calendar Grid */}
           <View style={styles.viewModeSegment}>
-            <TouchableOpacity
-              testID="view-mode-daily-btn"
-              style={[styles.viewModeBtn, viewMode === 'daily' && styles.viewModeBtnActive]}
-              onPress={async () => {
-                await triggerHaptic('tap', userProfile.hapticsEnabled);
-                setViewMode('daily');
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.viewModeBtnText, viewMode === 'daily' && styles.viewModeBtnTextActive]} numberOfLines={1}>
-                {isHi ? '☀️ पञ्चाङ्ग' : '☀️ Panchang'}
-              </Text>
-            </TouchableOpacity>
+            <TourTarget targetId="view-mode-daily-btn" borderRadius={12} style={{ flex: 1 }}>
+              <TouchableOpacity
+                testID="view-mode-daily-btn"
+                style={[styles.viewModeBtn, { width: '100%' }, viewMode === 'daily' && styles.viewModeBtnActive]}
+                onPress={async () => {
+                  await triggerHaptic('tap', userProfile.hapticsEnabled);
+                  setViewMode('daily');
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.viewModeBtnText, viewMode === 'daily' && styles.viewModeBtnTextActive]} numberOfLines={1}>
+                  {isHi ? '☀️ पञ्चाङ्ग' : '☀️ Panchang'}
+                </Text>
+              </TouchableOpacity>
+            </TourTarget>
 
             <TouchableOpacity
               testID="view-mode-planner-btn"
@@ -1079,132 +1212,141 @@ export default function PanchangScreen() {
           {/* ========================================================= */}
           {/* 2. LIVE COSMIC COMPASS (Now & Next Instant Guidance)      */}
           {/* ========================================================= */}
-          <View
-            style={[
-              styles.liveCosmicBanner,
-              {
-                backgroundColor: liveStatus.badgeBg,
-                borderColor: liveStatus.accentColor,
-              },
-            ]}
-          >
-            <View style={styles.liveCosmicTopRow}>
-              <View style={styles.livePulseGroup}>
-                <View
-                  style={[
-                    styles.livePulseDot,
-                    { backgroundColor: liveStatus.accentColor },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.liveCosmicBadgeText,
-                    { color: liveStatus.accentColor },
-                  ]}
-                >
-                  {isHi ? liveStatus.badgeHi : liveStatus.badgeEn}
-                </Text>
-              </View>
-              <Text style={styles.liveCosmicWindow}>
-                {isHi ? liveStatus.windowHi : liveStatus.windowEn}
-              </Text>
-            </View>
-
-            <Text style={styles.liveCosmicTitle}>
-              {isHi ? liveStatus.titleHi : liveStatus.titleEn}
-            </Text>
-
-            <Text style={styles.liveCosmicDesc} numberOfLines={2}>
-              {isHi ? liveStatus.descriptionHi : liveStatus.descriptionEn}
-            </Text>
-
-            {activeSlotTodos && (
-              <View style={styles.liveCosmicTasksRow}>
-                <Text style={styles.liveCosmicTasksTitle}>
-                  {isHi ? '🎯 इस मुहूर्त हेतु नियोजित कार्य:' : '🎯 Tasks planned for this window:'}
-                </Text>
-                <View style={styles.liveCosmicTasksList}>
-                  {activeSlotTodos.tasks.map((t, idx) => (
-                    <View key={idx} style={styles.liveCosmicTaskChip}>
-                      <Text style={styles.liveCosmicTaskChipText}>• {t.text}</Text>
-                    </View>
-                  ))}
+          <TourTarget targetId="live-cosmic-banner" borderRadius={20}>
+            <View
+              testID="live-cosmic-banner"
+              style={[
+                styles.liveCosmicBanner,
+                {
+                  backgroundColor: liveStatus.badgeBg,
+                  borderColor: liveStatus.accentColor,
+                },
+              ]}
+            >
+              <View style={styles.liveCosmicTopRow}>
+                <View style={styles.livePulseGroup}>
+                  <View
+                    style={[
+                      styles.livePulseDot,
+                      { backgroundColor: liveStatus.accentColor },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.liveCosmicBadgeText,
+                      { color: liveStatus.accentColor },
+                    ]}
+                  >
+                    {isHi ? liveStatus.badgeHi : liveStatus.badgeEn}
+                  </Text>
                 </View>
+                <Text style={styles.liveCosmicWindow}>
+                  {isHi ? liveStatus.windowHi : liveStatus.windowEn}
+                </Text>
               </View>
-            )}
-          </View>
+
+              <Text style={styles.liveCosmicTitle}>
+                {isHi ? liveStatus.titleHi : liveStatus.titleEn}
+              </Text>
+
+              <Text style={styles.liveCosmicDesc} numberOfLines={2}>
+                {isHi ? liveStatus.descriptionHi : liveStatus.descriptionEn}
+              </Text>
+
+              {activeSlotTodos && (
+                <View style={styles.liveCosmicTasksRow}>
+                  <Text style={styles.liveCosmicTasksTitle}>
+                    {isHi ? '🎯 इस मुहूर्त हेतु नियोजित कार्य:' : '🎯 Tasks planned for this window:'}
+                  </Text>
+                  <View style={styles.liveCosmicTasksList}>
+                    {activeSlotTodos.tasks.map((t, idx) => (
+                      <View key={idx} style={styles.liveCosmicTaskChip}>
+                        <Text style={styles.liveCosmicTaskChipText}>• {t.text}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          </TourTarget>
 
           {/* ========================================================= */}
           {/* 3. SACRED ALIGNMENT HUB (Sadhana & Vedic Sankalpa)        */}
           {/* ========================================================= */}
           <View style={styles.sacredAlignmentRow}>
             {/* Left Card: Daily Sadhana Checklist */}
-            <TouchableOpacity
-              testID="hero-challenge-card"
-              style={styles.sacredAlignmentCardLeft}
-              activeOpacity={0.88}
-              onPress={() => setIsSadhanaModalVisible(true)}
-            >
-              <View style={styles.alignmentCardHeader}>
-                <Text style={styles.alignmentCardTag}>
-                  {isHi ? '📿 नित्यकर्म साधना' : '📿 Daily Sadhana'}
+            <TourTarget targetId="hero-challenge-card" borderRadius={18} style={{ flex: 1 }}>
+              <TouchableOpacity
+                testID="hero-challenge-card"
+                style={[styles.sacredAlignmentCardLeft, { width: '100%' }]}
+                activeOpacity={0.88}
+                onPress={() => setIsSadhanaModalVisible(true)}
+              >
+                <View style={styles.alignmentCardHeader}>
+                  <Text style={styles.alignmentCardTag}>
+                    {isHi ? '📿 नित्यकर्म साधना' : '📿 Daily Sadhana'}
+                  </Text>
+                  {streakCount > 0 && (
+                    <Text style={styles.alignmentCardStreak}>🔥 {streakCount}d</Text>
+                  )}
+                </View>
+                <Text style={styles.alignmentCardTitle}>
+                  {isHi ? 'दैनिक सूक्ष्म साधनाएं' : '5 Sacred Micro-Habits'}
                 </Text>
-                {streakCount > 0 && (
-                  <Text style={styles.alignmentCardStreak}>🔥 {streakCount}d</Text>
-                )}
-              </View>
-              <Text style={styles.alignmentCardTitle}>
-                {isHi ? 'दैनिक सूक्ष्म साधनाएं' : '5 Sacred Micro-Habits'}
-              </Text>
-              <Text style={styles.alignmentCardSub} numberOfLines={1}>
-                {completedHabits.length}/5 {isHi ? 'साधनाएं पूर्ण' : 'habits completed'}
-              </Text>
-              <View style={styles.alignmentCardFooter}>
-                <Text style={styles.alignmentCardAction}>
-                  {isHi ? 'चेकलिस्ट देखें →' : 'View Checklist →'}
+                <Text style={styles.alignmentCardSub} numberOfLines={1}>
+                  {completedHabits.length}/5 {isHi ? 'साधनाएं पूर्ण' : 'habits completed'}
                 </Text>
-                <Ionicons name="checkmark-done" size={14} color="#047857" />
-              </View>
-            </TouchableOpacity>
+                <View style={styles.alignmentCardFooter}>
+                  <Text style={styles.alignmentCardAction}>
+                    {isHi ? 'चेकलिस्ट देखें →' : 'View Checklist →'}
+                  </Text>
+                  <Ionicons name="checkmark-done" size={14} color="#047857" />
+                </View>
+              </TouchableOpacity>
+            </TourTarget>
 
             {/* Right Card: Vedic Sankalpa Recital */}
-            <TouchableOpacity
-              testID="bento-tall-card"
-              style={styles.sacredAlignmentCardRight}
-              activeOpacity={0.88}
-              onPress={() => setIsSankalpaModalVisible(true)}
-            >
-              <View style={styles.alignmentCardHeader}>
-                <Text style={styles.alignmentCardTag}>
-                  {isHi ? '📜 दैनिक सङ्कल्प' : '📜 Vedic Sankalpa'}
+            <TourTarget targetId="bento-tall-card" borderRadius={18} style={{ flex: 1 }}>
+              <TouchableOpacity
+                testID="bento-tall-card"
+                style={[styles.sacredAlignmentCardRight, { width: '100%' }]}
+                activeOpacity={0.88}
+                onPress={() => setIsSankalpaModalVisible(true)}
+              >
+                <View style={styles.alignmentCardHeader}>
+                  <Text style={styles.alignmentCardTag}>
+                    {isHi ? '📜 दैनिक सङ्कल्प' : '📜 Vedic Sankalpa'}
+                  </Text>
+                  <Text style={styles.alignmentCardStreak}>
+                    {isHi ? 'आज का व्रत' : 'Daily Vow'}
+                  </Text>
+                </View>
+                <Text style={styles.alignmentCardTitle} numberOfLines={1}>
+                  {userProfile.gotra ? `${userProfile.gotra} गोत्र` : isHi ? 'वैदिक संकल्प' : 'Vedic Vow'}
                 </Text>
-                <Text style={styles.alignmentCardStreak}>
-                  {isHi ? 'आज का व्रत' : 'Daily Vow'}
+                <Text style={styles.alignmentCardSub} numberOfLines={1}>
+                  {activeMasa} • {panchang.tithi.current.nameDevanagari || panchang.tithi.current.name}
                 </Text>
-              </View>
-              <Text style={styles.alignmentCardTitle} numberOfLines={1}>
-                {userProfile.gotra ? `${userProfile.gotra} गोत्र` : isHi ? 'वैदिक संकल्प' : 'Vedic Vow'}
-              </Text>
-              <Text style={styles.alignmentCardSub} numberOfLines={1}>
-                {activeMasa} • {panchang.tithi.current.nameDevanagari || panchang.tithi.current.name}
-              </Text>
-              <View style={styles.alignmentCardFooter}>
-                <Text style={styles.alignmentCardAction}>
-                  {isHi ? 'सङ्कल्प लें →' : 'Recite Vow →'}
-                </Text>
-                <Ionicons name="arrow-forward" size={13} color="#b45309" />
-              </View>
-            </TouchableOpacity>
+                <View style={styles.alignmentCardFooter}>
+                  <Text style={styles.alignmentCardAction}>
+                    {isHi ? 'सङ्कल्प लें →' : 'Recite Vow →'}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={13} color="#b45309" />
+                </View>
+              </TouchableOpacity>
+            </TourTarget>
           </View>
 
           {/* Daily Satvik Rashi Guidance (Vedic Gochara & Remedies) */}
-          <DailyRashiCard
-            moonRashiIndex={panchang.moonRashi?.current?.index ?? 0}
-            savedRashiIndex={userProfile.rashi}
-            onSaveRashi={handleSaveRashi}
-            isHi={isHi}
-            hapticsEnabled={userProfile.hapticsEnabled}
-          />
+          <TourTarget targetId="daily-rashi-card" borderRadius={22}>
+            <DailyRashiCard
+              moonRashiIndex={panchang.moonRashi?.current?.index ?? 0}
+              savedRashiIndex={userProfile.rashi}
+              onSaveRashi={handleSaveRashi}
+              isHi={isHi}
+              hapticsEnabled={userProfile.hapticsEnabled}
+            />
+          </TourTarget>
 
           {/* ========================================================= */}
           {/* 4. THE HEART: HINDU DAY PLANNER (Front & Center!)         */}
@@ -1598,24 +1740,27 @@ const styles = StyleSheet.create({
 
   // Header Bar
   headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
     backgroundColor: 'transparent',
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   avatarContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#f59e0b',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
   },
   avatarInner: {
@@ -1624,35 +1769,40 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   avatarGlyph: {
-    fontSize: 19,
+    fontSize: 18,
   },
   greetingContainer: {
     flex: 1,
     marginLeft: 10,
-    backgroundColor: 'transparent',
+    marginRight: 6,
+    justifyContent: 'center',
   },
   greetingTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
     color: '#18181b',
-    letterSpacing: -0.3,
-  },
-  greetingSubtitle: {
-    fontSize: 12,
-    color: '#71717a',
-    marginTop: 2,
-    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   headerActionsGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: 'transparent',
   },
+  helpActionBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(217, 119, 6, 0.2)',
+  },
   langActionBtn: {
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#fff7ed',
     borderWidth: 1,
     borderColor: '#fed7aa',
@@ -1665,9 +1815,9 @@ const styles = StyleSheet.create({
     color: '#ea580c',
   },
   bellActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#fffbeb',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1680,23 +1830,71 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   whatsAppShareBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#25d366', // Authentic WhatsApp Green
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#16a34a',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
   },
   whatsAppShareBtnText: {
     color: '#ffffff',
     fontSize: 11,
     fontWeight: '700',
+  },
+  headerSubBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    shadowColor: '#ea580c',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  subBarPanchang: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+  },
+  subBarDateText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#3f3f46',
+  },
+  subBarBullet: {
+    fontSize: 11,
+    color: '#cbd5e1',
+    marginHorizontal: 5,
+  },
+  subBarTithiText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#d97706',
+  },
+  subBarLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 0,
+    marginLeft: 8,
+  },
+  subBarLocationText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#71717a',
+    maxWidth: 100,
   },
   cityActionBtn: {
     width: 36,

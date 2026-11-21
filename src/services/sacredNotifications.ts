@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { AndroidImportance } from 'expo-notifications';
 import { PanchangData, GeoLocation } from '@/src/core/panchang/types';
 import { calculatePanchang } from '@/src/core/panchang';
 import { PRESET_CITIES } from '@/src/core/panchang/constants';
@@ -28,7 +29,7 @@ export async function ensureOfflineNotificationChannels(): Promise<void> {
     await Notifications.setNotificationChannelAsync('sacred_muhurta_alerts', {
       name: 'सनातन मुहूर्त अलर्ट / Sacred Muhurta Alerts',
       description: 'अभिजित, ब्रह्म मुहूर्त एवं शुभ चौघड़िया अलर्ट',
-      importance: Notifications.AndroidImportance.HIGH,
+      importance: AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#b45309',
       sound: 'default',
@@ -40,7 +41,7 @@ export async function ensureOfflineNotificationChannels(): Promise<void> {
     await Notifications.setNotificationChannelAsync('sacred_caution_alerts', {
       name: 'राहु काल पूर्व-चेतावनी / Rahu Kaal Caution',
       description: 'राहु काल आरम्भ होने से पूर्व की सावधानी सूचनाएं',
-      importance: Notifications.AndroidImportance.MAX,
+      importance: AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500],
       lightColor: '#dc2626',
       sound: 'default',
@@ -52,7 +53,7 @@ export async function ensureOfflineNotificationChannels(): Promise<void> {
     await Notifications.setNotificationChannelAsync('sacred_todo_alerts', {
       name: 'दिनचर्या कार्य अलर्ट / Day Planner To-Dos',
       description: 'प्रत्येक मुहूर्त स्लॉट में नियोजित कार्यों की सूचना',
-      importance: Notifications.AndroidImportance.HIGH,
+      importance: AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#15803d',
       sound: 'default',

@@ -1,10 +1,6 @@
 import {
   GeoLocation,
   PanchangData,
-  TithiDetails,
-  NakshatraDetails,
-  YogaDetails,
-  KaranaDetails,
   VaraDetails,
 } from '../panchang/types';
 import { AyanamsaSystem } from '../panchang/ayanamsa';

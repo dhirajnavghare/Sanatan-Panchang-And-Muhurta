@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Linking, Modal, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -23,12 +23,28 @@ import { scheduleDailySacredReminders } from '@/src/services/sacredNotifications
 import { calculatePanchang, PRESET_CITIES } from '@/src/core/panchang';
 import { getDayPlans } from '@/src/services/dayplanner';
 import { getDateKey } from '@/src/services/sadhana';
+import { useTour } from '@/src/services/appTourContext';
+import { TourTarget } from '@/src/components/TourTarget';
 
 type MoreSection = 'temples' | 'devatas' | 'vrat_katha';
 
 export default function MoreScreen() {
   const { language, calendarSystem } = useLanguage();
   const isHi = language === 'hi';
+  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+
+  // Auto-scroll to spotlighted pilgrimage elements during guided tour
+  useEffect(() => {
+    if (isInteractiveTourActive && currentTourStep) {
+      if (
+        currentTourStep.targetTestID === 'more-tab-temples' ||
+        currentTourStep.targetTestID === 'more-tab-devatas'
+      ) {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }
+    }
+  }, [isInteractiveTourActive, currentTourStep]);
 
   const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -105,7 +121,7 @@ export default function MoreScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
       {/* Sacred Devotee Profile Banner */}
       <View style={styles.profileBanner}>
         <View style={styles.profileAvatarBox}>
@@ -124,18 +140,30 @@ export default function MoreScreen() {
             </Text>
           ) : null}
         </View>
-        <TouchableOpacity
-          testID="more-edit-profile-btn"
-          style={styles.editProfilePill}
-          onPress={async () => {
-            await triggerHaptic('tap', userProfile.hapticsEnabled);
-            setIsProfileModalOpen(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="create-outline" size={15} color="#b45309" />
-          <Text style={styles.editProfilePillText}>{isHi ? 'बदलें' : 'Edit'}</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <TouchableOpacity
+            testID="more-edit-profile-btn"
+            style={styles.editProfilePill}
+            onPress={async () => {
+              await triggerHaptic('tap', userProfile.hapticsEnabled);
+              setIsProfileModalOpen(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="create-outline" size={15} color="#b45309" />
+            <Text style={styles.editProfilePillText}>{isHi ? 'बदलें' : 'Edit'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            testID="more-help-btn"
+            style={styles.helpBtn}
+            onPress={() => openHelp('more')}
+            accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="help-circle-outline" size={18} color="#b45309" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Quick Navigation to Settings Tab */}
@@ -174,17 +202,37 @@ export default function MoreScreen() {
           { id: 'vrat_katha' as const, labelHi: '📖 व्रत कथा', labelEn: '📖 Vrat Katha' },
         ].map((tab) => {
           const isActive = activeSection === tab.id;
-          return (
+          const tabNode = (
             <TouchableOpacity
               key={tab.id}
               testID={`more-tab-${tab.id}`}
-              style={[styles.featureTab, isActive && styles.featureTabActive]}
+              style={[styles.featureTab, { width: '100%' }, isActive && styles.featureTabActive]}
               onPress={() => handleSectionSelect(tab.id)}
             >
               <Text style={[styles.featureTabText, isActive && styles.featureTabTextActive]}>
                 {isHi ? tab.labelHi : tab.labelEn}
               </Text>
             </TouchableOpacity>
+          );
+
+          if (tab.id === 'temples') {
+            return (
+              <TourTarget key={tab.id} targetId="more-tab-temples" borderRadius={14} style={{ flex: 1 }}>
+                {tabNode}
+              </TourTarget>
+            );
+          }
+          if (tab.id === 'devatas') {
+            return (
+              <TourTarget key={tab.id} targetId="more-tab-devatas" borderRadius={14} style={{ flex: 1 }}>
+                {tabNode}
+              </TourTarget>
+            );
+          }
+          return (
+            <View key={tab.id} style={{ flex: 1 }}>
+              {tabNode}
+            </View>
           );
         })}
       </View>
@@ -679,6 +727,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#b45309',
+  },
+  helpBtn: {
+    padding: 6,
+    borderRadius: Radius.pill,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   settingsCard: {
     backgroundColor: '#ffffff',

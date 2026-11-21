@@ -1,0 +1,27 @@
+name: ✨ Feature Request
+description: Propose a new feature, stotra, prayer, or architectural enhancement.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We welcome feature ideas that align with our 100% offline-first and spiritually authentic philosophy!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Missing Capability
+      description: Is your feature request related to a problem or missing spiritual functionality?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / Experience
+      description: Describe what you would like to happen and how it benefits devotees.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context or Shastra References
+      description: Any scriptures, images, or examples to support your proposal.

@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
 import { triggerHaptic } from '@/src/services/sacredAudio';
+import { useTour } from '@/src/services/appTourContext';
 
 export interface AppTourModalProps {
   visible: boolean;
@@ -119,6 +120,7 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { startTour } = useTour();
 
   if (!visible) return null;
 
@@ -217,6 +219,23 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
                 {isHi ? currentSlide.highlightHi : currentSlide.highlight}
               </Text>
             </View>
+
+            {/* Live Interactive Tour Callout Button */}
+            <TouchableOpacity
+              testID="tour-start-interactive-btn"
+              style={styles.liveTourBtn}
+              onPress={() => {
+                triggerHaptic('tap').catch(() => {});
+                onClose();
+                startTour(0);
+              }}
+              activeOpacity={0.88}
+            >
+              <Ionicons name="compass" size={17} color="#ffffff" style={{ marginRight: 6 }} />
+              <Text style={styles.liveTourBtnText}>
+                {isHi ? '🚀 संपूर्ण लाइव ऐप टूर देखें' : '🚀 Start Live Guided Tour'}
+              </Text>
+            </TouchableOpacity>
           </ScrollView>
 
           {/* Footer: Indicator Dots & Action Buttons */}
@@ -417,6 +436,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#047857',
     textAlign: 'center',
+  },
+  liveTourBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#d97706',
+    borderRadius: Radius.lg,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginTop: 10,
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  liveTourBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   footerContainer: {
     marginTop: 12,

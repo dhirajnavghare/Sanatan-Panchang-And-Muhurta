@@ -8,6 +8,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useColorScheme } from '@/components/useColorScheme';
 import { LanguageProvider } from '@/src/core/i18n/LanguageContext';
 import { runStartupDiagnostics } from '@/src/services/startupDiagnostics';
+import { TourProvider } from '@/src/services/appTourContext';
+import { InteractiveTourOverlay } from '@/src/components/InteractiveTourOverlay';
+import { ContextualHelpModal } from '@/src/components/ContextualHelpModal';
 
 export {
   ErrorBoundary,
@@ -56,7 +59,11 @@ export default function RootLayout() {
 
   return (
     <LanguageProvider>
-      <RootLayoutNav />
+      <TourProvider>
+        <RootLayoutNav />
+        <InteractiveTourOverlay />
+        <ContextualHelpModal />
+      </TourProvider>
     </LanguageProvider>
   );
 }

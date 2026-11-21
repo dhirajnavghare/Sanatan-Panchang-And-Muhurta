@@ -18,16 +18,13 @@ import { calculateUpcomingFestivals } from '../core/panchang/festivals';
 import { buildDayPlannerSlots, getLiveCosmicStatus } from './dayplanner';
 import {
   WEEKDAY_DEVATAS,
-  SACRED_DAILY_VERSES,
   generateDailySankalpa,
-  getCurrentSpiritualPeriod,
 } from './dinacharya';
 import { DAILY_SADHANA_HABITS } from './sadhana';
 import {
   DEFAULT_USER_PROFILE,
   POPULAR_GOTRAS,
   POPULAR_ISHTA_DEVATAS,
-  loadUserLocation,
 } from './userProfile';
 import { getOfflineCapabilityReport } from './sacredNotifications';
 

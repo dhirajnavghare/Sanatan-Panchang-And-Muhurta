@@ -9,10 +9,28 @@ import { Palette, Radius, Spacing } from '@/constants/Colors';
 import { JapaMalaView } from '@/src/components/JapaMalaView';
 import { playTempleBell, playShankhNaad, triggerHaptic } from '@/src/services/sacredAudio';
 import { loadUserProfile, UserSacredProfile, DEFAULT_USER_PROFILE } from '@/src/services/userProfile';
+import { useTour } from '@/src/services/appTourContext';
+import { TourTarget } from '@/src/components/TourTarget';
 
 export default function PrayersScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
+  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+
+  // Auto-scroll to spotlighted prayer elements during guided tour
+  useEffect(() => {
+    if (isInteractiveTourActive && currentTourStep) {
+      if (currentTourStep.targetTestID === 'chant-play-toggle-btn') {
+        scrollRef.current?.scrollTo({ y: 220, animated: true });
+      } else if (
+        currentTourStep.targetTestID === 'prayer-pill-hanuman-chalisa' ||
+        currentTourStep.targetTestID === 'prayers-shankh-btn'
+      ) {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }
+    }
+  }, [isInteractiveTourActive, currentTourStep]);
 
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRecord>(PRAYERS_DATA[0]);
   const [fontSizeOffset, setFontSizeOffset] = useState<number>(0);
@@ -130,6 +148,7 @@ export default function PrayersScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -140,7 +159,7 @@ export default function PrayersScreen() {
           {PRAYERS_DATA.map((p) => {
             const isSelected = p.id === selectedPrayer.id;
             const icon = prayerIcons[p.id] || '🕉️';
-            return (
+            const pillNode = (
               <TouchableOpacity
                 key={p.id}
                 testID={`prayer-pill-${p.id}`}
@@ -155,6 +174,14 @@ export default function PrayersScreen() {
                   {isHi ? p.titleDevanagari : p.title}
                 </Text>
               </TouchableOpacity>
+            );
+
+            return p.id === 'hanuman-chalisa' ? (
+              <TourTarget key={p.id} targetId="prayer-pill-hanuman-chalisa" borderRadius={20}>
+                {pillNode}
+              </TourTarget>
+            ) : (
+              pillNode
             );
           })}
         </ScrollView>
@@ -185,17 +212,29 @@ export default function PrayersScreen() {
               <Text style={styles.soundBtnText}>{isHi ? 'मन्दिर घंटी नाद' : 'Ring Mandir Bell'}</Text>
             </TouchableOpacity>
 
+            <TourTarget targetId="prayers-shankh-btn" borderRadius={18} style={{ flex: 1 }}>
+              <TouchableOpacity
+                testID="prayers-shankh-btn"
+                style={[styles.soundBtn, { width: '100%' }]}
+                onPress={async () => {
+                  await triggerHaptic('heavy', userProfile.hapticsEnabled);
+                  playShankhNaad(1.0);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.soundBtnIcon}>🐚</Text>
+                <Text style={styles.soundBtnText}>{isHi ? 'पवित्र शंख नाद' : 'Auspicious Shankha'}</Text>
+              </TouchableOpacity>
+            </TourTarget>
+
             <TouchableOpacity
-              testID="prayers-shankh-btn"
-              style={styles.soundBtn}
-              onPress={async () => {
-                await triggerHaptic('heavy', userProfile.hapticsEnabled);
-                playShankhNaad(1.0);
-              }}
+              testID="prayers-help-btn"
+              style={styles.helpBtn}
+              onPress={() => openHelp('prayers')}
+              accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
               activeOpacity={0.7}
             >
-              <Text style={styles.soundBtnIcon}>🐚</Text>
-              <Text style={styles.soundBtnText}>{isHi ? 'पवित्र शंख नाद' : 'Auspicious Shankha'}</Text>
+              <Ionicons name="help-circle-outline" size={20} color={Palette.textSecondaryLight} />
             </TouchableOpacity>
           </View>
 
@@ -252,23 +291,25 @@ export default function PrayersScreen() {
 
             {/* Chanting Action Buttons */}
             <View style={styles.chantActionRow}>
-              <TouchableOpacity
-                testID="chant-play-toggle-btn"
-                style={[styles.chantPlayBtn, isPlayingChant && styles.chantPlayBtnActive]}
-                onPress={handleToggleChant}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={isPlayingChant ? 'pause' : 'play'}
-                  size={18}
-                  color="#ffffff"
-                />
-                <Text style={styles.chantPlayBtnText}>
-                  {isPlayingChant
-                    ? (isHi ? 'विराम (Pause)' : 'Pause Chanting')
-                    : (isHi ? `पाठ प्रारंभ करें (${targetLoops} बार)` : `Start Chanting (${targetLoops}x)`)}
-                </Text>
-              </TouchableOpacity>
+              <TourTarget targetId="chant-play-toggle-btn" borderRadius={18} style={{ flex: 1 }}>
+                <TouchableOpacity
+                  testID="chant-play-toggle-btn"
+                  style={[styles.chantPlayBtn, { width: '100%' }, isPlayingChant && styles.chantPlayBtnActive]}
+                  onPress={handleToggleChant}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={isPlayingChant ? 'pause' : 'play'}
+                    size={18}
+                    color="#ffffff"
+                  />
+                  <Text style={styles.chantPlayBtnText}>
+                    {isPlayingChant
+                      ? (isHi ? 'विराम (Pause)' : 'Pause Chanting')
+                      : (isHi ? `पाठ प्रारंभ करें (${targetLoops} बार)` : `Start Chanting (${targetLoops}x)`)}
+                  </Text>
+                </TouchableOpacity>
+              </TourTarget>
 
               {(isPlayingChant || completedLoops > 0) && (
                 <TouchableOpacity
@@ -689,6 +730,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#92400e',
+  },
+  helpBtn: {
+    paddingHorizontal: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // Verses
