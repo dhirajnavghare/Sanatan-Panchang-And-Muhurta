@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Radius, Spacing } from '@/constants/Colors';
 import { triggerHaptic, playTempleBell } from '@/src/services/sacredAudio';
 
 interface JapaMalaViewProps {

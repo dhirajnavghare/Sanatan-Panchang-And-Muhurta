@@ -4,13 +4,11 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { calculatePanchang, GeoLocation, PanchangData } from '@/src/core/panchang';
+import { calculatePanchang, GeoLocation } from '@/src/core/panchang';
 import { triggerHaptic } from '@/src/services/sacredAudio';
-import { Palette, Radius, Spacing } from '@/constants/Colors';
+import { Radius, Spacing } from '@/constants/Colors';
 
 interface MonthlyCalendarGridProps {
   currentDate: Date;

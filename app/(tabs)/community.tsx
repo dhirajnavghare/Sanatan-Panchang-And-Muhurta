@@ -53,8 +53,6 @@ export default function CommunityScreen() {
   const [isContributorsLoading, setIsContributorsLoading] = useState(true);
   const [contributorsError, setContributorsError] = useState<string | null>(null);
 
-  // User Profile
-  const [profileName, setProfileName] = useState('');
 
   // 1. Feedback Form State
   const [feedbackRating, setFeedbackRating] = useState<number>(5);
@@ -79,7 +77,6 @@ export default function CommunityScreen() {
   useEffect(() => {
     loadUserProfile().then((prof) => {
       if (prof?.name && prof.name !== 'साधक' && prof.name !== 'Sadhaka') {
-        setProfileName(prof.name);
         setFeedbackName(prof.name);
         setIssueName(prof.name);
       }

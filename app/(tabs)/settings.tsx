@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -37,10 +37,29 @@ import {
 import { calculatePanchang, PRESET_CITIES } from '@/src/core/panchang';
 import { getDayPlans } from '@/src/services/dayplanner';
 import { getDateKey } from '@/src/services/sadhana';
+import { useTour } from '@/src/services/appTourContext';
+import { TourTarget } from '@/src/components/TourTarget';
 
 export default function SettingsScreen() {
   const { language, setLanguage, calendarSystem, setCalendarSystem } = useLanguage();
   const isHi = language === 'hi';
+  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+
+  // Auto-scroll to spotlighted settings items during guided tour
+  useEffect(() => {
+    if (isInteractiveTourActive && currentTourStep) {
+      if (currentTourStep.targetTestID === 'settings-replay-tour-btn') {
+        scrollRef.current?.scrollTo({ y: 340, animated: true });
+      } else if (currentTourStep.targetTestID === 'notif-master-switch') {
+        scrollRef.current?.scrollTo({ y: 220, animated: true });
+      } else if (currentTourStep.targetTestID === 'settings-meridian-btn') {
+        scrollRef.current?.scrollTo({ y: 120, animated: true });
+      } else if (currentTourStep.targetTestID === 'settings-edit-profile-btn') {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }
+    }
+  }, [isInteractiveTourActive, currentTourStep]);
 
   const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
   const [userLocation, setUserLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
@@ -197,7 +216,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
       {/* 1. Devotee Sacred Profile Banner */}
       <View style={styles.profileBanner}>
         <View style={styles.profileAvatarBox}>
@@ -216,18 +235,32 @@ export default function SettingsScreen() {
             </Text>
           ) : null}
         </View>
-        <TouchableOpacity
-          testID="settings-edit-profile-btn"
-          style={styles.editProfilePill}
-          onPress={async () => {
-            await triggerHaptic('tap', userProfile.hapticsEnabled);
-            setIsProfileModalOpen(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="create-outline" size={15} color="#b45309" />
-          <Text style={styles.editProfilePillText}>{isHi ? 'बदलें' : 'Edit'}</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <TourTarget targetId="settings-edit-profile-btn" borderRadius={18}>
+            <TouchableOpacity
+              testID="settings-edit-profile-btn"
+              style={styles.editProfilePill}
+              onPress={async () => {
+                await triggerHaptic('tap', userProfile.hapticsEnabled);
+                setIsProfileModalOpen(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="create-outline" size={15} color="#b45309" />
+              <Text style={styles.editProfilePillText}>{isHi ? 'बदलें' : 'Edit'}</Text>
+            </TouchableOpacity>
+          </TourTarget>
+
+          <TouchableOpacity
+            testID="settings-help-btn"
+            style={styles.helpBtn}
+            onPress={() => openHelp('settings')}
+            accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="help-circle-outline" size={18} color="#b45309" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 2. General Preferences & Regional System */}
@@ -313,53 +346,57 @@ export default function SettingsScreen() {
         </View>
 
         {/* Prime Meridian & Location Selection */}
-        <TouchableOpacity
-          testID="settings-meridian-btn"
-          style={styles.settingRow}
-          onPress={async () => {
-            await triggerHaptic('tap', userProfile.hapticsEnabled);
-            setIsCityModalVisible(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <View style={{ backgroundColor: 'transparent', flex: 1, marginRight: 8 }}>
-            <Text style={styles.settingTitle}>
-              {isHi ? 'प्रधान देशान्तर एवं नगर (Meridian)' : 'Prime Meridian & City Location'}
-            </Text>
-            <Text style={styles.settingDesc} numberOfLines={1}>
-              📍 {userLocation.name} ({userLocation.latitude.toFixed(2)}°, {userLocation.longitude.toFixed(2)}°)
-            </Text>
-          </View>
-          <View style={styles.meridianPill}>
-            <Ionicons name="compass-outline" size={16} color="#b45309" />
-            <Text style={styles.meridianPillText}>
-              {isHi ? 'बदलें' : 'Change'}
-            </Text>
-          </View>
-        </TouchableOpacity>
+        <TourTarget targetId="settings-meridian-btn" borderRadius={14}>
+          <TouchableOpacity
+            testID="settings-meridian-btn"
+            style={styles.settingRow}
+            onPress={async () => {
+              await triggerHaptic('tap', userProfile.hapticsEnabled);
+              setIsCityModalVisible(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={{ backgroundColor: 'transparent', flex: 1, marginRight: 8 }}>
+              <Text style={styles.settingTitle}>
+                {isHi ? 'प्रधान देशान्तर एवं नगर (Meridian)' : 'Prime Meridian & City Location'}
+              </Text>
+              <Text style={styles.settingDesc} numberOfLines={1}>
+                📍 {userLocation.name} ({userLocation.latitude.toFixed(2)}°, {userLocation.longitude.toFixed(2)}°)
+              </Text>
+            </View>
+            <View style={styles.meridianPill}>
+              <Ionicons name="compass-outline" size={16} color="#b45309" />
+              <Text style={styles.meridianPillText}>
+                {isHi ? 'बदलें' : 'Change'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </TourTarget>
 
         {/* Replay App Tour */}
-        <TouchableOpacity
-          testID="settings-replay-tour-btn"
-          style={[styles.settingRow, { borderBottomWidth: 0, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f4f4f5' }]}
-          onPress={async () => {
-            await triggerHaptic('tap', userProfile.hapticsEnabled);
-            setIsTourModalOpen(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <View style={{ backgroundColor: 'transparent', flex: 1, marginRight: 8 }}>
-            <Text style={styles.settingTitle}>
-              {isHi ? '🧭 ऐप का परिचय / पुनः टूर देखें' : '🧭 Take App Walkthrough Tour'}
-            </Text>
-            <Text style={styles.settingDesc}>
-              {isHi
-                ? 'सनातन दिनचर्या, मुहूर्त प्लानर व सभी सुविधाओं का संक्षिप्त गाइड'
-                : 'Interactive guide to Dinacharya, Muhurta Planner & all features'}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#b45309" />
-        </TouchableOpacity>
+        <TourTarget targetId="settings-replay-tour-btn" borderRadius={14}>
+          <TouchableOpacity
+            testID="settings-replay-tour-btn"
+            style={[styles.settingRow, { borderBottomWidth: 0, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f4f4f5' }]}
+            onPress={async () => {
+              await triggerHaptic('tap', userProfile.hapticsEnabled);
+              setIsTourModalOpen(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={{ backgroundColor: 'transparent', flex: 1, marginRight: 8 }}>
+              <Text style={styles.settingTitle}>
+                {isHi ? '🧭 ऐप का परिचय / पुनः टूर देखें' : '🧭 Take App Walkthrough Tour'}
+              </Text>
+              <Text style={styles.settingDesc}>
+                {isHi
+                  ? 'सनातन दिनचर्या, मुहूर्त प्लानर व सभी सुविधाओं का संक्षिप्त गाइड'
+                  : 'Interactive guide to Dinacharya, Muhurta Planner & all features'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#b45309" />
+          </TouchableOpacity>
+        </TourTarget>
       </View>
 
       {/* 3. Notification & Cosmic Alerts Section */}
@@ -375,13 +412,15 @@ export default function SettingsScreen() {
                 : 'Phone panel alerts for active Muhurtas & scheduled To-Dos'}
             </Text>
           </View>
-          <Switch
-            testID="notif-master-switch"
-            value={userProfile.notificationsEnabled}
-            onValueChange={handleToggleMasterNotifications}
-            trackColor={{ false: '#e4e4e7', true: '#bbf7d0' }}
-            thumbColor={userProfile.notificationsEnabled ? '#15803d' : '#f4f4f5'}
-          />
+          <TourTarget targetId="notif-master-switch" borderRadius={16}>
+            <Switch
+              testID="notif-master-switch"
+              value={userProfile.notificationsEnabled}
+              onValueChange={handleToggleMasterNotifications}
+              trackColor={{ false: '#e4e4e7', true: '#bbf7d0' }}
+              thumbColor={userProfile.notificationsEnabled ? '#15803d' : '#f4f4f5'}
+            />
+          </TourTarget>
         </View>
 
         {userProfile.notificationsEnabled && (
@@ -900,6 +939,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#b45309',
+  },
+  helpBtn: {
+    padding: 6,
+    borderRadius: Radius.pill,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   settingsCard: {
     backgroundColor: '#ffffff',

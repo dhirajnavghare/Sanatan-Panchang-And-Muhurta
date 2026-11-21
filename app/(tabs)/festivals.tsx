@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, ScrollView, TextInput, TouchableOpacity, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getFestivalTimeline } from '@/src/core/festivals/timeline';
@@ -9,13 +9,29 @@ import {
 } from '@/src/core/festivals/types';
 import { PRESET_CITIES } from '@/src/core/panchang';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
-import { cleanBilingualTitle, cleanPujaMuhurta } from '@/src/core/i18n/formatters';
+import { cleanPujaMuhurta } from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
+import { useTour } from '@/src/services/appTourContext';
+import { TourTarget } from '@/src/components/TourTarget';
 
 export default function FestivalsScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
+  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+
+  // Auto-scroll to spotlighted festival elements during guided tour
+  useEffect(() => {
+    if (isInteractiveTourActive && currentTourStep) {
+      if (
+        currentTourStep.targetTestID === 'festival-search-input' ||
+        currentTourStep.targetTestID === 'category-chip-all'
+      ) {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }
+    }
+  }, [isInteractiveTourActive, currentTourStep]);
 
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,6 +98,7 @@ export default function FestivalsScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -89,47 +106,59 @@ export default function FestivalsScreen() {
     >
       {/* Top Year Switcher & Search Bar */}
       <View style={styles.topControls}>
-        {/* Year Pills */}
-        <View style={styles.yearRow}>
-          {[2025, 2026, 2027].map((y) => (
-            <TouchableOpacity
-              key={y}
-              testID={`year-btn-${y}`}
-              style={[styles.yearBtn, year === y && styles.yearBtnActive]}
-              onPress={() => handleYearSelect(y)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.yearText, year === y && styles.yearTextActive]}>
-                {y}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.topHeaderRow}>
+          {/* Year Pills */}
+          <View style={styles.yearRow}>
+            {[2025, 2026, 2027].map((y) => (
+              <TouchableOpacity
+                key={y}
+                testID={`year-btn-${y}`}
+                style={[styles.yearBtn, year === y && styles.yearBtnActive]}
+                onPress={() => handleYearSelect(y)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.yearText, year === y && styles.yearTextActive]}>
+                  {y}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TouchableOpacity
+            testID="festivals-help-btn"
+            onPress={() => openHelp('festivals')}
+            style={styles.helpBtn}
+            accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
+          >
+            <Ionicons name="help-circle-outline" size={20} color={Palette.textSecondaryLight} />
+          </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color="#71717a" />
-          <TextInput
-            testID="festival-search-input"
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={
-              isHi ? 'पर्व, व्रत अथवा देवता खोजें...' : 'Search festivals, fasts, deities...'
-            }
-            placeholderTextColor="#a1a1aa"
-            returnKeyType="search"
-          />
-          {searchQuery ? (
-            <TouchableOpacity
-              testID="clear-search-icon"
-              onPress={() => setSearchQuery('')}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="close-circle" size={18} color="#71717a" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        <TourTarget targetId="festival-search-input" borderRadius={18}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color="#71717a" />
+            <TextInput
+              testID="festival-search-input"
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={
+                isHi ? 'पर्व, व्रत अथवा देवता खोजें...' : 'Search festivals, fasts, deities...'
+              }
+              placeholderTextColor="#a1a1aa"
+              returnKeyType="search"
+            />
+            {searchQuery ? (
+              <TouchableOpacity
+                testID="clear-search-icon"
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={18} color="#71717a" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </TourTarget>
       </View>
 
       {/* Category Filter Chips */}
@@ -137,7 +166,7 @@ export default function FestivalsScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 2 }}>
           {categories.map((c) => {
             const isSelected = selectedCategory === c.id;
-            return (
+            const chipNode = (
               <TouchableOpacity
                 key={c.id}
                 testID={`category-chip-${c.id}`}
@@ -150,6 +179,14 @@ export default function FestivalsScreen() {
                   {isHi ? c.labelHi : c.labelEn}
                 </Text>
               </TouchableOpacity>
+            );
+
+            return c.id === 'all' ? (
+              <TourTarget key={c.id} targetId="category-chip-all" borderRadius={16}>
+                {chipNode}
+              </TourTarget>
+            ) : (
+              chipNode
             );
           })}
         </ScrollView>
@@ -368,7 +405,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     gap: Spacing.sm,
   },
+  topHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  helpBtn: {
+    padding: 7,
+    borderRadius: Radius.pill,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   yearRow: {
+    flex: 1,
     flexDirection: 'row',
     backgroundColor: '#f4f4f5',
     borderRadius: Radius.md,

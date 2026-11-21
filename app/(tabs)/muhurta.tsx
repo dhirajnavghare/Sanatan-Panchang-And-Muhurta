@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, FlatList, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MUHURTA_CATEGORIES } from '@/src/core/muhurta-finder/categories';
@@ -9,10 +9,27 @@ import { useLanguage } from '@/src/core/i18n/LanguageContext';
 import { cleanBilingualTitle } from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
+import { useTour } from '@/src/services/appTourContext';
+import { TourTarget } from '@/src/components/TourTarget';
 
 export default function MuhurtaScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
+  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+
+  // Auto-scroll to spotlighted muhurta elements during guided tour
+  useEffect(() => {
+    if (isInteractiveTourActive && currentTourStep) {
+      if (currentTourStep.targetTestID === 'days-pill-30') {
+        scrollRef.current?.scrollTo({ y: 160, animated: true });
+      } else if (currentTourStep.targetTestID === 'muhurta-inauspicious-card') {
+        scrollRef.current?.scrollTo({ y: 60, animated: true });
+      } else if (currentTourStep.targetTestID === 'category-pill-griha_pravesh') {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }
+    }
+  }, [isInteractiveTourActive, currentTourStep]);
 
   const [selectedCategory, setSelectedCategory] = useState<MuhurtaCategoryId>('griha_pravesh');
   const [daysCount, setDaysCount] = useState<30 | 60 | 90>(60);
@@ -94,6 +111,7 @@ export default function MuhurtaScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -108,7 +126,7 @@ export default function MuhurtaScreen() {
           contentContainerStyle={{ paddingHorizontal: 2 }}
           renderItem={({ item }) => {
             const isSelected = item.id === selectedCategory;
-            return (
+            const pillNode = (
               <TouchableOpacity
                 testID={`category-pill-${item.id}`}
                 style={[styles.categoryPill, isSelected && styles.categoryPillSelected]}
@@ -121,6 +139,14 @@ export default function MuhurtaScreen() {
                 </Text>
               </TouchableOpacity>
             );
+
+            return item.id === 'griha_pravesh' ? (
+              <TourTarget key={item.id} targetId="category-pill-griha_pravesh" borderRadius={24}>
+                {pillNode}
+              </TourTarget>
+            ) : (
+              pillNode
+            );
           }}
         />
       </View>
@@ -131,9 +157,19 @@ export default function MuhurtaScreen() {
           <Text style={styles.bannerTitle}>
             {isHi ? activeCategoryMeta.titleDevanagari : activeCategoryMeta.title}
           </Text>
-          <View style={styles.cityBadge}>
-            <Ionicons name="location-sharp" size={11} color={Palette.primary} />
-            <Text style={styles.cityBadgeText}>{PRESET_CITIES[0].name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={styles.cityBadge}>
+              <Ionicons name="location-sharp" size={11} color={Palette.primary} />
+              <Text style={styles.cityBadgeText}>{PRESET_CITIES[0].name}</Text>
+            </View>
+            <TouchableOpacity
+              testID="muhurta-help-btn"
+              onPress={() => openHelp('muhurta')}
+              style={styles.helpBtn}
+              accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
+            >
+              <Ionicons name="help-circle-outline" size={18} color={Palette.textSecondaryLight} />
+            </TouchableOpacity>
           </View>
         </View>
         <Text style={styles.bannerDesc}>{activeCategoryMeta.description}</Text>
@@ -145,72 +181,86 @@ export default function MuhurtaScreen() {
       </View>
 
       {/* Today's Inauspicious & Avoidable Windows */}
-      <View style={styles.inauspiciousCard} testID="muhurta-inauspicious-card">
-        <View style={styles.inauspiciousHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 13 }}>⚠️</Text>
-            <Text style={styles.inauspiciousTitle}>
-              {isHi ? 'आज के त्याज्य व अशुभ काल' : "Today's Inauspicious Windows"}
+      <TourTarget targetId="muhurta-inauspicious-card" borderRadius={20}>
+        <View style={styles.inauspiciousCard} testID="muhurta-inauspicious-card">
+          <View style={styles.inauspiciousHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 13 }}>⚠️</Text>
+              <Text style={styles.inauspiciousTitle}>
+                {isHi ? 'आज के त्याज्य व अशुभ काल' : "Today's Inauspicious Windows"}
+              </Text>
+            </View>
+            <Text style={styles.inauspiciousSub}>
+              {isHi ? 'आरम्भ वर्जित' : 'Avoid Beginnings'}
             </Text>
           </View>
-          <Text style={styles.inauspiciousSub}>
-            {isHi ? 'आरम्भ वर्जित' : 'Avoid Beginnings'}
-          </Text>
+
+          <View style={styles.inauspiciousRow}>
+            {/* Rahu Kaal */}
+            <View style={styles.inauspiciousItem}>
+              <Text style={styles.inauspiciousBadgeRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
+              <Text style={styles.inauspiciousTime}>
+                {formatTime(todayPanchang.muhurtas.rahuKaal.startTime)} - {formatTime(todayPanchang.muhurtas.rahuKaal.endTime)}
+              </Text>
+              <Text style={styles.inauspiciousDesc}>
+                {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
+              </Text>
+            </View>
+
+            {/* Yamagandam */}
+            <View style={styles.inauspiciousItem}>
+              <Text style={styles.inauspiciousBadgeOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
+              <Text style={styles.inauspiciousTime}>
+                {formatTime(todayPanchang.muhurtas.yamaganda.startTime)} - {formatTime(todayPanchang.muhurtas.yamaganda.endTime)}
+              </Text>
+              <Text style={styles.inauspiciousDesc}>
+                {isHi ? 'यात्रा व सौदा वर्जित' : 'Avoid deals/travel'}
+              </Text>
+            </View>
+
+            {/* Gulika Kaal */}
+            <View style={styles.inauspiciousItem}>
+              <Text style={styles.inauspiciousBadgePurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
+              <Text style={styles.inauspiciousTime}>
+                {formatTime(todayPanchang.muhurtas.gulikaKaal.startTime)} - {formatTime(todayPanchang.muhurtas.gulikaKaal.endTime)}
+              </Text>
+              <Text style={styles.inauspiciousDesc}>
+                {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
+              </Text>
+            </View>
+          </View>
         </View>
-
-        <View style={styles.inauspiciousRow}>
-          {/* Rahu Kaal */}
-          <View style={styles.inauspiciousItem}>
-            <Text style={styles.inauspiciousBadgeRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
-            <Text style={styles.inauspiciousTime}>
-              {formatTime(todayPanchang.muhurtas.rahuKaal.startTime)} - {formatTime(todayPanchang.muhurtas.rahuKaal.endTime)}
-            </Text>
-            <Text style={styles.inauspiciousDesc}>
-              {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
-            </Text>
-          </View>
-
-          {/* Yamagandam */}
-          <View style={styles.inauspiciousItem}>
-            <Text style={styles.inauspiciousBadgeOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
-            <Text style={styles.inauspiciousTime}>
-              {formatTime(todayPanchang.muhurtas.yamaganda.startTime)} - {formatTime(todayPanchang.muhurtas.yamaganda.endTime)}
-            </Text>
-            <Text style={styles.inauspiciousDesc}>
-              {isHi ? 'यात्रा व सौदा वर्जित' : 'Avoid deals/travel'}
-            </Text>
-          </View>
-
-          {/* Gulika Kaal */}
-          <View style={styles.inauspiciousItem}>
-            <Text style={styles.inauspiciousBadgePurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
-            <Text style={styles.inauspiciousTime}>
-              {formatTime(todayPanchang.muhurtas.gulikaKaal.startTime)} - {formatTime(todayPanchang.muhurtas.gulikaKaal.endTime)}
-            </Text>
-            <Text style={styles.inauspiciousDesc}>
-              {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
-            </Text>
-          </View>
-        </View>
-      </View>
+      </TourTarget>
 
       {/* Modern Filter Strip: Horizon & Quality */}
       <View style={styles.filterSection}>
         {/* Horizon Filter (30 / 60 / 90 Days) */}
         <View style={styles.segmentedFilter}>
-          {([30, 60, 90] as const).map((d) => (
-            <TouchableOpacity
-              key={d}
-              testID={`days-pill-${d}`}
-              style={[styles.segmentBtn, daysCount === d && styles.segmentBtnActive]}
-              onPress={() => handleDaysSelect(d)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.segmentText, daysCount === d && styles.segmentTextActive]}>
-                {d} {isHi ? 'दिन' : 'Days'}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {([30, 60, 90] as const).map((d) => {
+            const btnNode = (
+              <TouchableOpacity
+                key={d}
+                testID={`days-pill-${d}`}
+                style={[styles.segmentBtn, { width: '100%' }, daysCount === d && styles.segmentBtnActive]}
+                onPress={() => handleDaysSelect(d)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.segmentText, daysCount === d && styles.segmentTextActive]}>
+                  {d} {isHi ? 'दिन' : 'Days'}
+                </Text>
+              </TouchableOpacity>
+            );
+
+            return d === 30 ? (
+              <TourTarget key={d} targetId="days-pill-30" borderRadius={14} style={{ flex: 1 }}>
+                {btnNode}
+              </TourTarget>
+            ) : (
+              <View key={d} style={{ flex: 1 }}>
+                {btnNode}
+              </View>
+            );
+          })}
         </View>
 
         {/* Quality Filter (Good / Optimal) */}
@@ -502,6 +552,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#92400e',
+  },
+  helpBtn: {
+    padding: 4,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   bannerDesc: {
     fontSize: 12,

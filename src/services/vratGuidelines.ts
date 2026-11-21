@@ -1,5 +1,4 @@
 import { PanchangData, GeoLocation } from '../core/panchang/types';
-import { RASHI_NAMES, RASHI_DEVANAGARI } from '../core/panchang/constants';
 import { calculateEkadashiParana, VratParanaDetails } from './vratParana';
 
 export interface VratGuidance {
