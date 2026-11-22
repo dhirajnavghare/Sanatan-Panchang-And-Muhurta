@@ -341,13 +341,51 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
       const interactiveTarget = screen.getByTestId('tour-spotlight-interactive-target');
       expect(interactiveTarget).toBeTruthy();
 
-      // Tap spotlight target directly
+      const beaconBadge = screen.getByTestId('tour-spotlight-beacon');
+      expect(beaconBadge).toBeTruthy();
+
+      const cardTryBtn = screen.getByTestId('tour-interactive-try-btn');
+      expect(cardTryBtn).toBeTruthy();
+
+      // Tap card's Try-This button: collapses tour overlay and enters Try Mode
       await act(async () => {
-        fireEvent.press(interactiveTarget);
+        fireEvent.press(cardTryBtn);
       });
 
       // Micro-toast confirmation appears
       expect(screen.getByTestId('tour-try-success-toast')).toBeTruthy();
+
+      // Floating docked Try-Mode banner appears with continue & reopen buttons
+      const tryModeBanner = screen.getByTestId('tour-try-mode-banner');
+      expect(tryModeBanner).toBeTruthy();
+
+      const continueBtn = screen.getByTestId('tour-continue-btn');
+      expect(continueBtn).toBeTruthy();
+
+      const reopenBtn = screen.getByTestId('tour-reopen-step-btn');
+      expect(reopenBtn).toBeTruthy();
+
+      // Tap reopen to restore the explanation card
+      await act(async () => {
+        fireEvent.press(reopenBtn);
+      });
+
+      expect(screen.getByTestId('tour-step-card')).toBeTruthy();
+
+      // Tap spotlight target directly to re-enter Try Mode
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-spotlight-interactive-target'));
+      });
+
+      expect(screen.getByTestId('tour-continue-btn')).toBeTruthy();
+
+      // Tap Continue Tour button -> advances to next step (step index 1)
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-continue-btn'));
+      });
+
+      expect(screen.getByTestId('tour-step-card')).toBeTruthy();
+      expect(screen.getAllByText('१-टैप में भाषा बदलें (EN / हिं)').length).toBeGreaterThanOrEqual(1);
     });
 
     it('supports swipe gestures on guide card to advance or return', async () => {
@@ -468,6 +506,62 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
       });
 
       expect(screen.queryByTestId('interactive-tour-overlay')).toBeNull();
+    });
+
+    it('supports completing the tour from Try Mode on the final step', async () => {
+      await renderWithProviders(
+        <>
+          <TestConsumer />
+          <InteractiveTourOverlay />
+        </>
+      );
+
+      // Start tour
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('btn-start-tour'));
+      });
+
+      // Jump to Settings section (starts at step 26)
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-section-chip-settings'));
+      });
+
+      // Advance to step 29 (final step 30)
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-interactive-next-btn'));
+      });
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-interactive-next-btn'));
+      });
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-interactive-next-btn'));
+      });
+
+      // Verify on final step: finish button is shown on guide card
+      expect(screen.getByTestId('tour-interactive-finish-btn')).toBeTruthy();
+
+      // Enter Try Mode on the final step
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-interactive-try-btn'));
+      });
+
+      const continueBtn = screen.getByTestId('tour-continue-btn');
+      expect(continueBtn).toBeTruthy();
+
+      // Tap finish from Try Mode
+      await act(async () => {
+        fireEvent.press(continueBtn);
+      });
+
+      // Celebration completion card is displayed!
+      expect(screen.getByTestId('tour-celebration-finish-btn')).toBeTruthy();
+
+      // Finish celebration
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-celebration-finish-btn'));
+      });
+
+      expect(screen.queryByTestId('tour-celebration-finish-btn')).toBeNull();
     });
   });
 

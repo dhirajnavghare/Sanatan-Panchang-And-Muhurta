@@ -90,29 +90,38 @@ export default function PanchangScreen() {
   const [isShareCardModalVisible, setIsShareCardModalVisible] = useState(false);
 
   // Tour & Contextual Guidance
-  const { isInteractiveTourActive, currentTourStep, openHelp } = useTour();
+  const { isInteractiveTourActive, isTryModeActive, currentTourStep, openHelp } = useTour();
   const mainScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   // Synchronize view mode and smooth auto-scroll with active tour step
   useEffect(() => {
-    if (isInteractiveTourActive && currentTourStep) {
+    if (isInteractiveTourActive && !isTryModeActive && currentTourStep) {
       if (currentTourStep.viewMode) {
         setViewMode(currentTourStep.viewMode);
       }
       if (currentTourStep.plannerSubTab) {
         setPlannerFilter(currentTourStep.plannerSubTab);
       }
-      if (currentTourStep.targetTestID === 'daily-rashi-card') {
-        mainScrollRef.current?.scrollTo({ y: 280, animated: false });
-      } else if (currentTourStep.targetTestID === 'inauspicious-triad-card') {
-        mainScrollRef.current?.scrollTo({ y: 440, animated: false });
-      } else {
-        // Steps 1-9 (header, lang, bell, share, day-pill, view-mode, live-banner, hero, bento)
-        // and Planner tabs (core, all, planned) are completely visible at y = 0
-        mainScrollRef.current?.scrollTo({ y: 0, animated: false });
-      }
+      const targetY =
+        currentTourStep.targetTestID === 'daily-rashi-card'
+          ? 340
+          : currentTourStep.targetTestID === 'inauspicious-triad-card'
+          ? 380
+          : 0;
+
+      mainScrollRef.current?.scrollTo({ y: targetY, animated: false });
+      const r1 = requestAnimationFrame(() => {
+        mainScrollRef.current?.scrollTo({ y: targetY, animated: false });
+      });
+      const timer = setTimeout(() => {
+        mainScrollRef.current?.scrollTo({ y: targetY, animated: false });
+      }, 60);
+      return () => {
+        cancelAnimationFrame(r1);
+        clearTimeout(timer);
+      };
     }
-  }, [isInteractiveTourActive, currentTourStep]);
+  }, [isInteractiveTourActive, isTryModeActive, currentTourStep]);
 
   // First-Time App Tour state
   const [isTourModalVisible, setIsTourModalVisible] = useState(false);
@@ -875,7 +884,7 @@ export default function PanchangScreen() {
           contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top, 16) }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          scrollEnabled={!isInteractiveTourActive}
+          scrollEnabled={!isInteractiveTourActive || isTryModeActive}
         >
           {/* ========================================================= */}
           {/* TOP PROFILE, GREETING & VIRAL SHARE BAR                  */}
@@ -1078,7 +1087,7 @@ export default function PanchangScreen() {
           </View>
 
           {/* View Mode Switcher: Daily vs Planner vs Monthly Calendar Grid */}
-          <TourTarget targetId="view-mode-daily-btn" borderRadius={14}>
+          <TourTarget targetId="view-mode-daily-btn" borderRadius={14} style={{ width: '100%' }}>
             <View style={styles.viewModeSegment}>
               <TouchableOpacity
                 testID="view-mode-daily-btn"

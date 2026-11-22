@@ -18,15 +18,19 @@ import { TourTarget } from '@/src/components/TourTarget';
 export default function FestivalsScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
-  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const { openHelp, isInteractiveTourActive, isTryModeActive, currentTourStep } = useTour();
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   // Auto-scroll to spotlighted festival elements during guided tour
   useEffect(() => {
-    if (isInteractiveTourActive && currentTourStep) {
+    if (isInteractiveTourActive && !isTryModeActive && currentTourStep) {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }, 60);
+      return () => clearTimeout(timer);
     }
-  }, [isInteractiveTourActive, currentTourStep]);
+  }, [isInteractiveTourActive, isTryModeActive, currentTourStep]);
 
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,7 +102,7 @@ export default function FestivalsScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
-      scrollEnabled={!isInteractiveTourActive}
+      scrollEnabled={!isInteractiveTourActive || isTryModeActive}
     >
       {/* Top Year Switcher & Search Bar */}
       <View style={styles.topControls}>

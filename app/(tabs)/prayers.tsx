@@ -15,15 +15,19 @@ import { TourTarget } from '@/src/components/TourTarget';
 export default function PrayersScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
-  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const { openHelp, isInteractiveTourActive, isTryModeActive, currentTourStep } = useTour();
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   // Auto-scroll to spotlighted prayer elements during guided tour
   useEffect(() => {
-    if (isInteractiveTourActive && currentTourStep) {
+    if (isInteractiveTourActive && !isTryModeActive && currentTourStep) {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }, 60);
+      return () => clearTimeout(timer);
     }
-  }, [isInteractiveTourActive, currentTourStep]);
+  }, [isInteractiveTourActive, isTryModeActive, currentTourStep]);
 
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRecord>(PRAYERS_DATA[0]);
   const [fontSizeOffset, setFontSizeOffset] = useState<number>(0);
@@ -145,7 +149,7 @@ export default function PrayersScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      scrollEnabled={!isInteractiveTourActive}
+      scrollEnabled={!isInteractiveTourActive || isTryModeActive}
     >
       {/* Horizontal Prayer Selector with Emojis */}
       <View style={styles.selectorContainer}>

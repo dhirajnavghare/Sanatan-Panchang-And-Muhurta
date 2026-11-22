@@ -26,7 +26,7 @@ export const TourTarget: React.FC<TourTargetProps> = ({
   const lastRect = useRef<SpotlightRect | null>(null);
 
   const measure = useCallback(() => {
-    if (viewRef.current && 'measureInWindow' in viewRef.current) {
+    if (viewRef.current && typeof (viewRef.current as any).measureInWindow === 'function') {
       (viewRef.current as any).measureInWindow(
         (x: number, y: number, width: number, height: number) => {
           if (width > 0 && height > 0) {
@@ -65,14 +65,15 @@ export const TourTarget: React.FC<TourTargetProps> = ({
         const r1 = requestAnimationFrame(measure);
         const t1 = setTimeout(measure, 40);
         const t2 = setTimeout(measure, 120);
+        const t3 = setTimeout(measure, 240);
+        const t4 = setTimeout(measure, 360);
         return () => {
           cancelAnimationFrame(r1);
           clearTimeout(t1);
           clearTimeout(t2);
+          clearTimeout(t3);
+          clearTimeout(t4);
         };
-      } else {
-        const t = setTimeout(measure, 80);
-        return () => clearTimeout(t);
       }
     }
   }, [isInteractiveTourActive, currentTourStep, targetId, measure]);

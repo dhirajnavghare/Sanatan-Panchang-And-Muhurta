@@ -31,15 +31,19 @@ type MoreSection = 'temples' | 'devatas' | 'vrat_katha';
 export default function MoreScreen() {
   const { language, calendarSystem } = useLanguage();
   const isHi = language === 'hi';
-  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const { openHelp, isInteractiveTourActive, isTryModeActive, currentTourStep } = useTour();
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   // Auto-scroll to spotlighted pilgrimage elements during guided tour
   useEffect(() => {
-    if (isInteractiveTourActive && currentTourStep) {
+    if (isInteractiveTourActive && !isTryModeActive && currentTourStep) {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }, 60);
+      return () => clearTimeout(timer);
     }
-  }, [isInteractiveTourActive, currentTourStep]);
+  }, [isInteractiveTourActive, isTryModeActive, currentTourStep]);
 
   const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -121,7 +125,7 @@ export default function MoreScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      scrollEnabled={!isInteractiveTourActive}
+      scrollEnabled={!isInteractiveTourActive || isTryModeActive}
     >
       {/* Sacred Devotee Profile Banner */}
       <View style={styles.profileBanner}>

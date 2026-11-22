@@ -43,19 +43,19 @@ import { TourTarget } from '@/src/components/TourTarget';
 export default function SettingsScreen() {
   const { language, setLanguage, calendarSystem, setCalendarSystem } = useLanguage();
   const isHi = language === 'hi';
-  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const { openHelp, isInteractiveTourActive, isTryModeActive, currentTourStep } = useTour();
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   // Auto-scroll to spotlighted settings items during guided tour
   useEffect(() => {
-    if (isInteractiveTourActive && currentTourStep) {
-      if (currentTourStep.targetTestID === 'notif-master-switch') {
-        scrollRef.current?.scrollTo({ y: 40, animated: false });
-      } else {
+    if (isInteractiveTourActive && !isTryModeActive && currentTourStep) {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      const timer = setTimeout(() => {
         scrollRef.current?.scrollTo({ y: 0, animated: false });
-      }
+      }, 60);
+      return () => clearTimeout(timer);
     }
-  }, [isInteractiveTourActive, currentTourStep]);
+  }, [isInteractiveTourActive, isTryModeActive, currentTourStep]);
 
   const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
   const [userLocation, setUserLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
@@ -217,28 +217,28 @@ export default function SettingsScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      scrollEnabled={!isInteractiveTourActive}
+      scrollEnabled={!isInteractiveTourActive || isTryModeActive}
     >
       {/* 1. Devotee Sacred Profile Banner */}
-      <View style={styles.profileBanner}>
-        <View style={styles.profileAvatarBox}>
-          <Text style={styles.profileAvatarEmoji}>🕉️</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.profileGreeting}>
-            {isHi ? 'श्री' : 'Sri'} {userProfile.name} {isHi ? 'जी' : ''}
-          </Text>
-          <Text style={styles.profileGotraText}>
-            {userProfile.gotra ? `${isHi ? 'गोत्र:' : 'Gotra:'} ${userProfile.gotra}` : ''} • {userProfile.ishtaDevata}
-          </Text>
-          {userProfile.kuldeviOrDevata ? (
-            <Text style={styles.profileKuldeviText}>
-              {isHi ? 'कुलदेवी:' : 'Family Deity:'} {userProfile.kuldeviOrDevata}
+      <TourTarget targetId="settings-edit-profile-btn" borderRadius={18}>
+        <View style={styles.profileBanner}>
+          <View style={styles.profileAvatarBox}>
+            <Text style={styles.profileAvatarEmoji}>🕉️</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.profileGreeting}>
+              {isHi ? 'श्री' : 'Sri'} {userProfile.name} {isHi ? 'जी' : ''}
             </Text>
-          ) : null}
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <TourTarget targetId="settings-edit-profile-btn" borderRadius={18}>
+            <Text style={styles.profileGotraText}>
+              {userProfile.gotra ? `${isHi ? 'गोत्र:' : 'Gotra:'} ${userProfile.gotra}` : ''} • {userProfile.ishtaDevata}
+            </Text>
+            {userProfile.kuldeviOrDevata ? (
+              <Text style={styles.profileKuldeviText}>
+                {isHi ? 'कुलदेवी:' : 'Family Deity:'} {userProfile.kuldeviOrDevata}
+              </Text>
+            ) : null}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <TouchableOpacity
               testID="settings-edit-profile-btn"
               style={styles.editProfilePill}
@@ -251,19 +251,19 @@ export default function SettingsScreen() {
               <Ionicons name="create-outline" size={15} color="#b45309" />
               <Text style={styles.editProfilePillText}>{isHi ? 'बदलें' : 'Edit'}</Text>
             </TouchableOpacity>
-          </TourTarget>
 
-          <TouchableOpacity
-            testID="settings-help-btn"
-            style={styles.helpBtn}
-            onPress={() => openHelp('settings')}
-            accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="help-circle-outline" size={18} color="#b45309" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              testID="settings-help-btn"
+              style={styles.helpBtn}
+              onPress={() => openHelp('settings')}
+              accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="help-circle-outline" size={18} color="#b45309" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </TourTarget>
 
       {/* 2. General Preferences & Regional System */}
       <View style={styles.settingsCard}>

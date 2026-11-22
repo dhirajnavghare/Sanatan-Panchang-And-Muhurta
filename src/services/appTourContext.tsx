@@ -11,6 +11,7 @@ import { triggerHaptic } from './sacredAudio';
 
 export interface TourContextValue {
   isInteractiveTourActive: boolean;
+  isTryModeActive: boolean;
   currentStepIndex: number;
   currentTourStep: TourStep | null;
   totalSteps: number;
@@ -24,6 +25,9 @@ export interface TourContextValue {
   nextStep: () => Promise<void>;
   prevStep: () => Promise<void>;
   goToStep: (index: number) => Promise<void>;
+  enterTryMode: () => void;
+  continueTourFromTryMode: () => Promise<void>;
+  exitTryMode: () => void;
   requestSkipTour: () => void;
   confirmExitTour: () => Promise<void>;
   cancelExitTour: () => void;
@@ -34,6 +38,7 @@ export interface TourContextValue {
 
 const defaultTourContext: TourContextValue = {
   isInteractiveTourActive: false,
+  isTryModeActive: false,
   currentStepIndex: 0,
   currentTourStep: null,
   totalSteps: TOUR_STEPS.length,
@@ -47,6 +52,9 @@ const defaultTourContext: TourContextValue = {
   nextStep: async () => {},
   prevStep: async () => {},
   goToStep: async () => {},
+  enterTryMode: () => {},
+  continueTourFromTryMode: async () => {},
+  exitTryMode: () => {},
   requestSkipTour: () => {},
   confirmExitTour: async () => {},
   cancelExitTour: () => {},
@@ -65,6 +73,7 @@ interface TourProviderProps {
 
 export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
   const [isInteractiveTourActive, setIsInteractiveTourActive] = useState(false);
+  const [isTryModeActive, setIsTryModeActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isExitConfirmVisible, setIsExitConfirmVisible] = useState(false);
@@ -94,22 +103,35 @@ export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const clearTargetCache = useCallback((step: TourStep) => {
+    const tid = step.targetTestID || step.id;
+    setTargetRects((prev) => {
+      if (!prev[tid]) return prev;
+      const next = { ...prev };
+      delete next[tid];
+      return next;
+    });
+  }, []);
+
   const startTour = useCallback(async (startStep?: number) => {
     await triggerHaptic('tap').catch(() => {});
     const stepIdx = typeof startStep === 'number' ? startStep : 0;
     const targetStep = TOUR_STEPS[stepIdx];
     if (targetStep) {
+      clearTargetCache(targetStep);
       navigateToStepTab(targetStep);
       await saveTourProgressStep(stepIdx);
     }
     setCurrentStepIndex(stepIdx);
     setIsInteractiveTourActive(true);
+    setIsTryModeActive(false);
     setIsCompleted(false);
     setIsExitConfirmVisible(false);
-  }, [navigateToStepTab]);
+  }, [navigateToStepTab, clearTargetCache]);
 
   const nextStep = useCallback(async () => {
     await triggerHaptic('tap').catch(() => {});
+    setIsTryModeActive(false);
     if (currentStepIndex >= TOUR_STEPS.length - 1) {
       // Completed the tour!
       setIsCompleted(true);
@@ -119,40 +141,62 @@ export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
       const nextIdx = currentStepIndex + 1;
       const targetStep = TOUR_STEPS[nextIdx];
       if (targetStep) {
+        clearTargetCache(targetStep);
         navigateToStepTab(targetStep);
         await saveTourProgressStep(nextIdx);
       }
       setCurrentStepIndex(nextIdx);
     }
-  }, [currentStepIndex, navigateToStepTab]);
+  }, [currentStepIndex, navigateToStepTab, clearTargetCache]);
 
   const prevStep = useCallback(async () => {
     await triggerHaptic('tap').catch(() => {});
+    setIsTryModeActive(false);
     if (currentStepIndex > 0) {
       const prevIdx = currentStepIndex - 1;
       const targetStep = TOUR_STEPS[prevIdx];
       if (targetStep) {
+        clearTargetCache(targetStep);
         navigateToStepTab(targetStep);
         await saveTourProgressStep(prevIdx);
       }
       setCurrentStepIndex(prevIdx);
     }
-  }, [currentStepIndex, navigateToStepTab]);
+  }, [currentStepIndex, navigateToStepTab, clearTargetCache]);
 
   const goToStep = useCallback(async (stepIdx: number) => {
     await triggerHaptic('tap').catch(() => {});
+    setIsTryModeActive(false);
     const safeIdx = Math.max(0, Math.min(stepIdx, TOUR_STEPS.length - 1));
     const targetStep = TOUR_STEPS[safeIdx];
     if (targetStep) {
+      clearTargetCache(targetStep);
       navigateToStepTab(targetStep);
       await saveTourProgressStep(safeIdx);
     }
     setCurrentStepIndex(safeIdx);
-  }, [navigateToStepTab]);
+  }, [navigateToStepTab, clearTargetCache]);
+
+  const enterTryMode = useCallback(() => {
+    triggerHaptic('tap').catch(() => {});
+    setIsTryModeActive(true);
+  }, []);
+
+  const exitTryMode = useCallback(() => {
+    triggerHaptic('tap').catch(() => {});
+    setIsTryModeActive(false);
+  }, []);
+
+  const continueTourFromTryMode = useCallback(async () => {
+    await triggerHaptic('tap').catch(() => {});
+    setIsTryModeActive(false);
+    await nextStep();
+  }, [nextStep]);
 
   const confirmExitTour = useCallback(async () => {
     await triggerHaptic('tap').catch(() => {});
     setIsInteractiveTourActive(false);
+    setIsTryModeActive(false);
     setIsExitConfirmVisible(false);
     setIsCompleted(false);
     await markAppTourCompleted();
@@ -160,6 +204,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
 
   const requestSkipTour = useCallback(() => {
     triggerHaptic('tap').catch(() => {});
+    setIsTryModeActive(false);
     // If user has made meaningful progress (past step 2), confirm exit
     if (currentStepIndex >= 2 && !isCompleted) {
       setIsExitConfirmVisible(true);
@@ -176,6 +221,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
   const finishTour = useCallback(async () => {
     await triggerHaptic('malaComplete').catch(() => {});
     setIsInteractiveTourActive(false);
+    setIsTryModeActive(false);
     setIsCompleted(false);
     await markAppTourCompleted();
     await clearTourProgressStep();
@@ -199,6 +245,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
     <TourContext.Provider
       value={{
         isInteractiveTourActive,
+        isTryModeActive,
         currentStepIndex,
         currentTourStep,
         totalSteps: TOUR_STEPS.length,
@@ -212,6 +259,9 @@ export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
         nextStep,
         prevStep,
         goToStep,
+        enterTryMode,
+        continueTourFromTryMode,
+        exitTryMode,
         requestSkipTour,
         confirmExitTour,
         cancelExitTour,

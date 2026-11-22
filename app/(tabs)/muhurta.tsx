@@ -15,15 +15,19 @@ import { TourTarget } from '@/src/components/TourTarget';
 export default function MuhurtaScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
-  const { openHelp, isInteractiveTourActive, currentTourStep } = useTour();
+  const { openHelp, isInteractiveTourActive, isTryModeActive, currentTourStep } = useTour();
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   // Auto-scroll to spotlighted muhurta elements during guided tour
   useEffect(() => {
-    if (isInteractiveTourActive && currentTourStep) {
+    if (isInteractiveTourActive && !isTryModeActive && currentTourStep) {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }, 60);
+      return () => clearTimeout(timer);
     }
-  }, [isInteractiveTourActive, currentTourStep]);
+  }, [isInteractiveTourActive, isTryModeActive, currentTourStep]);
 
   const [selectedCategory, setSelectedCategory] = useState<MuhurtaCategoryId>('griha_pravesh');
   const [daysCount, setDaysCount] = useState<30 | 60 | 90>(60);
@@ -109,7 +113,7 @@ export default function MuhurtaScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      scrollEnabled={!isInteractiveTourActive}
+      scrollEnabled={!isInteractiveTourActive || isTryModeActive}
     >
       {/* Category Horizontal Pill Selector */}
       <View style={styles.categoryContainer}>
