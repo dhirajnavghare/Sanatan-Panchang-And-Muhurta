@@ -21,13 +21,7 @@ export default function MuhurtaScreen() {
   // Auto-scroll to spotlighted muhurta elements during guided tour
   useEffect(() => {
     if (isInteractiveTourActive && currentTourStep) {
-      if (currentTourStep.targetTestID === 'days-pill-30') {
-        scrollRef.current?.scrollTo({ y: 160, animated: true });
-      } else if (currentTourStep.targetTestID === 'muhurta-inauspicious-card') {
-        scrollRef.current?.scrollTo({ y: 60, animated: true });
-      } else if (currentTourStep.targetTestID === 'category-pill-griha_pravesh') {
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
-      }
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
     }
   }, [isInteractiveTourActive, currentTourStep]);
 
@@ -115,6 +109,7 @@ export default function MuhurtaScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      scrollEnabled={!isInteractiveTourActive}
     >
       {/* Category Horizontal Pill Selector */}
       <View style={styles.categoryContainer}>
@@ -233,11 +228,11 @@ export default function MuhurtaScreen() {
       </TourTarget>
 
       {/* Modern Filter Strip: Horizon & Quality */}
-      <View style={styles.filterSection}>
-        {/* Horizon Filter (30 / 60 / 90 Days) */}
-        <View style={styles.segmentedFilter}>
-          {([30, 60, 90] as const).map((d) => {
-            const btnNode = (
+      <TourTarget targetId="days-pill-30" borderRadius={16}>
+        <View style={styles.filterSection}>
+          {/* Horizon Filter (30 / 60 / 90 Days) */}
+          <View style={styles.segmentedFilter}>
+            {([30, 60, 90] as const).map((d) => (
               <TouchableOpacity
                 key={d}
                 testID={`days-pill-${d}`}
@@ -249,37 +244,27 @@ export default function MuhurtaScreen() {
                   {d} {isHi ? 'दिन' : 'Days'}
                 </Text>
               </TouchableOpacity>
-            );
+            ))}
+          </View>
 
-            return d === 30 ? (
-              <TourTarget key={d} targetId="days-pill-30" borderRadius={14} style={{ flex: 1 }}>
-                {btnNode}
-              </TourTarget>
-            ) : (
-              <View key={d} style={{ flex: 1 }}>
-                {btnNode}
-              </View>
-            );
-          })}
+          {/* Quality Filter (Good / Optimal) */}
+          <View style={styles.segmentedFilter}>
+            {(['Good', 'Optimal'] as const).map((s) => (
+              <TouchableOpacity
+                key={s}
+                testID={`suitability-pill-${s}`}
+                style={[styles.segmentBtn, suitabilityFilter === s && styles.segmentBtnActive]}
+                onPress={() => handleSuitabilitySelect(s)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.segmentText, suitabilityFilter === s && styles.segmentTextActive]}>
+                  {s === 'Optimal' ? (isHi ? '🌟 श्रेष्ठ' : '🌟 Optimal') : (isHi ? '✨ उत्तम' : '✨ Good')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-
-        {/* Quality Filter (Good / Optimal) */}
-        <View style={styles.segmentedFilter}>
-          {(['Good', 'Optimal'] as const).map((s) => (
-            <TouchableOpacity
-              key={s}
-              testID={`suitability-pill-${s}`}
-              style={[styles.segmentBtn, suitabilityFilter === s && styles.segmentBtnActive]}
-              onPress={() => handleSuitabilitySelect(s)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.segmentText, suitabilityFilter === s && styles.segmentTextActive]}>
-                {s === 'Optimal' ? (isHi ? '🌟 श्रेष्ठ' : '🌟 Optimal') : (isHi ? '✨ उत्तम' : '✨ Good')}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+      </TourTarget>
 
       {isCalculating ? (
         <LoadingIndicator

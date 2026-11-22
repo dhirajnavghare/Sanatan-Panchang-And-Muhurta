@@ -21,14 +21,7 @@ export default function PrayersScreen() {
   // Auto-scroll to spotlighted prayer elements during guided tour
   useEffect(() => {
     if (isInteractiveTourActive && currentTourStep) {
-      if (currentTourStep.targetTestID === 'chant-play-toggle-btn') {
-        scrollRef.current?.scrollTo({ y: 220, animated: true });
-      } else if (
-        currentTourStep.targetTestID === 'prayer-pill-hanuman-chalisa' ||
-        currentTourStep.targetTestID === 'prayers-shankh-btn'
-      ) {
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
-      }
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
     }
   }, [isInteractiveTourActive, currentTourStep]);
 
@@ -152,6 +145,7 @@ export default function PrayersScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      scrollEnabled={!isInteractiveTourActive}
     >
       {/* Horizontal Prayer Selector with Emojis */}
       <View style={styles.selectorContainer}>

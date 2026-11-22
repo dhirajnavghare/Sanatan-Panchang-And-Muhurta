@@ -49,14 +49,10 @@ export default function SettingsScreen() {
   // Auto-scroll to spotlighted settings items during guided tour
   useEffect(() => {
     if (isInteractiveTourActive && currentTourStep) {
-      if (currentTourStep.targetTestID === 'settings-replay-tour-btn') {
-        scrollRef.current?.scrollTo({ y: 340, animated: true });
-      } else if (currentTourStep.targetTestID === 'notif-master-switch') {
-        scrollRef.current?.scrollTo({ y: 220, animated: true });
-      } else if (currentTourStep.targetTestID === 'settings-meridian-btn') {
-        scrollRef.current?.scrollTo({ y: 120, animated: true });
-      } else if (currentTourStep.targetTestID === 'settings-edit-profile-btn') {
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      if (currentTourStep.targetTestID === 'notif-master-switch') {
+        scrollRef.current?.scrollTo({ y: 40, animated: false });
+      } else {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
       }
     }
   }, [isInteractiveTourActive, currentTourStep]);
@@ -216,7 +212,13 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      ref={scrollRef}
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      scrollEnabled={!isInteractiveTourActive}
+    >
       {/* 1. Devotee Sacred Profile Banner */}
       <View style={styles.profileBanner}>
         <View style={styles.profileAvatarBox}>
@@ -401,18 +403,18 @@ export default function SettingsScreen() {
 
       {/* 3. Notification & Cosmic Alerts Section */}
       <View style={styles.settingsCard}>
-        <View style={styles.cardHeaderRow}>
-          <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-            <Text style={styles.cardHeaderTitle}>
-              {isHi ? '🔔 सूचनाएं एवं मुहूर्त अलर्ट' : '🔔 Notifications & Muhurta Alerts'}
-            </Text>
-            <Text style={styles.settingDesc}>
-              {isHi
-                ? 'मुहूर्त परिवर्तन, शुभ चौघड़िया एवं दिनचर्या कार्यों की सूचना'
-                : 'Phone panel alerts for active Muhurtas & scheduled To-Dos'}
-            </Text>
-          </View>
-          <TourTarget targetId="notif-master-switch" borderRadius={16}>
+        <TourTarget targetId="notif-master-switch" borderRadius={16}>
+          <View style={styles.cardHeaderRow}>
+            <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+              <Text style={styles.cardHeaderTitle}>
+                {isHi ? '🔔 सूचनाएं एवं मुहूर्त अलर्ट' : '🔔 Notifications & Muhurta Alerts'}
+              </Text>
+              <Text style={styles.settingDesc}>
+                {isHi
+                  ? 'मुहूर्त परिवर्तन, शुभ चौघड़िया एवं दिनचर्या कार्यों की सूचना'
+                  : 'Phone panel alerts for active Muhurtas & scheduled To-Dos'}
+              </Text>
+            </View>
             <Switch
               testID="notif-master-switch"
               value={userProfile.notificationsEnabled}
@@ -420,8 +422,8 @@ export default function SettingsScreen() {
               trackColor={{ false: '#e4e4e7', true: '#bbf7d0' }}
               thumbColor={userProfile.notificationsEnabled ? '#15803d' : '#f4f4f5'}
             />
-          </TourTarget>
-        </View>
+          </View>
+        </TourTarget>
 
         {userProfile.notificationsEnabled && (
           <View style={{ backgroundColor: 'transparent', marginTop: 8 }}>

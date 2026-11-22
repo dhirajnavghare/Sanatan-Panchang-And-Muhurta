@@ -62,19 +62,21 @@ export function getStepSpotlightRect(
         borderRadius: 17,
       };
 
-    case 'day-pill-selected':
+    case 'day-pill-selected': {
+      const pillW = Math.max(38, Math.round((screenWidth - 44) / 7));
       return {
-        x: 12,
-        y: topOffset + 98,
-        width: screenWidth - 24,
-        height: 74,
-        borderRadius: 18,
+        x: 16 + pillW * 3,
+        y: topOffset + 114,
+        width: pillW,
+        height: 72,
+        borderRadius: 20,
       };
+    }
 
     case 'view-mode-daily-btn':
       return {
         x: 16,
-        y: topOffset + 148,
+        y: topOffset + 204,
         width: screenWidth - 32,
         height: 46,
         borderRadius: 14,
@@ -83,16 +85,16 @@ export function getStepSpotlightRect(
     case 'live-cosmic-banner':
       return {
         x: 16,
-        y: topOffset + 204,
+        y: topOffset + 252,
         width: screenWidth - 32,
-        height: 118,
+        height: 88,
         borderRadius: 20,
       };
 
     case 'hero-challenge-card':
       return {
         x: 16,
-        y: topOffset + 332,
+        y: topOffset + 352,
         width: (screenWidth - 42) / 2,
         height: 126,
         borderRadius: 18,
@@ -101,7 +103,7 @@ export function getStepSpotlightRect(
     case 'bento-tall-card':
       return {
         x: screenWidth / 2 + 5,
-        y: topOffset + 332,
+        y: topOffset + 352,
         width: (screenWidth - 42) / 2,
         height: 126,
         borderRadius: 18,
@@ -110,9 +112,9 @@ export function getStepSpotlightRect(
     case 'daily-rashi-card':
       return {
         x: 16,
-        y: topOffset + 468,
+        y: topOffset + 260,
         width: screenWidth - 32,
-        height: 175,
+        height: 180,
         borderRadius: 22,
       };
 
@@ -122,14 +124,14 @@ export function getStepSpotlightRect(
         x: 16,
         y: topOffset + 204,
         width: screenWidth - 32,
-        height: 360,
-        borderRadius: 22,
+        height: 110,
+        borderRadius: 18,
       };
 
     case 'planner-tab-core':
       return {
         x: 16,
-        y: topOffset + 210,
+        y: topOffset + 264,
         width: (screenWidth - 32) * 0.33,
         height: 40,
         borderRadius: 12,
@@ -138,27 +140,27 @@ export function getStepSpotlightRect(
     case 'planner-tab-all':
       return {
         x: 16,
-        y: topOffset + 260,
+        y: topOffset + 320,
         width: screenWidth - 32,
-        height: 200,
-        borderRadius: 20,
+        height: 160,
+        borderRadius: 18,
       };
 
     case 'planner-tab-planned':
       return {
         x: 16,
-        y: topOffset + 210,
+        y: topOffset + 320,
         width: screenWidth - 32,
-        height: 130,
+        height: 160,
         borderRadius: 18,
       };
 
     case 'inauspicious-triad-card':
       return {
         x: 16,
-        y: topOffset + 470,
+        y: topOffset + 260,
         width: screenWidth - 32,
-        height: 140,
+        height: 150,
         borderRadius: 20,
       };
 
@@ -166,16 +168,16 @@ export function getStepSpotlightRect(
     case 'category-pill-griha_pravesh':
       return {
         x: 12,
-        y: topOffset + 12,
+        y: topOffset + 8,
         width: screenWidth - 24,
-        height: 52,
-        borderRadius: 26,
+        height: 48,
+        borderRadius: 24,
       };
 
     case 'muhurta-inauspicious-card':
       return {
         x: 16,
-        y: topOffset + 74,
+        y: topOffset + 68,
         width: screenWidth - 32,
         height: 154,
         borderRadius: 20,
@@ -184,10 +186,10 @@ export function getStepSpotlightRect(
     case 'days-pill-30':
       return {
         x: 16,
-        y: topOffset + 238,
+        y: topOffset + 234,
         width: screenWidth - 32,
-        height: 46,
-        borderRadius: 14,
+        height: 48,
+        borderRadius: 16,
       };
 
     // --- TAB 3: पर्व-व्रत (FESTIVALS) ---
@@ -262,34 +264,34 @@ export function getStepSpotlightRect(
         x: 16,
         y: topOffset + 12,
         width: screenWidth - 32,
-        height: 94,
-        borderRadius: 20,
+        height: 84,
+        borderRadius: 18,
       };
 
     case 'settings-meridian-btn':
       return {
         x: 16,
-        y: topOffset + 175,
+        y: topOffset + 248,
         width: screenWidth - 32,
-        height: 110,
-        borderRadius: 18,
-      };
-
-    case 'notif-master-switch':
-      return {
-        x: 16,
-        y: topOffset + 295,
-        width: screenWidth - 32,
-        height: 130,
-        borderRadius: 18,
+        height: 64,
+        borderRadius: 16,
       };
 
     case 'settings-replay-tour-btn':
       return {
         x: 16,
-        y: topOffset + 435,
+        y: topOffset + 312,
         width: screenWidth - 32,
         height: 64,
+        borderRadius: 16,
+      };
+
+    case 'notif-master-switch':
+      return {
+        x: 16,
+        y: topOffset + 346,
+        width: screenWidth - 32,
+        height: 74,
         borderRadius: 16,
       };
 

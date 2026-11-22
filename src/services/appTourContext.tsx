@@ -97,16 +97,15 @@ export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
   const startTour = useCallback(async (startStep?: number) => {
     await triggerHaptic('tap').catch(() => {});
     const stepIdx = typeof startStep === 'number' ? startStep : 0;
-    setCurrentStepIndex(stepIdx);
-    setIsInteractiveTourActive(true);
-    setIsCompleted(false);
-    setIsExitConfirmVisible(false);
-
     const targetStep = TOUR_STEPS[stepIdx];
     if (targetStep) {
       navigateToStepTab(targetStep);
       await saveTourProgressStep(stepIdx);
     }
+    setCurrentStepIndex(stepIdx);
+    setIsInteractiveTourActive(true);
+    setIsCompleted(false);
+    setIsExitConfirmVisible(false);
   }, [navigateToStepTab]);
 
   const nextStep = useCallback(async () => {
@@ -118,12 +117,12 @@ export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
       await clearTourProgressStep();
     } else {
       const nextIdx = currentStepIndex + 1;
-      setCurrentStepIndex(nextIdx);
       const targetStep = TOUR_STEPS[nextIdx];
       if (targetStep) {
         navigateToStepTab(targetStep);
         await saveTourProgressStep(nextIdx);
       }
+      setCurrentStepIndex(nextIdx);
     }
   }, [currentStepIndex, navigateToStepTab]);
 
@@ -131,24 +130,24 @@ export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
     await triggerHaptic('tap').catch(() => {});
     if (currentStepIndex > 0) {
       const prevIdx = currentStepIndex - 1;
-      setCurrentStepIndex(prevIdx);
       const targetStep = TOUR_STEPS[prevIdx];
       if (targetStep) {
         navigateToStepTab(targetStep);
         await saveTourProgressStep(prevIdx);
       }
+      setCurrentStepIndex(prevIdx);
     }
   }, [currentStepIndex, navigateToStepTab]);
 
   const goToStep = useCallback(async (stepIdx: number) => {
     await triggerHaptic('tap').catch(() => {});
     const safeIdx = Math.max(0, Math.min(stepIdx, TOUR_STEPS.length - 1));
-    setCurrentStepIndex(safeIdx);
     const targetStep = TOUR_STEPS[safeIdx];
     if (targetStep) {
       navigateToStepTab(targetStep);
       await saveTourProgressStep(safeIdx);
     }
+    setCurrentStepIndex(safeIdx);
   }, [navigateToStepTab]);
 
   const confirmExitTour = useCallback(async () => {

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { View, ViewStyle, StyleProp } from 'react-native';
 import { useTour } from '../services/appTourContext';
+import { SpotlightRect } from '../types/tour';
 
 interface TourTargetProps {
   targetId: string;
@@ -22,19 +23,31 @@ export const TourTarget: React.FC<TourTargetProps> = ({
 }) => {
   const { registerTargetRect, isInteractiveTourActive, currentTourStep } = useTour();
   const viewRef = useRef<React.ElementRef<typeof View>>(null);
+  const lastRect = useRef<SpotlightRect | null>(null);
 
   const measure = useCallback(() => {
     if (viewRef.current && 'measureInWindow' in viewRef.current) {
       (viewRef.current as any).measureInWindow(
         (x: number, y: number, width: number, height: number) => {
           if (width > 0 && height > 0) {
-            registerTargetRect(targetId, {
-              x,
-              y,
-              width,
-              height,
-              borderRadius,
-            });
+            const prev = lastRect.current;
+            if (
+              !prev ||
+              Math.abs(prev.x - x) > 1 ||
+              Math.abs(prev.y - y) > 1 ||
+              Math.abs(prev.width - width) > 1 ||
+              Math.abs(prev.height - height) > 1
+            ) {
+              const newRect: SpotlightRect = {
+                x,
+                y,
+                width,
+                height,
+                borderRadius,
+              };
+              lastRect.current = newRect;
+              registerTargetRect(targetId, newRect);
+            }
           }
         }
       );
@@ -43,20 +56,22 @@ export const TourTarget: React.FC<TourTargetProps> = ({
 
   useEffect(() => {
     if (isInteractiveTourActive) {
-      measure();
       const isCurrent =
         currentTourStep?.targetTestID === targetId || currentTourStep?.id === targetId;
+
       if (isCurrent) {
-        const t1 = setTimeout(measure, 60);
-        const t2 = setTimeout(measure, 220);
-        const t3 = setTimeout(measure, 450);
+        lastRect.current = null;
+        measure();
+        const r1 = requestAnimationFrame(measure);
+        const t1 = setTimeout(measure, 40);
+        const t2 = setTimeout(measure, 120);
         return () => {
+          cancelAnimationFrame(r1);
           clearTimeout(t1);
           clearTimeout(t2);
-          clearTimeout(t3);
         };
       } else {
-        const t = setTimeout(measure, 150);
+        const t = setTimeout(measure, 80);
         return () => clearTimeout(t);
       }
     }

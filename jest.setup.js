@@ -1,3 +1,4 @@
+/* global jest */
 // Jest Setup for Sanatan React Native / Expo Application
 
 // Mock AsyncStorage
@@ -74,9 +75,9 @@ jest.mock('expo-router', () => ({
     back: jest.fn(),
     navigate: jest.fn(),
   }),
-  useFocusEffect: (callback: any) => callback(),
+  useFocusEffect: (callback) => callback(),
   useLocalSearchParams: () => ({}),
-  Link: ({ children }: any) => children,
+  Link: ({ children }) => children,
 }));
 
 // Mock expo-location
@@ -94,8 +95,8 @@ jest.mock('expo-location', () => ({
 jest.mock('react-native-safe-area-context', () => {
   const inset = { top: 44, right: 0, bottom: 34, left: 0 };
   return {
-    SafeAreaProvider: ({ children }: any) => children,
-    SafeAreaConsumer: ({ children }: any) => children(inset),
+    SafeAreaProvider: ({ children }) => children,
+    SafeAreaConsumer: ({ children }) => children(inset),
     useSafeAreaInsets: () => inset,
   };
 });

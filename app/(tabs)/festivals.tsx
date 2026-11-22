@@ -24,12 +24,7 @@ export default function FestivalsScreen() {
   // Auto-scroll to spotlighted festival elements during guided tour
   useEffect(() => {
     if (isInteractiveTourActive && currentTourStep) {
-      if (
-        currentTourStep.targetTestID === 'festival-search-input' ||
-        currentTourStep.targetTestID === 'category-chip-all'
-      ) {
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
-      }
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
     }
   }, [isInteractiveTourActive, currentTourStep]);
 
@@ -103,6 +98,7 @@ export default function FestivalsScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
+      scrollEnabled={!isInteractiveTourActive}
     >
       {/* Top Year Switcher & Search Bar */}
       <View style={styles.topControls}>
