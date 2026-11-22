@@ -368,26 +368,56 @@ export const InteractiveTourOverlay: React.FC = () => {
   const sRadius = (spotlight.borderRadius ?? 16) + pad;
 
   const topInset = Math.max(insets.top || 0, Platform.OS === 'ios' ? 44 : 28);
-  const bottomInset = Math.max(insets.bottom || 0, 12);
+  const bottomInset = Math.max(insets.bottom || 0, 16);
 
-  const spaceAbove = sY - topInset;
-  const spaceBelow = SCREEN_HEIGHT - bottomInset - (sY + sH);
+  const BEACON_HEIGHT = 30;
+  const GAP = 10;
 
-  // Position guide card where clearance is optimal
-  const isCardAtBottom = spaceBelow >= 310 || spaceBelow >= spaceAbove;
+  // Space calculation relative to the spotlighted element
+  const spaceBelow = SCREEN_HEIGHT - bottomInset - (sY + sH + BEACON_HEIGHT + GAP);
+  const spaceAbove = sY - BEACON_HEIGHT - GAP - topInset;
+
+  // Choose whether to place card slightly below or slightly above the highlighter.
+  // Prefer below when spaceBelow >= 250 or when spaceBelow >= spaceAbove.
+  const isCardBelow = spaceBelow >= 250 || spaceBelow >= spaceAbove;
 
   // Position beacon with arrow pointing towards the target
-  const beaconTop = isCardAtBottom
+  const beaconTop = isCardBelow
     ? Math.min(SCREEN_HEIGHT - bottomInset - 52, sY + sH + 8)
-    : Math.max(topInset + 8, sY - 34);
+    : Math.max(topInset + 8, sY - BEACON_HEIGHT - 4);
 
   const beaconLeft = Math.max(16, Math.min(SCREEN_WIDTH - 170, sX + sW / 2 - 70));
-  const beaconArrowName = isCardAtBottom ? 'arrow-up' : 'arrow-down';
+  const beaconArrowName = isCardBelow ? 'arrow-up' : 'arrow-down';
+
+  // Dynamic card positioning & content-based max height constraint
+  const maxCardHeight = isCardBelow
+    ? Math.max(180, SCREEN_HEIGHT - bottomInset - (sY + sH + BEACON_HEIGHT + GAP + 4))
+    : Math.max(180, sY - BEACON_HEIGHT - GAP - topInset);
+
+  const cardPlacementStyle = isCardBelow
+    ? {
+        top: Math.min(
+          SCREEN_HEIGHT - bottomInset - 200,
+          sY + sH + BEACON_HEIGHT + GAP
+        ),
+        bottom: undefined,
+      }
+    : {
+        bottom: Math.min(
+          SCREEN_HEIGHT - topInset - 200,
+          SCREEN_HEIGHT - sY + BEACON_HEIGHT + GAP
+        ),
+        top: undefined,
+      };
 
   return (
     <View testID="interactive-tour-overlay" style={styles.interactiveOverlay} pointerEvents="box-none">
       {/* 1. Seamless Rounded Scrim Cutout (Smooth corners, zero white square artifacts) */}
-      <View pointerEvents="none" style={styles.scrimContainer}>
+      <View
+        style={styles.scrimContainer}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <View
           style={[
             styles.giantBorderCutout,
@@ -462,7 +492,7 @@ export const InteractiveTourOverlay: React.FC = () => {
           style={[
             styles.trySuccessToast,
             {
-              top: isCardAtBottom
+              top: isCardBelow
                 ? Math.max(topInset + 8, sY - 44)
                 : Math.min(SCREEN_HEIGHT - bottomInset - 44, sY + sH + 12),
               left: Math.max(16, Math.min(SCREEN_WIDTH - 180, sX + sW / 2 - 75)),
@@ -505,20 +535,18 @@ export const InteractiveTourOverlay: React.FC = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* 4. Adaptive Guide Card (Top or Bottom based on target location) */}
+      {/* 4. Adaptive Guide Card (Slightly below or above highlighter with dynamic height) */}
       <View
         testID="tour-step-card"
         style={[
           styles.guideCardWrapper,
-          isCardAtBottom
-            ? { bottom: bottomInset, top: undefined }
-            : { top: topInset, bottom: undefined },
+          cardPlacementStyle,
         ]}
         pointerEvents="auto"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <View style={[styles.guideCard, isDark && styles.guideCardDark]}>
+        <View style={[styles.guideCard, isDark && styles.guideCardDark, { maxHeight: maxCardHeight }]}>
           {/* Header Row: Tab badge, time estimate, step counter, skip button */}
           <View style={styles.guideHeaderRow}>
             <View style={styles.tagBadge}>
@@ -790,7 +818,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 16,
     elevation: 12,
-    maxHeight: SCREEN_HEIGHT * 0.44,
   },
   guideCardDark: {
     backgroundColor: '#18181b',
@@ -944,7 +971,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   guideScrollView: {
-    maxHeight: 155,
+    flexShrink: 1,
   },
   guideScrollContent: {
     paddingBottom: 4,

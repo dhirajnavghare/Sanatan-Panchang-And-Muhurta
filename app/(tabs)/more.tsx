@@ -37,12 +37,7 @@ export default function MoreScreen() {
   // Auto-scroll to spotlighted pilgrimage elements during guided tour
   useEffect(() => {
     if (isInteractiveTourActive && currentTourStep) {
-      if (
-        currentTourStep.targetTestID === 'more-tab-temples' ||
-        currentTourStep.targetTestID === 'more-tab-devatas'
-      ) {
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
-      }
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
     }
   }, [isInteractiveTourActive, currentTourStep]);
 
@@ -121,7 +116,13 @@ export default function MoreScreen() {
   };
 
   return (
-    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      ref={scrollRef}
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      scrollEnabled={!isInteractiveTourActive}
+    >
       {/* Sacred Devotee Profile Banner */}
       <View style={styles.profileBanner}>
         <View style={styles.profileAvatarBox}>
