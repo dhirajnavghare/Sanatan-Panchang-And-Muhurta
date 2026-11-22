@@ -325,7 +325,7 @@ export const TOUR_STEPS: TourStep[] = [
       'Every Muhurta card suggests ideal activities for that specific window (e.g. Meditation, Surya Puja, Studies, Contracts). Tapping any suggestion instantly adds it to your To-Do list!',
     howToUseHi: 'सुझाव चिप पर टैप करें: कार्य तुरंत प्लानर में जुड़ेगा',
     howToUseEn: 'Tap a suggestion chip: instantly schedules it',
-    targetTestID: 'planner-tab-all',
+    targetTestID: 'planner-first-slot-card',
     viewMode: 'planner',
     plannerSubTab: 'all',
   },

@@ -554,7 +554,7 @@ export default function PanchangScreen() {
             </Text>
           </View>
         ) : (
-          filteredSlots.map((slot) => {
+          filteredSlots.map((slot, index) => {
             const plan = dayPlans[slot.id];
             const todos: TodoItem[] =
               plan?.todos && plan.todos.length > 0
@@ -580,7 +580,7 @@ export default function PanchangScreen() {
             const isMahashubh =
               slot.quality === 'Mahashubh' || slot.quality === 'Amrit';
 
-            return (
+            const cardNode = (
               <View
                 key={slot.id}
                 style={[
@@ -762,6 +762,14 @@ export default function PanchangScreen() {
                   )}
                 </View>
               </View>
+            );
+
+            return index === 0 ? (
+              <TourTarget key={slot.id} targetId="planner-first-slot-card" borderRadius={18}>
+                {cardNode}
+              </TourTarget>
+            ) : (
+              cardNode
             );
           })
         )}
