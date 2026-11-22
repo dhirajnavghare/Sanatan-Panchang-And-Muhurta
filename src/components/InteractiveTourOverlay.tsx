@@ -665,52 +665,56 @@ export const InteractiveTourOverlay: React.FC = () => {
     SCREEN_HEIGHT,
     insets
   );
-  const topInset = Math.max(insets.top || 0, Platform.OS === 'ios' ? 44 : 28);
-  const bottomInset = Math.max(insets.bottom || 0, 16);
+  // Safe insets: account for Dynamic Island / notch at top, and bottom tab bar (~60px + home indicator)
+  const safeTop = Math.max(insets.top || 0, Platform.OS === 'ios' ? 50 : 28) + 8;
+  const safeBottom = (insets.bottom || 0) + (Platform.OS === 'ios' ? 64 : 66);
 
   const pad = 4;
   const sX = Math.max(2, Math.min(SCREEN_WIDTH - 20, spotlight.x - pad));
-  const sY = Math.max(topInset, Math.min(SCREEN_HEIGHT - 60, spotlight.y - pad));
+  const sY = Math.max(safeTop, Math.min(SCREEN_HEIGHT - safeBottom - 30, spotlight.y - pad));
   const sW = Math.max(20, Math.min(SCREEN_WIDTH - sX - 4, spotlight.width + pad * 2));
   const sH = Math.max(20, Math.min(SCREEN_HEIGHT - sY - 4, spotlight.height + pad * 2));
   const sRadius = Math.max(8, (spotlight.borderRadius ?? 16) + pad);
 
   const BEACON_HEIGHT = 30;
-  const GAP = 10;
+  const GAP = 8;
 
-  // Space calculation relative to the spotlighted element
-  const spaceBelow = SCREEN_HEIGHT - bottomInset - (sY + sH + BEACON_HEIGHT + GAP);
-  const spaceAbove = sY - BEACON_HEIGHT - GAP - topInset;
+  // Space calculation relative to the spotlighted element and safe viewport boundaries
+  const spaceBelow = Math.max(0, SCREEN_HEIGHT - safeBottom - (sY + sH + BEACON_HEIGHT + GAP));
+  const spaceAbove = Math.max(0, sY - BEACON_HEIGHT - GAP - safeTop);
 
   // Choose whether to place card slightly below or slightly above the highlighter.
-  // Prefer below when spaceBelow >= 250 or when spaceBelow >= spaceAbove.
-  const isCardBelow = spaceBelow >= 250 || spaceBelow >= spaceAbove;
+  // Prefer whichever side has substantially more room, ensuring comfortable reading space.
+  const isCardBelow = (spaceBelow >= spaceAbove && spaceBelow >= 220) || spaceAbove < 200;
 
   // Position beacon with arrow pointing towards the target
   const beaconTop = isCardBelow
-    ? Math.min(SCREEN_HEIGHT - bottomInset - 52, sY + sH + 8)
-    : Math.max(topInset + 8, sY - BEACON_HEIGHT - 4);
+    ? Math.min(SCREEN_HEIGHT - safeBottom - 44, sY + sH + 6)
+    : Math.max(safeTop + 8, sY - BEACON_HEIGHT - 6);
 
   const beaconLeft = Math.max(16, Math.min(SCREEN_WIDTH - 236, sX + sW / 2 - 80));
   const beaconArrowName = isCardBelow ? 'arrow-up' : 'arrow-down';
 
   // Dynamic card positioning & content-based max height constraint
+  const cardTop = sY + sH + BEACON_HEIGHT + GAP;
+  const cardBottomY = beaconTop - GAP;
+
   const maxCardHeight = isCardBelow
-    ? Math.max(180, SCREEN_HEIGHT - bottomInset - (sY + sH + BEACON_HEIGHT + GAP + 4))
-    : Math.max(180, sY - BEACON_HEIGHT - GAP - topInset);
+    ? Math.max(160, SCREEN_HEIGHT - safeBottom - cardTop - 6)
+    : Math.max(160, cardBottomY - safeTop);
 
   const cardPlacementStyle = isCardBelow
     ? {
-        top: Math.min(
-          SCREEN_HEIGHT - bottomInset - 200,
-          sY + sH + BEACON_HEIGHT + GAP
+        top: Math.max(
+          safeTop,
+          Math.min(SCREEN_HEIGHT - safeBottom - 200, cardTop)
         ),
         bottom: undefined,
       }
     : {
-        bottom: Math.min(
-          SCREEN_HEIGHT - topInset - 200,
-          SCREEN_HEIGHT - sY + BEACON_HEIGHT + GAP
+        bottom: Math.max(
+          safeBottom,
+          Math.min(SCREEN_HEIGHT - safeTop - 200, SCREEN_HEIGHT - cardBottomY)
         ),
         top: undefined,
       };
@@ -799,8 +803,8 @@ export const InteractiveTourOverlay: React.FC = () => {
             styles.trySuccessToast,
             {
               top: isCardBelow
-                ? Math.max(topInset + 8, sY - 44)
-                : Math.min(SCREEN_HEIGHT - bottomInset - 44, sY + sH + 12),
+                ? Math.max(safeTop, sY - 44)
+                : Math.min(SCREEN_HEIGHT - safeBottom - 44, sY + sH + 12),
               left: Math.max(16, Math.min(SCREEN_WIDTH - 180, sX + sW / 2 - 75)),
               opacity: toastOpacityAnim,
             },
@@ -928,7 +932,7 @@ export const InteractiveTourOverlay: React.FC = () => {
 
           {/* Content Body */}
           <ScrollView
-            style={styles.guideScrollView}
+            style={[styles.guideScrollView, { maxHeight: Math.max(80, maxCardHeight - 165) }]}
             contentContainerStyle={styles.guideScrollContent}
             showsVerticalScrollIndicator={false}
           >
@@ -1364,6 +1368,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 16,
     elevation: 12,
+    overflow: 'hidden',
   },
   guideCardDark: {
     backgroundColor: '#18181b',

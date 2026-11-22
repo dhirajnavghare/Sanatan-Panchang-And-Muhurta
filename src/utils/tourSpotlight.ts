@@ -155,10 +155,10 @@ export function getStepSpotlightRect(
     case 'planner-first-slot-card':
       return {
         x: 16,
-        y: topOffset + 342,
+        y: topOffset + 380,
         width: screenWidth - 32,
-        height: 170,
-        borderRadius: 18,
+        height: 48,
+        borderRadius: 14,
       };
 
     case 'planner-tab-planned': {

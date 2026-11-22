@@ -677,19 +677,37 @@ export default function PanchangScreen() {
                 </View>
 
                 {/* Suggested Quick Chips (Tap to instantly add to To-Do list) */}
-                <View style={styles.quickChipsRow}>
-                  {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
-                    <TouchableOpacity
-                      key={sIdx}
-                      testID={`planner-subtask-chip-${sIdx}`}
-                      style={styles.suggestionChip}
-                      onPress={() => handleApplySuggestion(slot.id, suggestion)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.suggestionChipText}>+ {suggestion}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                {index === 0 ? (
+                  <TourTarget targetId="planner-first-slot-card" borderRadius={14}>
+                    <View style={styles.quickChipsRow}>
+                      {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
+                        <TouchableOpacity
+                          key={sIdx}
+                          testID={`planner-subtask-chip-${sIdx}`}
+                          style={styles.suggestionChip}
+                          onPress={() => handleApplySuggestion(slot.id, suggestion)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.suggestionChipText}>+ {suggestion}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </TourTarget>
+                ) : (
+                  <View style={styles.quickChipsRow}>
+                    {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
+                      <TouchableOpacity
+                        key={sIdx}
+                        testID={`planner-subtask-chip-${sIdx}`}
+                        style={styles.suggestionChip}
+                        onPress={() => handleApplySuggestion(slot.id, suggestion)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.suggestionChipText}>+ {suggestion}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
 
                 {/* To-Do Checklist Items */}
                 {todos.length > 0 && (
@@ -764,13 +782,7 @@ export default function PanchangScreen() {
               </View>
             );
 
-            return index === 0 ? (
-              <TourTarget key={slot.id} targetId="planner-first-slot-card" borderRadius={18}>
-                {cardNode}
-              </TourTarget>
-            ) : (
-              cardNode
-            );
+            return cardNode;
           })
         )}
       </View>
