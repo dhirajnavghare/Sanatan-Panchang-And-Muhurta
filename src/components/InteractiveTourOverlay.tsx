@@ -137,6 +137,10 @@ export const InteractiveTourOverlay: React.FC = () => {
         finishTour();
         return true;
       }
+      if (isTryModeActive) {
+        exitTryMode();
+        return true;
+      }
       if (currentStepIndex > 0) {
         prevStep();
         return true;
@@ -149,10 +153,12 @@ export const InteractiveTourOverlay: React.FC = () => {
     return () => backHandler.remove();
   }, [
     isInteractiveTourActive,
+    isTryModeActive,
     isCompleted,
     isExitConfirmVisible,
     currentStepIndex,
     prevStep,
+    exitTryMode,
     cancelExitTour,
     finishTour,
     requestSkipTour,
@@ -166,6 +172,19 @@ export const InteractiveTourOverlay: React.FC = () => {
   // Touch tracking for swipe gestures
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const sectionScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+
+  useEffect(() => {
+    const secIdx = TOUR_SECTIONS.findIndex(
+      (sec) => currentStepIndex >= sec.startStep && currentStepIndex <= sec.endStep
+    );
+    if (secIdx >= 0 && sectionScrollRef.current) {
+      sectionScrollRef.current.scrollTo({
+        x: Math.max(0, secIdx * 76 - 30),
+        animated: true,
+      });
+    }
+  }, [currentStepIndex]);
 
   // Micro-toast state for interactive hands-on feedback
   const [trySuccessToast, setTrySuccessToast] = useState<string | null>(null);
@@ -672,7 +691,7 @@ export const InteractiveTourOverlay: React.FC = () => {
     ? Math.min(SCREEN_HEIGHT - bottomInset - 52, sY + sH + 8)
     : Math.max(topInset + 8, sY - BEACON_HEIGHT - 4);
 
-  const beaconLeft = Math.max(16, Math.min(SCREEN_WIDTH - 210, sX + sW / 2 - 80));
+  const beaconLeft = Math.max(16, Math.min(SCREEN_WIDTH - 236, sX + sW / 2 - 80));
   const beaconArrowName = isCardBelow ? 'arrow-up' : 'arrow-down';
 
   // Dynamic card positioning & content-based max height constraint
@@ -835,7 +854,7 @@ export const InteractiveTourOverlay: React.FC = () => {
           <View style={styles.guideHeaderRow}>
             <View style={styles.tagBadge}>
               <Text style={styles.tagBadgeEmoji}>{currentTourStep.emoji}</Text>
-              <Text style={styles.tagBadgeText}>
+              <Text style={styles.tagBadgeText} numberOfLines={1}>
                 {isHi ? currentTourStep.tabNameHi : currentTourStep.tabNameEn} • {isHi ? currentTourStep.badgeHi : currentTourStep.badgeEn}
               </Text>
             </View>
@@ -863,6 +882,7 @@ export const InteractiveTourOverlay: React.FC = () => {
 
           {/* Quick-Jump Section Navigation Chips */}
           <ScrollView
+            ref={sectionScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.sectionScroll}
@@ -1232,7 +1252,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: Radius.pill,
-    maxWidth: 240,
+    maxWidth: 220,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.35,

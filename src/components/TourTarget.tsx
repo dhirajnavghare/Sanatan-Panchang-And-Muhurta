@@ -21,7 +21,7 @@ export const TourTarget: React.FC<TourTargetProps> = ({
   style,
   children,
 }) => {
-  const { registerTargetRect, isInteractiveTourActive, currentTourStep } = useTour();
+  const { registerTargetRect, isInteractiveTourActive, isTryModeActive, currentTourStep } = useTour();
   const viewRef = useRef<React.ElementRef<typeof View>>(null);
   const lastRect = useRef<SpotlightRect | null>(null);
 
@@ -55,7 +55,7 @@ export const TourTarget: React.FC<TourTargetProps> = ({
   }, [targetId, borderRadius, registerTargetRect]);
 
   useEffect(() => {
-    if (isInteractiveTourActive) {
+    if (isInteractiveTourActive && !isTryModeActive) {
       const isCurrent =
         currentTourStep?.targetTestID === targetId || currentTourStep?.id === targetId;
 
@@ -76,7 +76,7 @@ export const TourTarget: React.FC<TourTargetProps> = ({
         };
       }
     }
-  }, [isInteractiveTourActive, currentTourStep, targetId, measure]);
+  }, [isInteractiveTourActive, isTryModeActive, currentTourStep, targetId, measure]);
 
   return (
     <View
