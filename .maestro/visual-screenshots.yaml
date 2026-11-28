@@ -1,0 +1,29 @@
+appId: cc.sanatan.app
+---
+# Automated Device Screenshot Suite for Real-Device Visual Baseline Capture
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: tour-skip-btn
+    commands:
+      - tapOn:
+          id: tour-skip-btn
+- assertVisible:
+    id: header-bar
+- takeScreenshot: "01-dinacharya-home"
+- tapOn:
+    id: view-mode-planner-btn
+- takeScreenshot: "02-day-planner"
+- tapOn: "मुहूर्त|Muhurta"
+- takeScreenshot: "03-muhurta-finder"
+- tapOn: "पर्व-व्रत|Festivals"
+- takeScreenshot: "04-festivals-timeline"
+- tapOn: "स्तोत्र-जप|Prayers"
+- takeScreenshot: "05-prayers-japa"
+- tapOn: "तीर्थ|More"
+- takeScreenshot: "06-temples-more"
+- tapOn: "प्रोजेक्ट|Project"
+- takeScreenshot: "07-community-hub"
+- tapOn: "सेटिंग्स|Settings"
+- takeScreenshot: "08-settings"

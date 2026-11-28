@@ -1,6 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react-native';
 import { AppTourModal } from '@/src/components/AppTourModal';
+import { LanguageProvider } from '@/src/core/i18n/LanguageContext';
+import { TourProvider } from '@/src/services/appTourContext';
+import { InteractiveTourOverlay } from '@/src/components/InteractiveTourOverlay';
 import {
   hasSeenAppTour,
   markAppTourCompleted,
@@ -52,12 +55,13 @@ describe('App Tour Modal Component & Service Tests', () => {
 
       expect(screen.getByTestId('app-tour-modal')).toBeTruthy();
       expect(screen.getByText('सनातन दिनचर्या में आपका स्वागत है')).toBeTruthy();
-      expect(screen.getByText(/चरण 1 \/ 5/i)).toBeTruthy();
+      expect(screen.getByText(/चरण 1 \/ 3/i)).toBeTruthy();
       expect(screen.getByTestId('tour-skip-btn')).toBeTruthy();
       expect(screen.getByTestId('tour-next-btn')).toBeTruthy();
+      expect(screen.getByTestId('tour-welcome-section-dinacharya')).toBeTruthy();
     });
 
-    it('should advance through all 5 slides upon clicking Next', async () => {
+    it('should advance through all 3 orientation slides upon clicking Next', async () => {
       await render(
         <AppTourModal visible={true} onClose={jest.fn()} isHi={true} />
       );
@@ -66,29 +70,15 @@ describe('App Tour Modal Component & Service Tests', () => {
       await act(async () => {
         fireEvent.press(screen.getByTestId('tour-next-btn'));
       });
-      expect(screen.getByText('मुहूर्त आधारित दिनचर्या व To-Do सूची')).toBeTruthy();
-      expect(screen.getByText(/चरण 2 \/ 5/i)).toBeTruthy();
+      expect(screen.getByText('२४h मुहूर्त दिनचर्या व दैनिक साधना')).toBeTruthy();
+      expect(screen.getByText(/चरण 2 \/ 3/i)).toBeTruthy();
 
-      // Slide 2 -> 3
+      // Slide 2 -> 3 (Final)
       await act(async () => {
         fireEvent.press(screen.getByTestId('tour-next-btn'));
       });
-      expect(screen.getByText('दैनिक नित्यकर्म साधना व गोत्र सङ्कल्प')).toBeTruthy();
-      expect(screen.getByText(/चरण 3 \/ 5/i)).toBeTruthy();
-
-      // Slide 3 -> 4
-      await act(async () => {
-        fireEvent.press(screen.getByTestId('tour-next-btn'));
-      });
-      expect(screen.getByText('मन्दिर पीतल घंटी एवं पञ्चाङ्ग शेयर कार्ड')).toBeTruthy();
-      expect(screen.getByText(/चरण 4 \/ 5/i)).toBeTruthy();
-
-      // Slide 4 -> 5 (Final)
-      await act(async () => {
-        fireEvent.press(screen.getByTestId('tour-next-btn'));
-      });
-      expect(screen.getByText(/दैनिक सहायक अनुभाग/)).toBeTruthy();
-      expect(screen.getByText(/चरण 5 \/ 5/i)).toBeTruthy();
+      expect(screen.getByText('स्तोत्र-जप माला, तीर्थ व तत्काल सहायता')).toBeTruthy();
+      expect(screen.getByText(/चरण 3 \/ 3/i)).toBeTruthy();
       expect(screen.getByTestId('tour-finish-btn')).toBeTruthy();
     });
 
@@ -101,13 +91,13 @@ describe('App Tour Modal Component & Service Tests', () => {
       await act(async () => {
         fireEvent.press(screen.getByTestId('tour-next-btn'));
       });
-      expect(screen.getByText(/चरण 2 \/ 5/i)).toBeTruthy();
+      expect(screen.getByText(/चरण 2 \/ 3/i)).toBeTruthy();
 
       // Go back to step 1
       await act(async () => {
         fireEvent.press(screen.getByTestId('tour-back-btn'));
       });
-      expect(screen.getByText(/चरण 1 \/ 5/i)).toBeTruthy();
+      expect(screen.getByText(/चरण 1 \/ 3/i)).toBeTruthy();
       expect(screen.getByText('सनातन दिनचर्या में आपका स्वागत है')).toBeTruthy();
     });
 
@@ -129,13 +119,7 @@ describe('App Tour Modal Component & Service Tests', () => {
         <AppTourModal visible={true} onClose={onClose} isHi={false} />
       );
 
-      // Advance to last slide (slide 5)
-      await act(async () => {
-        fireEvent.press(screen.getByTestId('tour-next-btn'));
-      });
-      await act(async () => {
-        fireEvent.press(screen.getByTestId('tour-next-btn'));
-      });
+      // Advance to last slide (slide 3)
       await act(async () => {
         fireEvent.press(screen.getByTestId('tour-next-btn'));
       });
@@ -148,6 +132,25 @@ describe('App Tour Modal Component & Service Tests', () => {
         fireEvent.press(finishBtn);
       });
       expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('launches a quick section walkthrough directly from welcome quick chips', async () => {
+      const onClose = jest.fn();
+      await render(
+        <LanguageProvider>
+          <TourProvider>
+            <AppTourModal visible={true} onClose={onClose} isHi={false} />
+            <InteractiveTourOverlay />
+          </TourProvider>
+        </LanguageProvider>
+      );
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-welcome-section-muhurta'));
+      });
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('interactive-tour-overlay')).toBeTruthy();
     });
   });
 });

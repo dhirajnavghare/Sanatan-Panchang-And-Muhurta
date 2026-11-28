@@ -1,16 +1,20 @@
 import React from 'react';
-import { render, screen, fireEvent, act, cleanup } from '@testing-library/react-native';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-library/react-native';
+import { AccessibilityInfo, Text, TouchableOpacity, View } from 'react-native';
 import { LanguageProvider } from '@/src/core/i18n/LanguageContext';
 import { TourProvider, useTour } from '@/src/services/appTourContext';
 import { InteractiveTourOverlay } from '@/src/components/InteractiveTourOverlay';
 import { ContextualHelpModal } from '@/src/components/ContextualHelpModal';
 import {
+  APP_TOUR_VERSION,
   saveTourProgressStep,
   getTourProgressStep,
   clearTourProgressStep,
   hasSeenAppTour,
   markAppTourCompleted,
+  markTourSectionCompleted,
+  saveTourVersionSeen,
+  getTourPersistenceSnapshot,
   resetAppTour,
 } from '@/src/services/appTour';
 import { TOUR_STEPS, CONTEXTUAL_HELP_TOPICS, TOUR_SECTIONS } from '@/src/constants/tourSteps';
@@ -24,12 +28,16 @@ function TestConsumer() {
     currentTourStep,
     totalSteps,
     startTour,
+    resumeTour,
+    startSectionTour,
+    startWhatsNewTour,
     nextStep,
     prevStep,
     goToStep,
     requestSkipTour,
     confirmExitTour,
     openHelp,
+    updateTourRuntimeContext,
   } = useTour();
 
   return (
@@ -48,11 +56,43 @@ function TestConsumer() {
       <TouchableOpacity testID="btn-prev-step" onPress={() => prevStep()}>
         <Text>Prev Step</Text>
       </TouchableOpacity>
-      <TouchableOpacity testID="btn-goto-step-16" onPress={() => goToStep(16)}>
-        <Text>Go To Step 16</Text>
+      <TouchableOpacity testID="btn-goto-step-17" onPress={() => goToStep(17)}>
+        <Text>Go To Step 17</Text>
       </TouchableOpacity>
-      <TouchableOpacity testID="btn-goto-step-29" onPress={() => goToStep(29)}>
-        <Text>Go To Step 29</Text>
+      <TouchableOpacity testID="btn-goto-step-30" onPress={() => goToStep(30)}>
+        <Text>Go To Step 30</Text>
+      </TouchableOpacity>
+      <TouchableOpacity testID="btn-goto-step-34" onPress={() => goToStep(34)}>
+        <Text>Go To Step 34</Text>
+      </TouchableOpacity>
+      <TouchableOpacity testID="btn-resume-tour" onPress={() => resumeTour()}>
+        <Text>Resume Tour</Text>
+      </TouchableOpacity>
+      <TouchableOpacity testID="btn-section-muhurta" onPress={() => startSectionTour('muhurta')}>
+        <Text>Muhurta Walkthrough</Text>
+      </TouchableOpacity>
+      <TouchableOpacity testID="btn-whats-new" onPress={() => startWhatsNewTour()}>
+        <Text>Whats New Tour</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        testID="btn-set-denied-location"
+        onPress={() => updateTourRuntimeContext({ locationPermission: 'denied' })}
+      >
+        <Text>Set Denied Location</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        testID="btn-set-edge-context"
+        onPress={() =>
+          updateTourRuntimeContext({
+            notificationPermission: 'denied',
+            plannedTaskCount: 0,
+            completedSadhanaCount: 0,
+            isAbhijitAvailableToday: false,
+            hasNetworkErrorOnCommunity: true,
+          })
+        }
+      >
+        <Text>Set Edge Tour Context</Text>
       </TouchableOpacity>
       <TouchableOpacity testID="btn-skip-tour" onPress={() => requestSkipTour()}>
         <Text>Skip Tour</Text>
@@ -74,12 +114,12 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
     jest.clearAllMocks();
   });
 
-  afterEach(() => {
-    cleanup();
+  afterEach(async () => {
+    await cleanup();
   });
 
   const renderWithProviders = async (ui: React.ReactElement) => {
-    return render(
+    return await render(
       <LanguageProvider>
         <TourProvider>{ui}</TourProvider>
       </LanguageProvider>
@@ -113,10 +153,10 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
   });
 
   describe('Tour Step Definitions & Catalog Invariants', () => {
-    it('defines 7 contiguous sections covering all 30 steps with valid metadata', () => {
-      expect(TOUR_SECTIONS.length).toBe(7);
+    it('defines 8 contiguous sections covering all 35 steps with valid metadata', () => {
+      expect(TOUR_SECTIONS.length).toBe(8);
       expect(TOUR_SECTIONS[0].startStep).toBe(0);
-      expect(TOUR_SECTIONS[TOUR_SECTIONS.length - 1].endStep).toBe(29);
+      expect(TOUR_SECTIONS[TOUR_SECTIONS.length - 1].endStep).toBe(34);
 
       for (let i = 0; i < TOUR_SECTIONS.length; i++) {
         const sec = TOUR_SECTIONS[i];
@@ -131,8 +171,8 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
       }
     });
 
-    it('should define all 30 comprehensive tour steps covering 6 bottom navigation sections', () => {
-      expect(TOUR_STEPS.length).toBe(30);
+    it('should define all 35 comprehensive tour steps covering all 7 tabs, Monthly grid, Japa Mala & Vrat Katha', () => {
+      expect(TOUR_STEPS.length).toBe(35);
 
       const dinacharyaSteps = TOUR_STEPS.filter((s) => s.tab === '/(tabs)' && s.viewMode !== 'planner');
       const dayPlannerSteps = TOUR_STEPS.filter((s) => s.tab === '/(tabs)' && s.viewMode === 'planner');
@@ -140,15 +180,21 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
       const festivalSteps = TOUR_STEPS.filter((s) => s.tab === '/(tabs)/festivals');
       const prayerSteps = TOUR_STEPS.filter((s) => s.tab === '/(tabs)/prayers');
       const moreSteps = TOUR_STEPS.filter((s) => s.tab === '/(tabs)/more');
+      const communitySteps = TOUR_STEPS.filter((s) => s.tab === '/(tabs)/community');
       const settingsSteps = TOUR_STEPS.filter((s) => s.tab === '/(tabs)/settings');
 
-      expect(dinacharyaSteps.length).toBeGreaterThanOrEqual(6);
-      expect(dayPlannerSteps.length).toBeGreaterThanOrEqual(5);
-      expect(muhurtaSteps.length).toBeGreaterThanOrEqual(3);
-      expect(festivalSteps.length).toBeGreaterThanOrEqual(2);
-      expect(prayerSteps.length).toBeGreaterThanOrEqual(3);
-      expect(moreSteps.length).toBeGreaterThanOrEqual(2);
-      expect(settingsSteps.length).toBeGreaterThanOrEqual(3);
+      expect(dinacharyaSteps.length).toBe(11);
+      expect(dayPlannerSteps.length).toBe(6);
+      expect(muhurtaSteps.length).toBe(3);
+      expect(festivalSteps.length).toBe(2);
+      expect(prayerSteps.length).toBe(4);
+      expect(moreSteps.length).toBe(3);
+      expect(communitySteps.length).toBe(2);
+      expect(settingsSteps.length).toBe(4);
+
+      expect(TOUR_STEPS.some((s) => s.viewMode === 'monthly' && s.targetTestID === 'monthly-calendar-grid')).toBe(true);
+      expect(TOUR_STEPS.some((s) => s.targetTestID === 'prayers-japa-mala')).toBe(true);
+      expect(TOUR_STEPS.some((s) => s.moreSection === 'vrat_katha' && s.targetTestID === 'more-tab-vrat_katha')).toBe(true);
     });
 
     it('each tour step must have valid bilingual copy and how-to tips', () => {
@@ -172,6 +218,7 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
       expect(keys).toContain('festivals');
       expect(keys).toContain('prayers');
       expect(keys).toContain('more');
+      expect(keys).toContain('community');
       expect(keys).toContain('settings');
 
       for (const key of keys) {
@@ -237,11 +284,11 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
       });
       expect(screen.getByTestId('current-step-index').props.children).toBe(0);
 
-      // Jump directly to step 16 (Muhurta Finder section)
+      // Jump directly to step 17 (Muhurta Finder section)
       await act(async () => {
-        fireEvent.press(screen.getByTestId('btn-goto-step-16'));
+        fireEvent.press(screen.getByTestId('btn-goto-step-17'));
       });
-      expect(screen.getByTestId('current-step-index').props.children).toBe(16);
+      expect(screen.getByTestId('current-step-index').props.children).toBe(17);
     });
 
     it('invokes router.navigate when step tab changes', async () => {
@@ -318,12 +365,12 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
       expect(screen.getByTestId('tour-section-chip-more')).toBeTruthy();
       expect(screen.getByTestId('tour-section-chip-settings')).toBeTruthy();
 
-      // Tap on Muhurta chip to jump to Muhurta section (step 16)
+      // Tap on Muhurta chip to jump to Muhurta section (step 17)
       await act(async () => {
         fireEvent.press(screen.getByTestId('tour-section-chip-muhurta'));
       });
 
-      expect(screen.getByTestId('current-step-index').props.children).toBe(16);
+      expect(screen.getByTestId('current-step-index').props.children).toBe(17);
     });
 
     it('provides hands-on interactive touch target and triggers tap-to-try feedback', async () => {
@@ -431,12 +478,12 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
         fireEvent.press(screen.getByTestId('btn-start-tour'));
       });
 
-      // Jump to step 29 (last step)
+      // Jump to step 34 (final step across all 7 tabs)
       await act(async () => {
-        fireEvent.press(screen.getByTestId('btn-goto-step-29'));
+        fireEvent.press(screen.getByTestId('btn-goto-step-34'));
       });
 
-      expect(screen.getByTestId('current-step-index').props.children).toBe(29);
+      expect(screen.getByTestId('current-step-index').props.children).toBe(34);
       expect(screen.getByTestId('tour-interactive-finish-btn')).toBeTruthy();
 
       // Finish the tour
@@ -521,18 +568,12 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
         fireEvent.press(screen.getByTestId('btn-start-tour'));
       });
 
-      // Jump to Settings section (starts at step 26)
+      // Jump to Community section (final section: steps 30..31)
       await act(async () => {
-        fireEvent.press(screen.getByTestId('tour-section-chip-settings'));
+        fireEvent.press(screen.getByTestId('tour-section-chip-community'));
       });
 
-      // Advance to step 29 (final step 30)
-      await act(async () => {
-        fireEvent.press(screen.getByTestId('tour-interactive-next-btn'));
-      });
-      await act(async () => {
-        fireEvent.press(screen.getByTestId('tour-interactive-next-btn'));
-      });
+      // Advance to step 31 (final step 32)
       await act(async () => {
         fireEvent.press(screen.getByTestId('tour-interactive-next-btn'));
       });
@@ -598,6 +639,175 @@ describe('Interactive Guided App Tour & Contextual Help Tests', () => {
       // Help modal should close, and interactive tour overlay should become visible
       expect(screen.queryByTestId('contextual-help-modal')).toBeNull();
       expect(screen.getByTestId('interactive-tour-overlay')).toBeTruthy();
+    });
+
+    it('launches scoped single-section walkthrough from ContextualHelpModal without restarting full tour', async () => {
+      await renderWithProviders(
+        <>
+          <TestConsumer />
+          <ContextualHelpModal />
+          <InteractiveTourOverlay />
+        </>
+      );
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('btn-open-help'));
+      });
+
+      const sectionBtn = screen.getByTestId('contextual-help-section-tour-btn');
+      expect(sectionBtn).toBeTruthy();
+
+      await act(async () => {
+        fireEvent.press(sectionBtn);
+      });
+
+      expect(screen.queryByTestId('contextual-help-modal')).toBeNull();
+      expect(screen.getByTestId('interactive-tour-overlay')).toBeTruthy();
+      expect(screen.getByTestId('tour-step-progress-text').props.children).toBe('1/11');
+    });
+  });
+
+  describe('Tour Resume, Section Tracking, Version Updates & State Awareness', () => {
+    it('supports resuming interrupted tour from persisted step index', async () => {
+      await saveTourProgressStep(19);
+      await renderWithProviders(<TestConsumer />);
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('btn-resume-tour'));
+      });
+
+      expect(screen.getByTestId('tour-active-status').props.children).toBe('ACTIVE');
+      expect(screen.getByTestId('current-step-index').props.children).toBe(19);
+    });
+
+    it('tracks version-aware updates without forcing v1 users to repeat all steps', async () => {
+      await markAppTourCompleted(1);
+      await saveTourVersionSeen(1);
+
+      const snapshot = await getTourPersistenceSnapshot();
+      expect(snapshot.hasCompletedTour).toBe(true);
+      expect(snapshot.lastCompletedVersion).toBe(1);
+      expect(snapshot.needsWhatsNewOnly).toBe(true);
+
+      await renderWithProviders(
+        <>
+          <TestConsumer />
+          <InteractiveTourOverlay />
+        </>
+      );
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('btn-whats-new'));
+      });
+
+      expect(screen.getByTestId('current-step-index').props.children).toBe(33);
+      expect(await markTourSectionCompleted('community')).toContain('community');
+      const refreshed = await getTourPersistenceSnapshot();
+      expect(refreshed.lastCompletedVersion).toBe(APP_TOUR_VERSION);
+      expect(refreshed.needsWhatsNewOnly).toBe(false);
+    });
+
+    it('renders state-aware permission rationale banner on location settings step', async () => {
+      await renderWithProviders(
+        <>
+          <TestConsumer />
+          <InteractiveTourOverlay />
+        </>
+      );
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('btn-set-denied-location'));
+      });
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('btn-start-tour'));
+      });
+      await act(async () => {
+        // Step 27 (index 27) is step-settings-location-cal with conditionType: 'location_permission'
+        fireEvent.press(screen.getByTestId('tour-section-chip-settings'));
+      });
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('tour-interactive-next-btn'));
+      });
+
+      const insightBox = screen.getByTestId('tour-state-insight-box');
+      expect(insightBox).toBeTruthy();
+    });
+
+    it('renders dynamic insights for Wednesday no-Abhijit, empty Sadhana/Planner, denied Notifications, and offline Community', async () => {
+      await renderWithProviders(
+        <>
+          <TestConsumer />
+          <InteractiveTourOverlay />
+        </>
+      );
+
+      await fireEvent.press(screen.getByTestId('btn-set-edge-context'));
+      await fireEvent.press(screen.getByTestId('btn-start-tour'));
+
+      // Step 2: Temple Bell -> notification_permission
+      await fireEvent.press(screen.getByTestId('btn-next-step'));
+      await fireEvent.press(screen.getByTestId('btn-next-step'));
+      expect(screen.getByTestId('tour-state-insight-box')).toBeTruthy();
+
+      // Step 6: Live Cosmic Compass -> abhijit_status (Wednesday rule)
+      await fireEvent.press(screen.getByTestId('btn-goto-step-17'));
+      await fireEvent.press(screen.getByTestId('btn-goto-step-30'));
+      // Check planner_empty on dayplanner chip
+      await fireEvent.press(screen.getByTestId('tour-section-chip-dayplanner'));
+      await fireEvent.press(screen.getByTestId('tour-interactive-next-btn'));
+      expect(screen.getByTestId('tour-step-card')).toBeTruthy();
+    });
+
+    it('respects OS reduced-motion preference and exercises updated interactive try prompts across Monthly, Prayers & More', async () => {
+      const reduceSpy = jest
+        .spyOn(AccessibilityInfo, 'isReduceMotionEnabled')
+        .mockResolvedValue(true);
+
+      await renderWithProviders(
+        <>
+          <TestConsumer />
+          <InteractiveTourOverlay />
+        </>
+      );
+
+      await waitFor(() => {
+        expect(reduceSpy).toHaveBeenCalled();
+      });
+
+      await fireEvent.press(screen.getByTestId('btn-start-tour'));
+
+      // Walk Dinacharya -> Language toggle (step 1) & Bell (step 2) -> Monthly Grid (step 10)
+      await fireEvent.press(screen.getByTestId('tour-interactive-next-btn'));
+      await fireEvent.press(screen.getByTestId('tour-interactive-try-btn'));
+      expect(screen.getByTestId('tour-try-mode-banner')).toBeTruthy();
+      await fireEvent.press(screen.getByTestId('tour-continue-btn'));
+
+      await fireEvent.press(screen.getByTestId('tour-interactive-try-btn'));
+      await fireEvent.press(screen.getByTestId('tour-reopen-step-btn'));
+
+      // Jump to Prayers -> tap Try on Collection, Audio, Japa Mala, Chant Loop
+      await fireEvent.press(screen.getByTestId('tour-section-chip-prayers'));
+      for (let i = 0; i < 4; i++) {
+        await fireEvent.press(screen.getByTestId('tour-interactive-try-btn'));
+        await fireEvent.press(screen.getByTestId('tour-continue-btn'));
+      }
+
+      // On More Temples -> Deities -> Vrat Katha
+      await fireEvent.press(screen.getByTestId('tour-section-chip-more'));
+      for (let i = 0; i < 3; i++) {
+        await fireEvent.press(screen.getByTestId('tour-interactive-try-btn'));
+        await fireEvent.press(screen.getByTestId('tour-continue-btn'));
+      }
+
+      // Community Hub & Feedback
+      await fireEvent.press(screen.getByTestId('tour-section-chip-community'));
+      await fireEvent.press(screen.getByTestId('tour-interactive-try-btn'));
+      await fireEvent.press(screen.getByTestId('tour-continue-btn'));
+      await fireEvent.press(screen.getByTestId('tour-interactive-try-btn'));
+      await fireEvent.press(screen.getByTestId('tour-reopen-step-btn'));
+
+      expect(screen.getByTestId('tour-step-card')).toBeTruthy();
+      reduceSpy.mockRestore();
     });
   });
 });

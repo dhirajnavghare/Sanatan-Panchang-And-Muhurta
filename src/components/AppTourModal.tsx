@@ -7,12 +7,13 @@ import {
   TouchableOpacity,
   ScrollView,
   useColorScheme,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Palette, Radius, Spacing } from '@/constants/Colors';
+import { Radius } from '@/constants/Colors';
 import { triggerHaptic } from '@/src/services/sacredAudio';
 import { useTour } from '@/src/services/appTourContext';
+import { getAppTheme, MIN_TOUCH_TARGET } from '@/src/utils/theme';
 
 export interface AppTourModalProps {
   visible: boolean;
@@ -36,80 +37,57 @@ interface TourSlide {
 
 const TOUR_SLIDES: TourSlide[] = [
   {
-    emoji: '🌅',
-    badge: 'Kāla (Cosmic Time)',
-    badgeHi: 'काल चेतना',
+    emoji: '🕉️',
+    badge: 'Welcome • 100% Offline',
+    badgeHi: 'स्वागतम् • १००% ऑफ़लाइन',
     title: 'Welcome to Sanatan Dinacharya',
     titleHi: 'सनातन दिनचर्या में आपका स्वागत है',
-    subtitle: 'Time is not just a clock; it is cosmic Kāla',
-    subtitleHi: 'समय केवल घड़ी नहीं, जीवित काल-ऊर्जा है',
+    subtitle: 'Your authentic daily Panchang, Muhurta & Sadhana companion',
+    subtitleHi: 'दैनिक पञ्चाङ्ग, शुभ मुहूर्त एवं साधना का प्रामाणिक साथी',
     description:
-      'In Vedic tradition, every hour carries a specific spiritual frequency. Sanatan Dinacharya guides you in real time — knowing whether Amrit, Shubh, or Rahu Kaal is active right now so your actions bring peace and triumph.',
+      'See today’s Tithi, sunrise timings, Rahu Kaal alerts, and live auspicious energy right at a glance — computed privately on your device.',
     descriptionHi:
-      'सनातन परम्परा में हर घड़ी का एक विशेष प्रभाव होता है। सनातन दिनचर्या आपको सीधे बताती है कि अभी इस क्षण कौन सा मुहूर्त सक्रिय है — अमृत, शुभ अथवा राहु काल — ताकि आप सही समय पर शुभ कर्म कर सकें।',
-    highlight: '⚡ Live Cosmic Compass: Know your exact auspicious window now',
-    highlightHi: '⚡ सजीव काल कम्पास: जानें अभी क्या शुभ कार्य करना चाहिए',
+      'आज की तिथि, सूर्योदय समय, राहु काल सावधानी और सक्रिय शुभ मुहूर्त तुरंत जानें — पूर्णतः ऑफ़लाइन व निजी गणना के साथ।',
+    highlight: '⚡ Start the 2-minute interactive walkthrough or pick any section below',
+    highlightHi: '⚡ २ मिनट का लाइव गाइड शुरू करें या नीचे से कोई एक अनुभाग चुनें',
   },
   {
     emoji: '🎯',
-    badge: 'Muhurta Day Planner',
-    badgeHi: 'दैनिक कार्य योजना',
-    title: 'Continuous Vedic Day Planner & To-Do',
-    titleHi: 'मुहूर्त आधारित दिनचर्या व To-Do सूची',
-    subtitle: 'Hour-by-hour contiguous timeline from 4 AM to sleep',
-    subtitleHi: 'सुबह 4:00 से रात्रि विश्राम तक की अविरल समय-सारणी',
+    badge: 'Plan Your Day Calmly',
+    badgeHi: 'दिन योजना व नित्य साधना',
+    title: '24h Muhurta Planner & 5 Habits',
+    titleHi: '२४h मुहूर्त दिनचर्या व दैनिक साधना',
+    subtitle: 'Align everyday work with fruitful Vedic windows',
+    subtitleHi: 'हर कार्य को उसके अनुकूल शुभ काल में नियोजित करें',
     description:
-      'A seamless 24-hour schedule connected by Vedic Muhurtas and Choghadiyas. Add 1-tap Shastric preset tasks (Meditation, Surya Arghya, Gita study, Key decisions) or type custom tasks into your daily checklist.',
+      'Schedule tasks into 24-hour Muhurta slots with 1-tap Shastric suggestions, build your 5-habit Sadhana streak, and check Ekadashi or festival dates on the Monthly grid.',
     descriptionHi:
-      'ब्रह्म मुहूर्त से रात्रि शयन तक २४ घंटे की अविरल समय-सारणी। प्रत्येक मुहूर्त में १-टैप से शास्त्रीय सुझाव जोड़ें (ध्यान, सूर्य अर्घ्य, स्वाध्याय, अनुबंध हस्ताक्षर) अथवा अपने निजी कार्य लिखकर टू-डू लिस्ट बनाएं।',
-    highlight: '✨ 1-Tap Presets • Checklists • Completion Progress Badges',
-    highlightHi: '✨ १-टैप सुझाव • चेकलिस्ट • पूर्णता प्रगति 🎯',
+      '२४ घंटे के मुहूर्त स्लॉट्स में अपने कार्य जोड़ें, ५ नित्य साधनाओं से स्ट्रीक बनाएं और मासिक ग्रिड में एकादशी व पर्व देखें।',
+    highlight: '🔔 Pre-scheduled offline reminders keep important windows on time',
+    highlightHi: '🔔 समयपूर्व ऑफ़लाइन अलर्ट हर शुभ मुहूर्त याद दिलाते हैं',
   },
   {
     emoji: '📿',
-    badge: 'Daily Sadhana & Sankalpa',
-    badgeHi: 'नित्यकर्म व सङ्कल्प',
-    title: 'Daily Micro-Sadhana & Gotra Sankalpa',
-    titleHi: 'दैनिक नित्यकर्म साधना व गोत्र सङ्कल्प',
-    subtitle: '5 micro-habits & personalized Vedic Sankalpa',
-    subtitleHi: '५ सूक्ष्म साधनाएं एवं आपके गोत्र-नाम से सङ्कल्प पाठ',
+    badge: 'Devotion, Shrines & Help',
+    badgeHi: 'स्तोत्र, तीर्थ व मार्गदर्शन',
+    title: 'Prayers, Pilgrimages & Help Anytime',
+    titleHi: 'स्तोत्र-जप माला, तीर्थ व तत्काल सहायता',
+    subtitle: 'Everything across 7 dedicated bottom tabs',
+    subtitleHi: '७ व्यवस्थित टैब्स और हर स्क्रीन पर "?" मदद बटन',
     description:
-      'Complete 5 daily micro-habits to build an unbroken spiritual streak: Pre-dawn waking, Surya Arghya, Ishta Puja, Satvik deeds, and Evening Lamp. Recite your authentic daily Gotra & Name Sankalpa in one tap.',
+      'Chant Stotras with a 108-bead haptic Japa Mala, read Vrat Kathas and Jyotirlinga guides, or tap "?" on any screen anytime for quick help or a section tour.',
     descriptionHi:
-      'दैनिक ५ सूक्ष्म साधनाएं पूर्ण कर अपनी स्ट्रीक बनाएं: प्रातः जागरण, सूर्य अर्घ्य, इष्ट पूजा, सात्विक कर्म एवं सायं दीप। साथ ही अपने नाम व गोत्र से युक्त शास्त्रसम्मत दैनिक सङ्कल्प का १-टैप में पाठ करें।',
-    highlight: '🔥 Sadhana Streak • Personalized Vedic Gotra Sankalpa',
-    highlightHi: '🔥 साधना स्ट्रीक • व्यक्तिगत गोत्र सङ्कल्प • आत्म-शांति',
+      '१०८ मनकों की जप माला, व्रत कथा व ज्योतिर्लिंग गाइड का उपयोग करें — किसी भी स्क्रीन पर "?" दबाकर कभी भी सहायता पाएं।',
+    highlight: '🧭 Zero ads, zero tracking — launch live guidance or explore freely',
+    highlightHi: '🧭 शून्य विज्ञापन — लाइव गाइड आज़माएं या सीधे उपयोग शुरू करें',
   },
-  {
-    emoji: '🔔',
-    badge: 'Sacred Audio & Sharing',
-    badgeHi: 'देव ध्वनि व शेयर',
-    title: 'Mandir Brass Bell & WhatsApp Cards',
-    titleHi: 'मन्दिर पीतल घंटी एवं पञ्चाङ्ग शेयर कार्ड',
-    subtitle: 'Sacred acoustic chime & 1-tap family cards',
-    subtitleHi: 'पवित्र ध्वनि तरंगें एवं परिवार संग दैनिक पञ्चाङ्ग साझा',
-    description:
-      'Chime the authentic brass temple bell with real acoustic frequency to start your morning auspiciously. Generate high-devotion, beautiful daily Panchang & Shubh Muhurta cards to share on family WhatsApp groups.',
-    descriptionHi:
-      'शीर्ष पर स्थित मन्दिर की पीतल घंटी बजाकर शुद्ध ध्वनि तरंगों का अनुभव करें। प्रतिदिन सुबह परिवार व मित्रों के वॉट्सऐप ग्रुप के लिए सुंदर, प्रामाणिक पञ्चाङ्ग व शुभ मुहूर्त कार्ड एक टैप में तैयार करें।',
-    highlight: '🔔 Real Brass Bell Chime • 📲 Viral WhatsApp Card Generator',
-    highlightHi: '🔔 वास्तविक पीतल घंटी • 📲 १-टैप वॉट्सऐप ग्रुप कार्ड',
-  },
-  {
-    emoji: '🌟',
-    badge: '6 Sacred Tabs',
-    badgeHi: '६ पवित्र अनुभाग',
-    title: 'Your 6 Sacred Companion Tabs',
-    titleHi: 'आपके ६ दैनिक सहायक अनुभाग',
-    subtitle: 'The comprehensive daily companion for every Sanatani',
-    subtitleHi: 'हर सनातनी का संपूर्ण एवं प्रामाणिक डिजिटल साथी',
-    description:
-      '• दिनचर्या (Dinacharya): Your daily Muhurta Planner & To-Do workspace\n• मुहूर्त (Muhurta): 12+ categories Shubh Muhurta Finder\n• पर्व-व्रत (Festivals): Full Ekadashi, Vrat & Festival almanac\n• स्तोत्र-जप (Prayers): 108-bead Japa Mala counter & Stotras\n• तीर्थ (More): Jyotirlinga, Char Dham & Divine Deities\n• सेटिंग्स (Settings): Personalized Alerts, Gotra Profile & Language',
-    descriptionHi:
-      '• दिनचर्या: आपका दैनिक मुहूर्त प्लानर व टू-डू कार्य योजना\n• मुहूर्त: विवाह, गृह प्रवेश आदि १२+ श्रेणियों का मुहूर्त शोधक\n• पर्व-व्रत: सम्पूर्ण एकादशी, पूर्णिमा व त्योहार पञ्चिका\n• स्तोत्र-जप: १०८ मनकों की जप माला, चालीसा व स्तोत्र संग्रह\n• तीर्थ: ज्योतिर्लिंग, चार धाम व देवी-देवता दर्शन\n• सेटिंग्स: फोन नोटिफिकेशन, गोत्र प्रोफाइल व भाषा सेटिंग्स',
-    highlight: '🚩 Authentic mathematical ephemeris with zero approximations',
-    highlightHi: '🚩 नासा व प्राचीन भारतीय सिद्धान्तों पर आधारित पूर्णतः सटीक',
-  },
+];
+
+const QUICK_LAUNCH_SECTIONS = [
+  { id: 'dinacharya', emoji: '🌅', labelEn: 'Daily', labelHi: 'दिनचर्या' },
+  { id: 'dayplanner', emoji: '🎯', labelEn: 'Planner', labelHi: 'दिन योजना' },
+  { id: 'muhurta', emoji: '✨', labelEn: 'Muhurta', labelHi: 'मुहूर्त' },
+  { id: 'prayers', emoji: '📿', labelEn: 'Prayers', labelHi: 'जप-स्तोत्र' },
 ];
 
 export const AppTourModal: React.FC<AppTourModalProps> = ({
@@ -120,7 +98,9 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { startTour } = useTour();
+  const theme = getAppTheme(isDark);
+  const { width, height } = useWindowDimensions();
+  const { startTour, startSectionTour, resumeTour, savedProgressStep, totalSteps } = useTour();
 
   if (!visible) return null;
 
@@ -159,22 +139,33 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
       testID="app-tour-modal"
     >
       <View style={styles.modalOverlay}>
-        <View style={[styles.tourCard, isDark && styles.tourCardDark]}>
+        <View
+          style={[
+            styles.tourCard,
+            isDark && styles.tourCardDark,
+            {
+              width: Math.min(Math.max(260, width - 32), 420),
+              maxHeight: Math.min(height * 0.88, 640),
+            },
+          ]}
+        >
           {/* Header Row: Step counter & Skip Button */}
           <View style={styles.topRow}>
-            <View style={styles.stepBadge}>
-              <Text style={styles.stepBadgeText}>
+            <View style={[styles.stepBadge, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder, borderWidth: 1 }]}>
+              <Text style={[styles.stepBadgeText, isDark && { color: theme.primary }]}>
                 {isHi ? `चरण ${currentStep + 1} / ${TOUR_SLIDES.length}` : `Step ${currentStep + 1} of ${TOUR_SLIDES.length}`}
               </Text>
             </View>
 
             <TouchableOpacity
               testID="tour-skip-btn"
-              style={styles.skipBtn}
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? 'टूर छोड़ें' : 'Skip tour'}
+              style={[styles.skipBtn, isDark && { backgroundColor: theme.cardMuted }]}
               onPress={handleSkip}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.skipBtnText}>{isHi ? 'छोड़ें ✕' : 'Skip ✕'}</Text>
+              <Text style={[styles.skipBtnText, isDark && { color: theme.textSecondary }]}>{isHi ? 'छोड़ें ✕' : 'Skip ✕'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -185,13 +176,13 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
             showsVerticalScrollIndicator={false}
           >
             {/* Visual Icon */}
-            <View style={styles.iconCircle}>
+            <View style={[styles.iconCircle, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }]}>
               <Text style={styles.iconEmoji}>{currentSlide.emoji}</Text>
             </View>
 
             {/* Category Badge */}
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryBadgeText}>
+            <View style={[styles.categoryBadge, isDark && { backgroundColor: theme.cardMuted }]}>
+              <Text style={[styles.categoryBadgeText, isDark && { color: theme.textSecondary }]}>
                 {isHi ? currentSlide.badgeHi : currentSlide.badge}
               </Text>
             </View>
@@ -202,7 +193,7 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
             </Text>
 
             {/* Subtitle */}
-            <Text style={styles.slideSubtitle}>
+            <Text style={[styles.slideSubtitle, isDark && { color: theme.primary }]}>
               {isHi ? currentSlide.subtitleHi : currentSlide.subtitle}
             </Text>
 
@@ -214,16 +205,40 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
             </View>
 
             {/* Feature Highlight Pill */}
-            <View style={styles.highlightPill}>
-              <Text style={styles.highlightPillText}>
+            <View style={[styles.highlightPill, isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder }]}>
+              <Text style={[styles.highlightPillText, isDark && { color: theme.successText }]}>
                 {isHi ? currentSlide.highlightHi : currentSlide.highlight}
               </Text>
             </View>
 
             {/* Live Interactive Tour Callout Button */}
+            {savedProgressStep > 0 && savedProgressStep < totalSteps && (
+              <TouchableOpacity
+                testID="tour-resume-interactive-btn"
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'अधूरा लाइव टूर जारी रखें' : 'Resume saved live tour'}
+                style={[styles.liveTourBtn, { backgroundColor: '#b45309', marginBottom: 4, minHeight: MIN_TOUCH_TARGET }]}
+                onPress={() => {
+                  triggerHaptic('tap').catch(() => {});
+                  onClose();
+                  resumeTour();
+                }}
+                activeOpacity={0.88}
+              >
+                <Ionicons name="play-forward" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                <Text style={styles.liveTourBtnText}>
+                  {isHi
+                    ? `अधूरा टूर जारी रखें (चरण ${savedProgressStep + 1}/${totalSteps})`
+                    : `Resume Tour (Step ${savedProgressStep + 1}/${totalSteps})`}
+                </Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               testID="tour-start-interactive-btn"
-              style={styles.liveTourBtn}
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? 'संपूर्ण लाइव ऐप टूर देखें' : 'Start Live Guided Tour'}
+              style={[styles.liveTourBtn, { minHeight: MIN_TOUCH_TARGET }]}
               onPress={() => {
                 triggerHaptic('tap').catch(() => {});
                 onClose();
@@ -233,13 +248,48 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
             >
               <Ionicons name="compass" size={17} color="#ffffff" style={{ marginRight: 6 }} />
               <Text style={styles.liveTourBtnText}>
-                {isHi ? '🚀 संपूर्ण लाइव ऐप टूर देखें' : '🚀 Start Live Guided Tour'}
+                {isHi ? '🚀 इंटरएक्टिव लाइव गाइड शुरू करें' : '🚀 Start Interactive Tour (~2 min)'}
               </Text>
             </TouchableOpacity>
+
+            {/* Quick Section Tour Chips for Progressive Learning */}
+            <View style={styles.quickSectionWrap}>
+              <Text style={[styles.quickSectionLabel, { color: theme.textMuted }]}>
+                {isHi ? 'या केवल एक अनुभाग का गाइड चुनें:' : 'Or jump straight to one area:'}
+              </Text>
+              <View style={styles.quickSectionRow}>
+                {QUICK_LAUNCH_SECTIONS.map((sec) => (
+                  <TouchableOpacity
+                    key={sec.id}
+                    testID={`tour-welcome-section-${sec.id}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={isHi ? `${sec.labelHi} गाइड शुरू करें` : `Tour ${sec.labelEn}`}
+                    style={[
+                      styles.quickSectionChip,
+                      {
+                        backgroundColor: theme.cardMuted,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      triggerHaptic('tap').catch(() => {});
+                      onClose();
+                      startSectionTour(sec.id);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.quickSectionEmoji}>{sec.emoji}</Text>
+                    <Text style={[styles.quickSectionChipText, { color: theme.text }]}>
+                      {isHi ? sec.labelHi : sec.labelEn}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           </ScrollView>
 
           {/* Footer: Indicator Dots & Action Buttons */}
-          <View style={styles.footerContainer}>
+          <View style={[styles.footerContainer, isDark && { borderTopColor: theme.border }]}>
             {/* Dots */}
             <View style={styles.dotsRow}>
               {TOUR_SLIDES.map((_, idx) => (
@@ -258,12 +308,14 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
               {currentStep > 0 ? (
                 <TouchableOpacity
                   testID="tour-back-btn"
-                  style={styles.backBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'पिछला परिचय कार्ड' : 'Previous intro slide'}
+                  style={[styles.backBtn, { minHeight: MIN_TOUCH_TARGET }]}
                   onPress={handleBack}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="arrow-back" size={16} color="#71717a" style={{ marginRight: 4 }} />
-                  <Text style={styles.backBtnText}>{isHi ? 'पीछे' : 'Back'}</Text>
+                  <Ionicons name="arrow-back" size={16} color={theme.textMuted} style={{ marginRight: 4 }} />
+                  <Text style={[styles.backBtnText, { color: theme.textMuted }]}>{isHi ? 'पीछे' : 'Back'}</Text>
                 </TouchableOpacity>
               ) : (
                 <View style={{ width: 70 }} />
@@ -271,13 +323,19 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
 
               <TouchableOpacity
                 testID={isLastStep ? 'tour-finish-btn' : 'tour-next-btn'}
-                style={[styles.primaryBtn, isLastStep && styles.primaryBtnFinish]}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isLastStep
+                    ? (isHi ? 'स्वयं उपयोग शुरू करें' : 'Explore on my own')
+                    : (isHi ? 'अगला परिचय' : 'Next overview')
+                }
+                style={[styles.primaryBtn, { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' }, isLastStep && styles.primaryBtnFinish]}
                 onPress={handleNext}
                 activeOpacity={0.8}
               >
                 <Text style={styles.primaryBtnText}>
                   {isLastStep
-                    ? isHi ? 'आरम्भ करें 🙏' : 'Get Started 🙏'
+                    ? isHi ? 'स्वयं देखें 🙏' : 'Explore App 🙏'
                     : isHi ? 'आगे बढ़ें →' : 'Next →'}
                 </Text>
               </TouchableOpacity>
@@ -288,8 +346,6 @@ export const AppTourModal: React.FC<AppTourModalProps> = ({
     </Modal>
   );
 };
-
-const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -303,8 +359,9 @@ const styles = StyleSheet.create({
   tourCard: {
     backgroundColor: '#ffffff',
     borderRadius: 24,
-    width: Math.min(width - 32, 420),
-    maxHeight: Math.min(height * 0.88, 640),
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '88%',
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 16,
@@ -327,23 +384,26 @@ const styles = StyleSheet.create({
   },
   stepBadge: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 10,
   },
   stepBadgeText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#b45309',
   },
   skipBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   skipBtnText: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#52525b',
   },
   scrollArea: {
     flexGrow: 0,
@@ -373,38 +433,38 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     backgroundColor: '#f4f4f5',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 8,
     marginBottom: 8,
   },
   categoryBadgeText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#52525b',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   slideTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: '#18181b',
     textAlign: 'center',
-    marginBottom: 4,
-    lineHeight: 24,
+    marginBottom: 6,
+    lineHeight: 27,
   },
   slideSubtitle: {
-    fontSize: 13,
+    fontSize: 14.5,
     fontWeight: '600',
     color: '#b45309',
     textAlign: 'center',
     marginBottom: 12,
-    lineHeight: 18,
+    lineHeight: 21,
   },
   descriptionBox: {
     backgroundColor: '#f8fafc',
     borderRadius: 14,
-    padding: 12,
+    padding: 14,
     width: '100%',
     marginBottom: 12,
     borderWidth: 1,
@@ -415,27 +475,28 @@ const styles = StyleSheet.create({
     borderColor: '#383848',
   },
   descriptionText: {
-    fontSize: 13,
+    fontSize: 14.5,
     color: '#334155',
-    lineHeight: 19,
+    lineHeight: 22,
     textAlign: 'left',
     fontWeight: '400',
   },
   highlightPill: {
     backgroundColor: '#ecfdf5',
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#a7f3d0',
     width: '100%',
     alignItems: 'center',
   },
   highlightPillText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: '#047857',
     textAlign: 'center',
+    lineHeight: 19,
   },
   liveTourBtn: {
     flexDirection: 'row',
@@ -443,8 +504,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#d97706',
     borderRadius: Radius.lg,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     marginTop: 10,
     shadowColor: '#d97706',
     shadowOffset: { width: 0, height: 3 },
@@ -453,9 +514,42 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   liveTourBtnText: {
-    fontSize: 13,
+    fontSize: 14.5,
     fontWeight: '700',
     color: '#ffffff',
+  },
+  quickSectionWrap: {
+    width: '100%',
+    marginTop: 14,
+    alignItems: 'center',
+  },
+  quickSectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  quickSectionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  quickSectionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  quickSectionEmoji: {
+    fontSize: 14,
+  },
+  quickSectionChipText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   footerContainer: {
     marginTop: 12,
@@ -498,16 +592,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   backBtnText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#52525b',
   },
   primaryBtn: {
     backgroundColor: '#b45309',
     paddingHorizontal: 22,
     paddingVertical: 12,
     borderRadius: 14,
-    minWidth: 120,
+    minWidth: 130,
     alignItems: 'center',
     shadowColor: '#b45309',
     shadowOffset: { width: 0, height: 3 },
@@ -520,7 +614,7 @@ const styles = StyleSheet.create({
     shadowColor: '#047857',
   },
   primaryBtnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
     color: '#ffffff',
   },

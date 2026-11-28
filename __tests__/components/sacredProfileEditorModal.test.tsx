@@ -1,4 +1,5 @@
 import React from 'react';
+import { Switch } from 'react-native';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react-native';
 import { SacredProfileEditorModal } from '../../src/components/SacredProfileEditorModal';
 import { DEFAULT_USER_PROFILE, UserSacredProfile } from '../../src/services/userProfile';
@@ -84,5 +85,50 @@ describe('SacredProfileEditorModal - Interactive Profile Editor UI Tests', () =>
     });
 
     expect(mockOnClose).toHaveBeenCalled();
+  });
+
+  it('allows tapping Gotra quick pills, Ishta Devata cards, Kuldevi input, and notification switches in English', async () => {
+    const { container } = await render(
+      <SacredProfileEditorModal
+        visible={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        profile={DEFAULT_USER_PROFILE}
+        isHi={false}
+      />
+    );
+
+    const atriPill = screen.getByText(/Atri|अत्रि/i);
+    await fireEvent.press(atriPill);
+
+    const krishnaCard = screen.getByText('Lord Sri Krishna');
+    await fireEvent.press(krishnaCard);
+
+    const kuldeviInput = screen.getByPlaceholderText('e.g. Vindhyavasini');
+    await fireEvent.changeText(kuldeviInput, 'Maa Bhavani');
+
+    const switches: { props: { value?: boolean } }[] = [];
+    const collectSwitches = (node: unknown) => {
+      if (!node || typeof node !== 'object') return;
+      const inst = node as { type?: unknown; props?: { value?: boolean }; children?: unknown[] };
+      if (inst.type === Switch || inst.type === 'RCTSwitch') {
+        switches.push(inst as { props: { value?: boolean } });
+      }
+      if (Array.isArray(inst.children)) {
+        for (const c of inst.children) collectSwitches(c);
+      }
+    };
+    collectSwitches(container);
+
+    expect(switches.length).toBeGreaterThanOrEqual(4);
+    for (const sw of switches) {
+      await fireEvent(sw as never, 'valueChange', !sw.props.value);
+    }
+
+    await fireEvent.press(screen.getByTestId('profile-save-btn'));
+    expect(mockOnSave).toHaveBeenCalledTimes(1);
+    const saved = mockOnSave.mock.calls[0][0] as UserSacredProfile;
+    expect(saved.ishtaDevata).toBe('Lord Sri Krishna');
+    expect(saved.kuldeviOrDevata).toBe('Maa Bhavani');
   });
 });

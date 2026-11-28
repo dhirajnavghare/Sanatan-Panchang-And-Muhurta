@@ -3,9 +3,9 @@ import { StyleSheet, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors, { Palette } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
+import { getAppTheme, Typography } from '@/src/utils/theme';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -13,42 +13,46 @@ export default function TabLayout() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
   const isDark = colorScheme === 'dark';
+  const theme = getAppTheme(isDark);
 
-  const bottomInset = Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 8);
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 10);
 
   return (
     <Tabs
       screenOptions={{
         tabBarShowLabel: true,
-        tabBarActiveTintColor: Palette.primary,
-        tabBarInactiveTintColor: isDark ? '#a1a1aa' : '#71717a',
+        tabBarAllowFontScaling: true,
+        tabBarHideOnKeyboard: true,
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
         tabBarLabelStyle: styles.tabLabel,
+        tabBarItemStyle: styles.tabItem,
         tabBarIconStyle: {
           marginTop: 2,
         },
         tabBarStyle: {
-          backgroundColor: isDark ? '#16161c' : '#ffffff',
+          backgroundColor: theme.headerBg,
           borderTopWidth: 1,
-          borderTopColor: isDark ? '#27272a' : '#e4e4e7',
-          height: Platform.OS === 'ios' ? 56 + bottomInset : 58 + bottomInset,
+          borderTopColor: theme.border,
+          minHeight: Platform.OS === 'ios' ? 62 + bottomInset : 64 + bottomInset,
           paddingBottom: bottomInset,
           paddingTop: 6,
-          elevation: 8,
+          elevation: 6,
           shadowColor: '#000000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.05,
           shadowRadius: 6,
         },
         headerStyle: {
-          backgroundColor: isDark ? '#16161c' : '#ffffff',
+          backgroundColor: theme.headerBg,
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#27272a' : '#f4f4f5',
+          borderBottomColor: theme.borderSubtle,
         },
-        headerTintColor: Colors[colorScheme].text,
+        headerTintColor: theme.text,
         headerTitleStyle: {
-          fontWeight: '700',
+          ...Typography.sectionHeading,
           fontSize: 18,
         },
       }}
@@ -62,7 +66,7 @@ export default function TabLayout() {
             <Ionicons
               name={focused ? 'today' : 'today-outline'}
               size={23}
-              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+              color={focused ? theme.primary : theme.textMuted}
             />
           ),
         }}
@@ -71,12 +75,12 @@ export default function TabLayout() {
         name="muhurta"
         options={{
           title: isHi ? 'मुहूर्त' : 'Muhurta',
-          headerTitle: isHi ? 'शुभ मुहूर्त शोधक' : 'Shubh Muhurta Finder',
+          headerTitle: isHi ? 'शुभ मुहूर्त खोजें' : 'Find Auspicious Times',
           tabBarIcon: ({ focused }) => (
             <Ionicons
               name={focused ? 'sparkles' : 'sparkles-outline'}
-              size={23}
-              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+              size={24}
+              color={focused ? theme.primary : theme.textSecondary}
             />
           ),
         }}
@@ -85,12 +89,12 @@ export default function TabLayout() {
         name="festivals"
         options={{
           title: isHi ? 'पर्व-व्रत' : 'Festivals',
-          headerTitle: isHi ? 'पर्व एवं व्रत पञ्चिका' : 'Festivals & Vrats',
+          headerTitle: isHi ? 'पर्व एवं व्रत कैलेंडर' : 'Festivals & Fasting Days',
           tabBarIcon: ({ focused }) => (
             <Ionicons
               name={focused ? 'flame' : 'flame-outline'}
-              size={23}
-              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+              size={24}
+              color={focused ? theme.primary : theme.textSecondary}
             />
           ),
         }}
@@ -99,12 +103,12 @@ export default function TabLayout() {
         name="prayers"
         options={{
           title: isHi ? 'स्तोत्र-जप' : 'Prayers',
-          headerTitle: isHi ? 'स्तोत्र, मन्त्र एवं जप माला' : 'Sacred Prayers & Japa',
+          headerTitle: isHi ? 'प्रार्थना, स्तोत्र व जप माला' : 'Prayers & Japa Mala',
           tabBarIcon: ({ focused }) => (
             <Ionicons
               name={focused ? 'book' : 'book-outline'}
-              size={23}
-              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+              size={24}
+              color={focused ? theme.primary : theme.textSecondary}
             />
           ),
         }}
@@ -113,12 +117,12 @@ export default function TabLayout() {
         name="more"
         options={{
           title: isHi ? 'तीर्थ' : 'More',
-          headerTitle: isHi ? 'तीर्थ, देव एवं व्रत कथा' : 'Temples, Deities & Kathas',
+          headerTitle: isHi ? 'तीर्थ, देवता व व्रत कथा' : 'Temples, Deities & Stories',
           tabBarIcon: ({ focused }) => (
             <Ionicons
               name={focused ? 'library' : 'library-outline'}
-              size={22}
-              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+              size={24}
+              color={focused ? theme.primary : theme.textSecondary}
             />
           ),
         }}
@@ -127,12 +131,12 @@ export default function TabLayout() {
         name="community"
         options={{
           title: isHi ? 'प्रोजेक्ट' : 'Project',
-          headerTitle: isHi ? 'प्रोजेक्ट हब एवं प्रतिक्रिया' : 'Project Hub & Feedback',
+          headerTitle: isHi ? 'प्रोजेक्ट जानकारी व सुझाव' : 'Updates & Feedback',
           tabBarIcon: ({ focused }) => (
             <Ionicons
               name={focused ? 'people' : 'people-outline'}
-              size={22}
-              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+              size={24}
+              color={focused ? theme.primary : theme.textSecondary}
             />
           ),
         }}
@@ -141,12 +145,12 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: isHi ? 'सेटिंग्स' : 'Settings',
-          headerTitle: isHi ? 'ऍप सेटिंग्स एवं प्राथमिकताएं' : 'App Settings & Preferences',
+          headerTitle: isHi ? 'सेटिंग्स एवं भाषा' : 'Settings & Preferences',
           tabBarIcon: ({ focused }) => (
             <Ionicons
               name={focused ? 'settings' : 'settings-outline'}
-              size={22}
-              color={focused ? Palette.primary : (isDark ? '#a1a1aa' : '#71717a')}
+              size={24}
+              color={focused ? theme.primary : theme.textSecondary}
             />
           ),
         }}
@@ -156,9 +160,16 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  tabItem: {
+    paddingHorizontal: 1,
+    paddingVertical: 2,
+    minWidth: 0,
+    minHeight: 50,
+  },
   tabLabel: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11.5,
+    fontWeight: '700',
+    lineHeight: 15,
     marginTop: 2,
   },
 });

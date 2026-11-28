@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   NativeModules,
+  useColorScheme,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { ALL_RASHIS, getDailyRashiOutlook } from '../services/rashiBhavishya';
 import { triggerHaptic } from '../services/sacredAudio';
+import { COMFORT_TOUCH_TARGET, getAppTheme, MIN_TOUCH_TARGET, Typography } from '../utils/theme';
 
 export const SELECTED_RASHI_STORAGE_KEY = '@sanatan_selected_rashi_v1';
 
@@ -34,29 +36,41 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
   isHi,
   hapticsEnabled = true,
 }) => {
-  const [selectedRashi, setSelectedRashi] = useState<number>(
-    savedRashiIndex !== undefined ? savedRashiIndex : (moonRashiIndex || 0)
-  );
+  const isDark = useColorScheme() === 'dark';
+  const theme = getAppTheme(isDark);
+  const [loadedStorageRashi, setLoadedStorageRashi] = useState<number | null>(null);
+  const [localSelection, setLocalSelection] = useState<{
+    baseSaved: number | undefined;
+    value: number;
+  } | null>(null);
   const cardRef = useRef<any>(null);
   const [isSharing, setIsSharing] = useState(false);
 
-  // Sync state whenever savedRashiIndex changes (e.g. after async AsyncStorage loading)
+  // Async storage hydration when savedRashiIndex isn't externally provided
   useEffect(() => {
-    if (savedRashiIndex !== undefined) {
-      setSelectedRashi(savedRashiIndex);
-    } else {
+    let mounted = true;
+    if (savedRashiIndex === undefined) {
       AsyncStorage.getItem(SELECTED_RASHI_STORAGE_KEY)
         .then((val) => {
-          if (val !== null) {
-            const parsed = parseInt(val, 10);
-            if (!isNaN(parsed) && parsed >= 0 && parsed < ALL_RASHIS.length) {
-              setSelectedRashi(parsed);
-            }
+          if (!mounted || val === null) return;
+          const parsed = parseInt(val, 10);
+          if (!isNaN(parsed) && parsed >= 0 && parsed < ALL_RASHIS.length) {
+            setLoadedStorageRashi(parsed);
           }
         })
         .catch(() => {});
     }
+    return () => {
+      mounted = false;
+    };
   }, [savedRashiIndex]);
+
+  const selectedRashi =
+    localSelection && localSelection.baseSaved === savedRashiIndex
+      ? localSelection.value
+      : savedRashiIndex !== undefined
+        ? savedRashiIndex
+        : loadedStorageRashi ?? (moonRashiIndex || 0);
 
   const outlook = useMemo(() => {
     return getDailyRashiOutlook(selectedRashi, moonRashiIndex, new Date());
@@ -82,7 +96,7 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
 
   const handleSelectRashi = (idx: number) => {
     triggerHaptic('tap', hapticsEnabled).catch(() => {});
-    setSelectedRashi(idx);
+    setLocalSelection({ baseSaved: savedRashiIndex, value: idx });
     AsyncStorage.setItem(SELECTED_RASHI_STORAGE_KEY, String(idx)).catch(() => {});
   };
 
@@ -210,17 +224,23 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
   const isMyRashi = savedRashiIndex === selectedRashi;
 
   return (
-    <View style={styles.container} testID="daily-rashi-card">
+    <View
+      style={[
+        styles.container,
+        isDark && { backgroundColor: theme.card, borderColor: theme.border },
+      ]}
+      testID="daily-rashi-card"
+    >
       {/* Header Bar */}
       <View style={styles.headerRow}>
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
           <View style={styles.headerBadgeGroup}>
             <Text style={styles.headerIcon}>🪐</Text>
-            <Text style={styles.headerTitle}>
+            <Text style={[styles.headerTitle, isDark && { color: theme.text }]}>
               {isHi ? 'दैनिक गोचर राशिफल व उपाय' : 'Daily Vedic Horoscope & Remedy'}
             </Text>
           </View>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerSubtitle, isDark && { color: theme.textMuted }]}>
             {isHi
               ? 'चन्द्र गोचर आधारित प्रामाणिक फल एवं दैनिक साधना'
               : 'Authentic Moon transit outlook & daily spiritual remedies'}
@@ -230,11 +250,25 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
         {onSaveRashi && (
           <TouchableOpacity
             testID="rashi-set-my-btn"
-            style={[styles.myRashiPill, isMyRashi && styles.myRashiPillActive]}
+            accessibilityRole="button"
+            accessibilityLabel={isMyRashi ? (isHi ? 'मेरी राशि चयनित' : 'My sign saved') : (isHi ? 'मेरी राशि चुनें' : 'Set as my sign')}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            style={[
+              styles.myRashiPill,
+              { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' },
+              isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+              isMyRashi && [styles.myRashiPillActive, isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder }],
+            ]}
             onPress={handleSetAsMyRashi}
             activeOpacity={0.7}
           >
-            <Text style={[styles.myRashiText, isMyRashi && styles.myRashiTextActive]}>
+            <Text
+              style={[
+                styles.myRashiText,
+                isDark && { color: theme.textSecondary },
+                isMyRashi && [styles.myRashiTextActive, isDark && { color: theme.successText }],
+              ]}
+            >
               {isMyRashi ? (isHi ? '✓ मेरी राशि' : '✓ My Sign') : (isHi ? '+ मेरी राशि चुनें' : '+ Set My Sign')}
             </Text>
           </TouchableOpacity>
@@ -254,8 +288,13 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
             <TouchableOpacity
               key={r.index}
               testID={`rashi-pill-${r.index}`}
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? `${r.nameHi} राशि` : `${r.nameEn} sign`}
+              accessibilityState={{ selected: isSelected }}
               style={[
                 styles.rashiPill,
+                { minHeight: MIN_TOUCH_TARGET },
+                isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
                 isSelected && {
                   backgroundColor: r.colorHex,
                   borderColor: r.colorHex,
@@ -268,6 +307,7 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
               <Text
                 style={[
                   styles.rashiPillName,
+                  isDark && { color: theme.textSecondary },
                   isSelected && styles.rashiPillNameSelected,
                 ]}
               >
@@ -285,12 +325,12 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
       <View
         ref={cardRef}
         collapsable={false}
-        style={styles.outlookBody}
+        style={[styles.outlookBody, isDark && { backgroundColor: theme.surface, borderColor: theme.border }]}
       >
         {/* Sacred Card Header for Visual Share */}
-        <View style={styles.cardShareHeader}>
-          <Text style={styles.cardSacredMantra}>॥ ॐ श्री सूर्याय नमः ॥</Text>
-          <Text style={styles.cardDateText}>{formattedDate}</Text>
+        <View style={[styles.cardShareHeader, isDark && { borderBottomColor: theme.border }]}>
+          <Text style={[styles.cardSacredMantra, isDark && { color: theme.primary }]}>॥ ॐ श्री सूर्याय नमः ॥</Text>
+          <Text style={[styles.cardDateText, isDark && { color: theme.textMuted }]}>{formattedDate}</Text>
         </View>
 
         {/* Rashi & Energy Header */}
@@ -298,10 +338,10 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
           <View style={styles.rashiIdentityRow}>
             <Text style={styles.rashiSymbolLarge}>{outlook.rashi.symbol}</Text>
             <View style={styles.rashiTextCol}>
-              <Text style={styles.rashiNameTitle}>
+              <Text style={[styles.rashiNameTitle, isDark && { color: theme.text }]}>
                 {isHi ? `${outlook.rashi.nameHi} राशि` : `${outlook.rashi.nameEn} (Sign)`}
               </Text>
-              <Text style={styles.rashiLordText}>
+              <Text style={[styles.rashiLordText, isDark && { color: theme.textMuted }]}>
                 {isHi
                   ? `स्वामी: ${outlook.rashi.lordHi} • ${outlook.rashi.elementHi}`
                   : `Ruler: ${outlook.rashi.lordEn} • ${outlook.rashi.elementEn}`}
@@ -309,19 +349,19 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
             </View>
           </View>
 
-          <View style={styles.energyBadge}>
-            <Text style={styles.energyBadgeText}>
+          <View style={[styles.energyBadge, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }]}>
+            <Text style={[styles.energyBadgeText, isDark && { color: theme.primary }]}>
               {isHi ? outlook.energyLevelHi : outlook.energyLevelEn}
             </Text>
           </View>
         </View>
 
         {/* House Transit Highlight */}
-        <View style={styles.transitBanner}>
-          <Text style={styles.transitTitle}>
+        <View style={[styles.transitBanner, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Text style={[styles.transitTitle, isDark && { color: theme.text }]}>
             {isHi ? outlook.houseTitleHi : outlook.houseTitleEn}
           </Text>
-          <Text style={styles.transitGuidance}>
+          <Text style={[styles.transitGuidance, isDark && { color: theme.textSecondary }]}>
             {isHi ? outlook.guidanceHi : outlook.guidanceEn}
           </Text>
         </View>
@@ -331,30 +371,30 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
           {/* Row 1: Lucky Color & Lucky Number */}
           <View style={styles.attributesRow}>
             {/* Lucky Color */}
-            <View style={[styles.attrCard, { flex: 1.6 }]}>
+            <View style={[styles.attrCard, { flex: 1.6 }, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
               <Text style={styles.attrEmoji}>🎨</Text>
               <View style={styles.attrTextCol}>
-                <Text style={styles.attrLabel}>{isHi ? 'शुभ रंग' : 'Lucky Color'}</Text>
-                <Text style={styles.attrValue}>{isHi ? outlook.luckyColorHi : outlook.luckyColorEn}</Text>
+                <Text style={[styles.attrLabel, isDark && { color: theme.textMuted }]}>{isHi ? 'शुभ रंग' : 'Lucky Color'}</Text>
+                <Text style={[styles.attrValue, isDark && { color: theme.text }]}>{isHi ? outlook.luckyColorHi : outlook.luckyColorEn}</Text>
               </View>
             </View>
 
             {/* Lucky Number */}
-            <View style={[styles.attrCard, { flex: 1 }]}>
+            <View style={[styles.attrCard, { flex: 1 }, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
               <Text style={styles.attrEmoji}>🔢</Text>
               <View style={styles.attrTextCol}>
-                <Text style={styles.attrLabel}>{isHi ? 'शुभ अंक' : 'Lucky No.'}</Text>
-                <Text style={styles.attrValue}>{outlook.luckyNumber}</Text>
+                <Text style={[styles.attrLabel, isDark && { color: theme.textMuted }]}>{isHi ? 'शुभ अंक' : 'Lucky No.'}</Text>
+                <Text style={[styles.attrValue, isDark && { color: theme.text }]}>{outlook.luckyNumber}</Text>
               </View>
             </View>
           </View>
 
           {/* Row 2: Ishtadev (Full prominence) */}
-          <View style={[styles.attrCard, styles.attrCardFull]}>
+          <View style={[styles.attrCard, styles.attrCardFull, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
             <Text style={styles.attrEmoji}>🕉️</Text>
             <View style={styles.attrTextCol}>
-              <Text style={styles.attrLabel}>{isHi ? 'आराध्य देव' : 'Ishta Deity'}</Text>
-              <Text style={styles.attrValue}>
+              <Text style={[styles.attrLabel, isDark && { color: theme.textMuted }]}>{isHi ? 'आराध्य देव' : 'Ishta Deity'}</Text>
+              <Text style={[styles.attrValue, isDark && { color: theme.text }]}>
                 {isHi ? outlook.rashi.ishtadevHi : outlook.rashi.ishtadevEn}
               </Text>
             </View>
@@ -362,37 +402,39 @@ export const DailyRashiCard: React.FC<DailyRashiCardProps> = ({
         </View>
 
         {/* Daily Satvik Upay */}
-        <View style={styles.upayCard}>
+        <View style={[styles.upayCard, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }]}>
           <View style={styles.upayHeaderRow}>
             <Text style={styles.upayIcon}>🌸</Text>
-            <Text style={styles.upayTitle}>
-              {isHi ? 'आज का सात्विक उपाय व कर्म' : 'Satvik Remedy of the Day'}
+            <Text style={[styles.upayTitle, isDark && { color: theme.primary }]}>
+              {isHi ? 'आज का सात्विक उपाय व कर्म' : 'Simple Daily Good Deed'}
             </Text>
           </View>
-          <Text style={styles.upayText}>
+          <Text style={[styles.upayText, isDark && { color: theme.textSecondary }]}>
             {isHi ? outlook.satvikActionHi : outlook.satvikActionEn}
           </Text>
         </View>
 
         {/* Seed Mantra Pill */}
-        <View style={styles.mantraRow}>
-          <Text style={styles.mantraLabel}>{isHi ? 'दैनिक मन्त्र:' : 'Daily Mantra:'}</Text>
-          <Text style={styles.mantraText}>{outlook.rashi.seedMantra}</Text>
+        <View style={[styles.mantraRow, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Text style={[styles.mantraLabel, isDark && { color: theme.textMuted }]}>{isHi ? 'दैनिक मन्त्र:' : 'Daily Mantra:'}</Text>
+          <Text style={[styles.mantraText, isDark && { color: theme.primary }]}>{outlook.rashi.seedMantra}</Text>
         </View>
 
         {/* Card Footer for Visual Share (Branding) */}
-        <View style={styles.cardShareFooter}>
-          <Text style={styles.cardBrandTitle}>
+        <View style={[styles.cardShareFooter, isDark && { borderTopColor: theme.border }]}>
+          <Text style={[styles.cardBrandTitle, isDark && { color: theme.primary }]}>
             🚩 {isHi ? 'सनातन — प्रामाणिक वैदिक पञ्चाङ्ग व मुहूर्त साथी' : 'Sanatan — Authentic Vedic Panchang & Muhurta'}
           </Text>
-          <Text style={styles.cardBrandUrl}>sanatan.cc</Text>
+          <Text style={[styles.cardBrandUrl, isDark && { color: theme.textMuted }]}>sanatan.cc</Text>
         </View>
       </View>
 
       {/* WhatsApp Share Daily Horoscope Button */}
       <TouchableOpacity
         testID="rashi-share-whatsapp-btn"
-        style={styles.whatsAppShareRashiBtn}
+        accessibilityRole="button"
+        accessibilityLabel={isHi ? 'WhatsApp पर राशिफल शेयर करें' : 'Share Horoscope on WhatsApp'}
+        style={[styles.whatsAppShareRashiBtn, { minHeight: COMFORT_TOUCH_TARGET }]}
         onPress={handleShareHoroscopeWhatsApp}
         activeOpacity={0.8}
         disabled={isSharing}
@@ -430,6 +472,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 12,
     backgroundColor: 'transparent',
   },
@@ -437,20 +481,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 2,
+    marginBottom: 3,
     backgroundColor: 'transparent',
   },
   headerIcon: {
-    fontSize: 16,
+    fontSize: 18,
   },
   headerTitle: {
-    fontSize: 16,
+    ...Typography.cardTitle,
+    fontSize: 17,
     fontWeight: '800',
     color: '#1f2937',
+    flexShrink: 1,
   },
   headerSubtitle: {
-    fontSize: 11.5,
-    color: '#6b7280',
+    ...Typography.bodyMuted,
+    fontSize: 13.5,
+    color: '#52525b',
     fontWeight: '500',
   },
   whatsAppShareRashiBtn: {
@@ -458,63 +505,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#25D366',
-    paddingVertical: 10,
+    backgroundColor: '#16a34a',
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 12,
-    marginTop: 10,
-    shadowColor: '#25D366',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 14,
+    marginTop: 12,
   },
   whatsAppShareRashiText: {
     color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700',
+    ...Typography.button,
   },
   myRashiPill: {
     backgroundColor: '#f3f4f6',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    marginLeft: 6,
   },
   myRashiPillActive: {
     backgroundColor: '#ecfdf5',
     borderColor: '#a7f3d0',
   },
   myRashiText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#4b5563',
+    color: '#374151',
   },
   myRashiTextActive: {
-    color: '#059669',
+    color: '#047857',
   },
   rashiSelectorScroll: {
-    paddingBottom: 10,
-    gap: 6,
+    paddingBottom: 12,
+    gap: 8,
   },
   rashiPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     backgroundColor: '#f9fafb',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   rashiSymbol: {
-    fontSize: 13,
+    fontSize: 15,
   },
   rashiPillName: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#374151',
   },
@@ -522,16 +562,16 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   savedDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#10b981',
     marginLeft: 2,
   },
   outlookBody: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 12,
+    padding: 14,
     borderWidth: 1.5,
     borderColor: '#f3f4f6',
   },
@@ -539,42 +579,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
     paddingBottom: 8,
-    marginBottom: 8,
+    marginBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
     backgroundColor: 'transparent',
   },
   cardSacredMantra: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#b45309',
     fontFamily: 'serif',
   },
   cardDateText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#52525b',
   },
   cardShareFooter: {
-    marginTop: 10,
-    paddingTop: 8,
+    marginTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
     backgroundColor: 'transparent',
   },
   cardBrandTitle: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#b45309',
+    flexShrink: 1,
   },
   cardBrandUrl: {
-    fontSize: 9.5,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#9ca3af',
+    color: '#71717a',
   },
   bodyTopRow: {
     flexDirection: 'row',
@@ -582,15 +627,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 8,
-    rowGap: 8,
-    columnGap: 8,
     marginBottom: 10,
     backgroundColor: 'transparent',
   },
   rashiIdentityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     flexShrink: 1,
     backgroundColor: 'transparent',
   },
@@ -599,59 +642,60 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   rashiSymbolLarge: {
-    fontSize: 26,
+    fontSize: 28,
   },
   rashiNameTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '800',
     color: '#111827',
   },
   rashiLordText: {
-    fontSize: 11,
-    color: '#6b7280',
+    fontSize: 13,
+    color: '#52525b',
     fontWeight: '600',
+    marginTop: 2,
   },
   energyBadge: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#fde68a',
     alignSelf: 'flex-start',
   },
   energyBadgeText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#b45309',
   },
   transitBanner: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 10,
+    padding: 12,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   transitTitle: {
-    fontSize: 12.5,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#1f2937',
     marginBottom: 4,
   },
   transitGuidance: {
-    fontSize: 12,
-    color: '#4b5563',
-    lineHeight: 17,
+    ...Typography.bodyMuted,
+    color: '#3f3f46',
   },
   attributesContainer: {
-    gap: 6,
+    gap: 8,
     marginBottom: 10,
     backgroundColor: 'transparent',
   },
   attributesRow: {
     flexDirection: 'row',
-    gap: 6,
+    flexWrap: 'wrap',
+    gap: 8,
     backgroundColor: 'transparent',
   },
   attrCard: {
@@ -659,12 +703,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     backgroundColor: '#ffffff',
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    overflow: 'hidden',
   },
   attrCardFull: {
     width: '100%',
@@ -674,47 +717,48 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   attrEmoji: {
-    fontSize: 16,
+    fontSize: 18,
   },
   attrLabel: {
-    fontSize: 9.5,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#6b7280',
+    color: '#52525b',
     textTransform: 'uppercase',
   },
   attrValue: {
-    fontSize: 11.5,
+    fontSize: 14,
     fontWeight: '800',
     color: '#1f2937',
     flexShrink: 1,
+    marginTop: 1,
   },
   upayCard: {
     backgroundColor: '#fefce8',
     borderRadius: 12,
-    padding: 10,
-    marginBottom: 8,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#fef08a',
   },
   upayHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 3,
+    gap: 6,
+    marginBottom: 4,
     backgroundColor: 'transparent',
   },
   upayIcon: {
-    fontSize: 12,
+    fontSize: 14,
   },
   upayTitle: {
-    fontSize: 11.5,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#854d0e',
   },
   upayText: {
-    fontSize: 11.5,
+    fontSize: 13.5,
     color: '#713f12',
-    lineHeight: 16,
+    lineHeight: 19,
   },
   mantraRow: {
     flexDirection: 'row',
@@ -722,19 +766,19 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   mantraLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#6b7280',
+    color: '#52525b',
   },
   mantraText: {
-    fontSize: 12.5,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#7c2d12',
     fontFamily: 'serif',

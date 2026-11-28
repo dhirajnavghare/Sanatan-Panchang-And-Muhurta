@@ -1,6 +1,5 @@
 import {
   WEEKDAY_DEVATAS,
-  SACRED_DAILY_VERSES,
   generateDailySankalpa,
   getCurrentSpiritualPeriod,
 } from '../src/services/dinacharya';

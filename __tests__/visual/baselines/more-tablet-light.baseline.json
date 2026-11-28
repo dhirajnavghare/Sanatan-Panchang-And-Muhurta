@@ -1,0 +1,2060 @@
+{
+  "type": "RCTScrollView",
+  "style": {
+    "backgroundColor": "#f8f8fa"
+  },
+  "children": [
+    {
+      "type": "View",
+      "children": [
+        {
+          "type": "View",
+          "style": {
+            "backgroundColor": "#ffffff",
+            "borderColor": "#e4e4e7",
+            "borderRadius": 18,
+            "borderWidth": 1,
+            "flexDirection": "row",
+            "flexWrap": "wrap",
+            "gap": 10,
+            "padding": 10
+          },
+          "children": [
+            {
+              "type": "View",
+              "testID": "more-edit-profile-btn",
+              "role": "button",
+              "style": {
+                "backgroundColor": "#fffbeb",
+                "borderColor": "#fde68a",
+                "borderRadius": 14,
+                "borderWidth": 1,
+                "flexDirection": "row",
+                "gap": 10,
+                "minHeight": 48,
+                "opacity": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 10
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "fontSize": 20
+                  },
+                  "children": [
+                    "🕉️"
+                  ]
+                },
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 15,
+                        "fontWeight": "800"
+                      },
+                      "children": [
+                        "श्री",
+                        " ",
+                        "साधक",
+                        " ",
+                        "जी"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 12.5
+                      },
+                      "children": [
+                        "कश्यप • ",
+                        "Lord Shiva / Mahadeva"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#d97706",
+                    "fontSize": 18,
+                    "fontWeight": "normal"
+                  },
+                  "children": [
+                    ""
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "gap": 8
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "more-to-settings-btn",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "#f4f4f5",
+                    "borderColor": "#e4e4e7",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1,
+                    "paddingHorizontal": 12
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 18,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "सेटिंग्स"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "more-help-btn",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "#fffbeb",
+                    "borderColor": "#fcd34d",
+                    "borderRadius": 9999,
+                    "borderWidth": 1,
+                    "minHeight": 44,
+                    "opacity": 1,
+                    "padding": 6
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 22,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "style": {
+            "backgroundColor": "#f4f4f5",
+            "borderRadius": 18,
+            "flexDirection": "row",
+            "gap": 4,
+            "padding": 4
+          },
+          "children": [
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "more-tab-temples",
+                  "role": "tab",
+                  "style": {
+                    "backgroundColor": "#ffffff",
+                    "borderRadius": 14,
+                    "minHeight": 48,
+                    "opacity": 1,
+                    "paddingVertical": 10,
+                    "width": "100%"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 13.5,
+                        "fontWeight": "800"
+                      },
+                      "children": [
+                        "🛕 तीर्थ-मन्दिर"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "more-tab-devatas",
+                  "role": "tab",
+                  "style": {
+                    "borderRadius": 14,
+                    "minHeight": 48,
+                    "opacity": 1,
+                    "paddingVertical": 10,
+                    "width": "100%"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#52525b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "🔱 देवी-देवता"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "more-tab-vrat_katha",
+                  "role": "tab",
+                  "style": {
+                    "borderRadius": 14,
+                    "minHeight": 48,
+                    "opacity": 1,
+                    "paddingVertical": 10,
+                    "width": "100%"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#52525b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "📖 व्रत कथा"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "style": {
+            "backgroundColor": "transparent"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "style": {
+                "color": "#18181b",
+                "fontSize": 18,
+                "fontWeight": "800"
+              },
+              "children": [
+                "🛕 पवित्र तीर्थ एवं मन्दिर दर्शन"
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "flexWrap": "wrap",
+                "gap": 8
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "circuit-pill-jyotirlinga",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "#18181b",
+                    "borderColor": "#18181b",
+                    "borderRadius": 22,
+                    "borderWidth": 1,
+                    "minHeight": 44,
+                    "opacity": 1,
+                    "paddingHorizontal": 16,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#ffffff",
+                        "fontSize": 13.5,
+                        "fontWeight": "800"
+                      },
+                      "children": [
+                        "१२ ज्योतिर्लिंग"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "circuit-pill-char_dham",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "#ffffff",
+                    "borderColor": "#e4e4e7",
+                    "borderRadius": 22,
+                    "borderWidth": 1,
+                    "minHeight": 44,
+                    "opacity": 1,
+                    "paddingHorizontal": 16,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#3f3f46",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "चार धाम"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "circuit-pill-pancha_bhoota",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "#ffffff",
+                    "borderColor": "#e4e4e7",
+                    "borderRadius": 22,
+                    "borderWidth": 1,
+                    "minHeight": 44,
+                    "opacity": 1,
+                    "paddingHorizontal": 16,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#3f3f46",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "पंचभूत"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री काशी विश्वनाथ ज्योतिर्लिंग"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Varanasi",
+                            ", ",
+                            "Uttar Pradesh"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान शिव (विश्वेश्वर)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "उत्तरवाहिनी गङ्गा"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "गङ्गा तट पर स्थित द्वादश ज्योतिर्लिंगों में प्रधान मोक्ष तीर्थ।"
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "03:00 प्रातः – 11:00 संध्या (मंगला आरती: 03:00 प्रातः, सप्तर्षि आरती: 07:00 संध्या)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री महाकालेश्वर ज्योतिर्लिंग"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Ujjain",
+                            ", ",
+                            "Madhya Pradesh"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान महाकाल (काल के स्वामी)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "शिप्रा नदी"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "Unique as the only south-facing (Dakshinabhimukhi) Jyotirlinga, possessing profound power to conquer untimely death (Akal Mrityu). Famous worldwide for the sacred Bhasma Aarti performed each dawn with fresh sacred ash."
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "04:00 प्रातः – 11:00 संध्या (भस्म आरती: 04:00 प्रातः, संध्या आरती: 07:00 संध्या)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री सोमनाथ ज्योतिर्लिंग"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Prabhas Patan, Veraval",
+                            ", ",
+                            "Gujarat"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान सोमनाथ (चन्द्रमौली)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "Triveni Sangam"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "The primordial Jyotirlinga (\"Prathamam Somanatham Cha\"). Stands on the shores of the Arabian Sea where an arrow-pillar (Bāna Stambha) marks that no landmass exists in a straight line between Somnath and Antarctica."
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "06:00 प्रातः – 10:00 संध्या (Aartis: 07:00 प्रातः, 12:00 संध्या, 07:00 संध्या; Light & Sound show: 08:00 संध्या)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री केदारनाथ ज्योतिर्लिंग"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Rudraprayag",
+                            ", ",
+                            "Uttarakhand"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान केदारनाथ (सदाशिव)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "मन्दाकिनी"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "Highest of all 12 Jyotirlingas, situated at 3,583 meters against the snowy Kedarnath peaks. It is both a prime Jyotirlinga and the crowning jewel of the Chota Char Dham circuit."
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "04:00 प्रातः – 09:00 संध्या (Temple opens on Akshaya Tritiya / Vaisakh and closes on Bhai Dooj / Kartik)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री मल्लिकार्जुन ज्योतिर्लिंग (श्रीशैलम)"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Srisailam",
+                            ", ",
+                            "Andhra Pradesh"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री मल्लिकार्जुन एवं भ्रमराम्बा देवी"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "कृष्णा नदी"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "Remarkable sacred site where a Jyotirlinga and an 18 Maha Shakti Peetha (Bhramaramba) co-exist in the same holy complex on Srisailam mountain (Kailasa of the South)."
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "04:30 प्रातः – 10:00 संध्या (Suprabhatप्रातः: 05:00 प्रातः, Sparsha Darshan available)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री ओंकारेश्वर एवं ममलेश्वर ज्योतिर्लिंग"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Khandwa / Mandhata Island",
+                            ", ",
+                            "Madhya Pradesh"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान ओंकारेश्वर (प्रणव स्वरूप)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "रेवा / नर्मदा"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "Situated on Mandhata Island in river Narmada, naturally contoured in the exact sacred geometric shape of the sacred syllable \"ॐ\" (Om). Visited alongside Mamleshwar (Amareshwar) on the southern bank to complete the pilgrimage."
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "05:00 प्रातः – 09:30 संध्या (मंगला आरती: 05:00 प्रातः, Shayan Aarti: 08:30 संध्या)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री त्र्यम्बकेश्वर ज्योतिर्लिंग"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Nashik",
+                            ", ",
+                            "Maharashtra"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान त्र्यम्बकेश्वर (ब्रह्मा-विष्णु-महेश)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "Southern Ganga / गौतमी"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "Unique Jyotirlinga enshrining a hollow cavity with three small thumb-sized lingams representing the Trimurti: Brahma, Vishnu, and Rudra. Site of the sacred Nashik-Trimbak Kumbh Mela."
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "05:30 प्रातः – 09:00 संध्या (Rudrabhishek, Narayan Nagbali & Kalsarpa pujas)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री भीमाशंकर ज्योतिर्लिंग"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Khed (near Pune)",
+                            ", ",
+                            "Maharashtra"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान भीमाशंकर"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "भीमा नदी उद्गम"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "The 6th sacred Jyotirlinga nestled deep in the lush Sahyadri Western Ghats where the sacred Bhima river originates. Consecrated on the exact spot Lord Shiva vanquished the demon Bhima, son of Kumbhakarna, to protect his devotee King Priyadharman."
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "04:30 प्रातः – 09:30 संध्या (Maha Abhishek: 04:30 प्रातः; संध्या आरती: 07:30 संध्या)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री बाबा बैद्यनाथ ज्योतिर्लिंग (देवघर)"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Deoghar",
+                            ", ",
+                            "Jharkhand"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान बैद्यनाथ (कामदा लिंग)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "शिवगंगा तीर्थ"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "One of the most revered Jyotirlingas, famously known as Chitabhoomi and Kamada Lingam (fulfiller of all pure desires). Unique sanctuary where Shiva and Shakti shrines are tied together with sacred red silk ribbons (Gathbandhan). Renowned for the annual 105-km barefoot Kanwar Yatra from Sultanganj."
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "04:00 प्रातः – 09:00 संध्या (Sarkari Pooja: 04:00 प्रातः; Shringaar Aarti: 07:30 संध्या)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री नागेश्वर ज्योतिर्लिंग (दारुकावन)"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Daarukavanam (near Dwarka)",
+                            ", ",
+                            "Gujarat"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान नागेश्वर (नागेश महादेव)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "पश्चिमी चार धाम में भगवान श्रीकृष्ण की पावन द्वारिकापुरी।"
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "06:00 प्रातः – 09:30 संध्या (मंगला आरती: 06:00 प्रातः; संध्या आरती: 07:00 संध्या)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री घृष्णेश्वर ज्योतिर्लिंग (वेरूल)"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Verul (Ellora)",
+                            ", ",
+                            "Maharashtra"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान घृष्णेश्वर (कुसुमेश्वर)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "शिवालय तीर्थ"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "The 12th and ultimate Jyotirlinga immortalized in the Dwadasha Jyotirlinga Stotram. Located adjacent to the UNESCO World Heritage Ellora Caves, celebrated for the pure maternal devotion of Grushma whose deceased son was resurrected by Mahadeva."
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "05:30 प्रातः – 09:30 संध्या (During Shravan: 03:00 प्रातः – 11:00 संध्या)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 17,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "श्री रामनाथस्वामी मन्दिर (रामेश्वरम)"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Rameswaram",
+                            ", ",
+                            "Tamil Nadu"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "प्रधान आराध्य:",
+                    " ",
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "भगवान रामनाथस्वामी"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 13.5
+                  },
+                  "children": [
+                    "🌊 ",
+                    "पवित्र नदी:",
+                    " ",
+                    "समुद्र एवं तीर्थ"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#3f3f46",
+                    "fontSize": 14
+                  },
+                  "children": [
+                    "दक्षिणी चार धाम जहाँ श्रीराम ने लंका विजय पूर्व ज्योतिर्लिंग स्थापित किया।"
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#fef3c7",
+                    "borderRadius": 10,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#92400e",
+                        "fontSize": 13,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "दर्शन समय:",
+                        " ",
+                        "05:00 प्रातः – 01:00 संध्या, 03:00 संध्या – 09:00 संध्या (Sphatika Linga Darshan: 05:00 प्रातः)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "style": {
+            "backgroundColor": "#ffffff",
+            "borderColor": "#e4e4e7",
+            "borderRadius": 20,
+            "borderWidth": 1,
+            "padding": 18
+          },
+          "children": [
+            {
+              "type": "Text",
+              "style": {
+                "color": "#b45309",
+                "fontSize": 22,
+                "fontWeight": "bold"
+              },
+              "children": [
+                "sanatan.cc"
+              ]
+            },
+            {
+              "type": "Text",
+              "style": {
+                "color": "#18181b",
+                "fontSize": 15,
+                "fontWeight": "bold"
+              },
+              "children": [
+                "१००% निःशुल्क शास्त्रीय वैदिक खगोल विज्ञान"
+              ]
+            },
+            {
+              "type": "Text",
+              "style": {
+                "color": "#52525b",
+                "fontSize": 14
+              },
+              "children": [
+                "नासा JPL VSOP87 एवं Chapront ELP-2000 खगोलीय सिद्धांतों तथा मुहूर्तचिन्तामणि व निर्णयसिन्धु शास्त्रीय ग्रन्थों पर आधारित पूर्णतः ऑफलाइन गणना।"
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "flexWrap": "wrap",
+                "gap": 10
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "more-about-btn",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "#b45309",
+                    "borderRadius": 12,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "minHeight": 48,
+                    "opacity": 1,
+                    "paddingHorizontal": 18,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#ffffff",
+                        "fontSize": 18,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#ffffff",
+                        "fontSize": 14,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "विस्तृत परिचय"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "more-github-btn",
+                  "role": "link",
+                  "style": {
+                    "backgroundColor": "#27272a",
+                    "borderRadius": 12,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "minHeight": 48,
+                    "opacity": 1,
+                    "paddingHorizontal": 18,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#ffffff",
+                        "fontSize": 18,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#ffffff",
+                        "fontSize": 14,
+                        "fontWeight": "bold"
+                      },
+                      "children": [
+                        "GitHub"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -28,11 +28,10 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...Ionicons.font,
   });
-  const [isReady, setIsReady] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
     if (loaded || error) {
-      setIsReady(true);
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [loaded, error]);
@@ -40,7 +39,7 @@ export default function RootLayout() {
   // Safety fallback: allow ample time for mobile font engine before forcing ready
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsReady(true);
+      setTimedOut(true);
       SplashScreen.hideAsync().catch(() => {});
     }, 3500);
     return () => clearTimeout(timer);
@@ -53,7 +52,7 @@ export default function RootLayout() {
     });
   }, []);
 
-  if (!loaded && !error && !isReady) {
+  if (!loaded && !error && !timedOut) {
     return null;
   }
 

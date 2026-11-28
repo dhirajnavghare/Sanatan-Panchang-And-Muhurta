@@ -11,19 +11,139 @@ import {
   Platform,
   Animated,
   BackHandler,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTour } from '../services/appTourContext';
 import { useLanguage } from '../core/i18n/LanguageContext';
 import { Radius, Spacing } from '@/constants/Colors';
-import { getStepSpotlightRect } from '../utils/tourSpotlight';
+import {
+  getStepSpotlightRect,
+  computeHighlightFrame,
+  computeTooltipLayout,
+} from '../utils/tourSpotlight';
 import { TOUR_SECTIONS } from '../constants/tourSteps';
+import { TourRuntimeContext, TourStepConditionType } from '../types/tour';
 import { playTempleBell, playShankhNaad, triggerHaptic } from '../services/sacredAudio';
-
+import { useReducedMotion } from '../hooks/useReducedMotion';
+import { MIN_TOUCH_TARGET } from '../utils/theme';
 
 /**
- * Context-aware dynamic "Try This" labels for all 30 guided tour steps
+ * Produces contextual state-aware guidance based on current permissions,
+ * empty states, calendar edge cases (Wednesday Abhijit), or offline state.
+ */
+function getConditionInsight(
+  conditionType: TourStepConditionType | undefined,
+  ctx: TourRuntimeContext,
+  isHi: boolean
+): { emoji: string; text: string; tone: 'info' | 'warn' } | null {
+  if (!conditionType) return null;
+
+  switch (conditionType) {
+    case 'location_permission':
+      if (ctx.locationPermission === 'denied') {
+        return {
+          emoji: '📍',
+          tone: 'warn',
+          text: isHi
+            ? 'GPS अनुमति बंद है। पञ्चाङ्ग व राहुकाल सटीक गणना हेतु स्थान आवश्यक है — आप सेटिंग्स से शहर भी चुन सकते हैं।'
+            : 'Location permission is currently off. GPS ensures accurate local sunrise & Rahu Kaal — or pick any city manually.',
+        };
+      }
+      return {
+        emoji: '🛰️',
+        tone: 'info',
+        text: isHi
+          ? 'सूर्योदय व चौघड़िया आपके चुने गए शहर के अक्षांश-देशांतर (Meridian) पर आधारित हैं।'
+          : 'Sunrise and Muhurta windows automatically adapt to your selected city meridian.',
+      };
+
+    case 'notification_permission':
+      if (ctx.notificationPermission === 'denied') {
+        return {
+          emoji: '🔕',
+          tone: 'warn',
+          text: isHi
+            ? 'फ़ोन सूचना अनुमति बंद है। अभिजीत मुहूर्त व एकादशी अलर्ट पाने हेतु सेटिंग्स से अनुमति दें।'
+            : 'Notification permission is off. Enable phone alerts so we can remind you before sacred windows begin.',
+        };
+      }
+      return null;
+
+    case 'planner_empty':
+      if (ctx.plannedTaskCount === 0) {
+        return {
+          emoji: '📝',
+          tone: 'info',
+          text: isHi
+            ? 'आज के लिए कोई कार्य अभी जुड़ा नहीं है। किसी भी मुहूर्त कार्ड में "+ कार्य जोड़ें" दबाकर शुरुआत करें!'
+            : 'No tasks scheduled for today yet. Tap "+ Add Task" inside any Muhurta card or tap a suggestion chip!',
+        };
+      }
+      return {
+        emoji: '✅',
+        tone: 'info',
+        text: isHi
+          ? `आज के लिए ${ctx.plannedTaskCount} कार्य पहले से निर्धारित हैं — "योजनाबद्ध" टैब में देखें।`
+          : `${ctx.plannedTaskCount} task(s) scheduled today — open "Planned" to review them.`,
+      };
+
+    case 'sadhana_empty':
+      if (ctx.completedSadhanaCount === 0) {
+        return {
+          emoji: '🌱',
+          tone: 'info',
+          text: isHi
+            ? 'अपनी पहली नित्य साधना पर टिक करके आज की आध्यात्मिक स्ट्रीक शुरू करें।'
+            : 'Tap any item below to begin your daily spiritual streak!',
+        };
+      }
+      return {
+        emoji: '🔥',
+        tone: 'info',
+        text: isHi
+          ? `आज ${ctx.completedSadhanaCount} नित्य साधनाएं पूर्ण — उत्तम अनुशासन!`
+          : `${ctx.completedSadhanaCount} daily practice(s) completed today — keep going!`,
+      };
+
+    case 'abhijit_status':
+      if (!ctx.isAbhijitAvailableToday) {
+        return {
+          emoji: '⚖️',
+          tone: 'warn',
+          text: isHi
+            ? 'शास्त्रीय नियम: बुधवार को अभिजित मुहूर्त वर्जित (राहुकाल से संयुत) होता है — कम्पास आपको आज का श्रेष्ठ वैकल्पिक मुहूर्त दिखाएगा।'
+            : 'Shastric Note: Abhijit Muhurta is unavailable on Wednesdays — the compass automatically highlights the best alternate window.',
+        };
+      }
+      return null;
+
+    case 'network_required':
+      if (ctx.hasNetworkErrorOnCommunity) {
+        return {
+          emoji: '📡',
+          tone: 'warn',
+          text: isHi
+            ? 'प्रोजेक्ट हब हेतु इंटरनेट आवश्यक है। बाकी संपूर्ण पञ्चाङ्ग व स्तोत्र १००% ऑफलाइन काम करते हैं।'
+            : 'Live Community feed needs internet access. Core Panchang, Festivals, and Prayers work 100% offline.',
+        };
+      }
+      return {
+        emoji: '🌐',
+        tone: 'info',
+        text: isHi
+          ? 'यह अनुभाग इंटरनेट से लाइव जुड़ता है, जबकि मुख्य पञ्चाङ्ग सदा ऑफलाइन उपलब्ध है।'
+          : 'Uses internet to fetch live releases & submit feedback; core Panchang remains offline-ready.',
+      };
+
+    default:
+      return null;
+  }
+}
+
+/**
+ * Context-aware dynamic "Try This" labels for all 32 guided tour steps
  */
 export const getStepTryLabel = (stepId: string, isHi: boolean): string => {
   switch (stepId) {
@@ -47,6 +167,8 @@ export const getStepTryLabel = (stepId: string, isHi: boolean): string => {
       return isHi ? '📜 सङ्कल्प पाठ खोलें' : '📜 Recite Vedic vow';
     case 'step-rashi-card':
       return isHi ? '🪐 राशिफल व उपाय देखें' : '🪐 View Rashi remedy';
+    case 'step-monthly-calendar':
+      return isHi ? '📆 मासिक तिथियाँ देखें' : '📆 Browse monthly grid';
     case 'step-planner-intro':
       return isHi ? '🎯 दिन योजना समय देखें' : '🎯 Explore Day Planner';
     case 'step-planner-tabs':
@@ -56,13 +178,13 @@ export const getStepTryLabel = (stepId: string, isHi: boolean): string => {
     case 'step-planner-suggested-chips':
       return isHi ? '✨ १-टैप सुझाव जोड़ें' : '✨ Add 1-tap task suggestion';
     case 'step-planner-custom-tasks':
-      return isHi ? '📝 अपना कार्य जोड़ें' : '📝 Try adding custom task';
+      return isHi ? '📝 नियोजित कार्य सूची देखें' : '📝 Inspect planned tasks';
     case 'step-planner-inauspicious':
       return isHi ? '⚠️ त्याज्य समय सचेतक' : '⚠️ Check Rahu Kaal alert';
     case 'step-muhurta-categories':
       return isHi ? '✨ मुहूर्त श्रेणी चुनें' : '✨ Choose Muhurta category';
     case 'step-muhurta-inauspicious-card':
-      return isHi ? '📜 शास्त्र नियम पढ़ें' : '📜 Read Shastric treatise rules';
+      return isHi ? '📜 त्याज्य काल विस्तारें' : '📜 Expand all 3 avoid windows';
     case 'step-muhurta-filters':
       return isHi ? '🔍 ६० दिन फ़िल्टर करें' : '🔍 Filter 60 days ahead';
     case 'step-festivals-almanac':
@@ -74,11 +196,15 @@ export const getStepTryLabel = (stepId: string, isHi: boolean): string => {
     case 'step-prayers-audio':
       return isHi ? '🐚 शंख बजाकर देखें' : '🐚 Sound the sacred conch';
     case 'step-prayers-japa-mala':
-      return isHi ? '📿 मनका जप गिनें' : '📿 Count bead on Japa Mala';
+      return isHi ? '📿 १०८ जप माला आज़माएं' : '📿 Try 108-bead Japa Mala';
+    case 'step-prayers-chant-loop':
+      return isHi ? '🔁 स्वचालित पाठ आवर्तन' : '🔁 Try guided chant player';
     case 'step-more-temples':
-      return isHi ? '🛕 ज्योतिर्लिंग देखें' : '🛕 Explore Jyotirlingas';
+      return isHi ? '🛕 ज्योतिर्लिंग व चार धाम' : '🛕 Explore sacred shrines';
     case 'step-more-devatas-vrat':
-      return isHi ? '🔱 देवी-देवता दर्शन' : '🔱 Explore Deities & Katha';
+      return isHi ? '🔱 देवी-देवता कार्ड चुनें' : '🔱 Inspect Deities & mantras';
+    case 'step-more-vrat-katha':
+      return isHi ? '📜 व्रत कथा व विधि पढ़ें' : '📜 Read Vrat Kathas & rules';
     case 'step-settings-profile':
       return isHi ? '👤 गोत्र प्रोफाइल देखें' : '👤 View devotee profile';
     case 'step-settings-location-cal':
@@ -87,6 +213,10 @@ export const getStepTryLabel = (stepId: string, isHi: boolean): string => {
       return isHi ? '🔔 अलर्ट स्विच करें' : '🔔 Toggle smart alerts';
     case 'step-settings-replay':
       return isHi ? '🧭 पुनः टूर याद रखें' : '🧭 Remember tour replay button';
+    case 'step-community-hub':
+      return isHi ? '🤝 प्रोजेक्ट अपडेट्स देखें' : '🤝 Browse live project hub';
+    case 'step-community-feedback':
+      return isHi ? '💬 सुझाव या समस्या भेजें' : '💬 Try feedback & bug forms';
     default:
       return isHi ? 'यहाँ टैप करें' : 'Tap here to try';
   }
@@ -99,6 +229,10 @@ export const InteractiveTourOverlay: React.FC = () => {
     currentStepIndex,
     currentTourStep,
     totalSteps,
+    activeSectionId,
+    sectionStepRange,
+    tourRuntimeContext,
+    completedSections,
     isCompleted,
     isExitConfirmVisible,
     targetRects,
@@ -112,6 +246,7 @@ export const InteractiveTourOverlay: React.FC = () => {
     confirmExitTour,
     cancelExitTour,
     finishTour,
+    requestActiveTargetMeasure,
   } = useTour();
 
   const { language, setLanguage } = useLanguage();
@@ -119,8 +254,62 @@ export const InteractiveTourOverlay: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReducedMotion();
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
-  const SCRIM_SIZE = Math.max(SCREEN_WIDTH, SCREEN_HEIGHT) * 1.6;
+  // Keep giant border cutout compact so Android GPU texture stays < 4096px even on tablets
+  const SCRIM_SIZE = Math.max(SCREEN_WIDTH, SCREEN_HEIGHT) + 40;
+
+  const overlayRef = useRef<React.ElementRef<typeof View>>(null);
+  const [overlayOrigin, setOverlayOrigin] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const measureOverlayOrigin = useCallback(() => {
+    const node = overlayRef.current as unknown as {
+      measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void;
+    } | null;
+    if (!node || typeof node.measureInWindow !== 'function') return;
+    node.measureInWindow((ox, oy) => {
+      if (!Number.isFinite(ox) || !Number.isFinite(oy)) return;
+      setOverlayOrigin((prev) =>
+        Math.abs(prev.x - ox) < 0.5 && Math.abs(prev.y - oy) < 0.5 ? prev : { x: ox, y: oy }
+      );
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isInteractiveTourActive) {
+      return;
+    }
+    measureOverlayOrigin();
+    requestActiveTargetMeasure(currentTourStep?.tab, false);
+  }, [
+    isInteractiveTourActive,
+    SCREEN_WIDTH,
+    SCREEN_HEIGHT,
+    currentTourStep?.tab,
+    measureOverlayOrigin,
+    requestActiveTargetMeasure,
+  ]);
+
+  useEffect(() => {
+    if (!isInteractiveTourActive) return;
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      const h = e?.endCoordinates?.height ?? 0;
+      setKeyboardHeight(h);
+      requestActiveTargetMeasure(currentTourStep?.tab, false);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+      requestActiveTargetMeasure(currentTourStep?.tab, false);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+      setKeyboardHeight(0);
+    };
+  }, [isInteractiveTourActive, currentTourStep?.tab, requestActiveTargetMeasure]);
 
   // Android Hardware Back Button navigation integration
   useEffect(() => {
@@ -188,12 +377,9 @@ export const InteractiveTourOverlay: React.FC = () => {
 
   // Micro-toast state for interactive hands-on feedback
   const [trySuccessToast, setTrySuccessToast] = useState<string | null>(null);
-  const [hasTriedCurrentStep, setHasTriedCurrentStep] = useState(false);
+  const [triedStepIndex, setTriedStepIndex] = useState<number | null>(null);
+  const hasTriedCurrentStep = triedStepIndex === currentStepIndex;
   const toastDismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    setHasTriedCurrentStep(false);
-  }, [currentStepIndex]);
 
   useEffect(() => {
     return () => {
@@ -204,6 +390,12 @@ export const InteractiveTourOverlay: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (reduceMotion) {
+      pulseAnim.setValue(1);
+      auraScaleAnim.setValue(1);
+      auraOpacityAnim.setValue(0.35);
+      return;
+    }
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -254,7 +446,7 @@ export const InteractiveTourOverlay: React.FC = () => {
       pulseLoop.stop();
       auraLoop.stop();
     };
-  }, [pulseAnim, auraScaleAnim, auraOpacityAnim]);
+  }, [reduceMotion, pulseAnim, auraScaleAnim, auraOpacityAnim]);
 
   // Enhanced Interactive Tap-to-Try Handler for all 30 steps
   const handleSpotlightPress = useCallback(() => {
@@ -316,7 +508,12 @@ export const InteractiveTourOverlay: React.FC = () => {
 
       case 'step-rashi-card':
         triggerHaptic('tap').catch(() => {});
-        toastMsg = isHi ? '🪐 चन्द्र गोचर: आज का सात्विक उपाय व मन्त्र!' : '🪐 Moon Transit: Today’s Sacred Remedy!';
+        toastMsg = isHi ? '🪐 चन्द्र गोचर: राशि चुनकर आज के उपाय देखें!' : '🪐 Try selecting your Rashi sign below!';
+        break;
+
+      case 'step-monthly-calendar':
+        triggerHaptic('tap').catch(() => {});
+        toastMsg = isHi ? '📆 मासिक ग्रिड: किसी भी तिथि पर टैप करके देखें!' : '📆 Try tapping any date in the Monthly Grid!';
         break;
 
       case 'step-planner-intro':
@@ -376,7 +573,7 @@ export const InteractiveTourOverlay: React.FC = () => {
 
       case 'step-prayers-collection':
         triggerHaptic('tap').catch(() => {});
-        toastMsg = isHi ? '📖 हनुमान चालीसा, महामृत्युंजय व विष्णु सहस्रनाम' : '📖 Sacred Prayers, Chalisas & Sanskrit Verses';
+        toastMsg = isHi ? '📖 ऊपर दिए चिप्स से कोई स्तोत्र चुनें!' : '📖 Tap any prayer chip above to read!';
         break;
 
       case 'step-prayers-audio':
@@ -387,17 +584,27 @@ export const InteractiveTourOverlay: React.FC = () => {
 
       case 'step-prayers-japa-mala':
         triggerHaptic('bead').catch(() => {});
-        toastMsg = isHi ? '📿 १ मनका जप गिना गया (१०८ लक्ष्य)!' : '📿 1 Bead Counted on 108 Japa Mala!';
+        toastMsg = isHi ? '📿 नीचे १०८-मनका घेरे पर टैप कर जप आज़माएं!' : '📿 Tap the 108-bead ring below to count!';
+        break;
+
+      case 'step-prayers-chant-loop':
+        triggerHaptic('tap').catch(() => {});
+        toastMsg = isHi ? '🔁 आवर्तन चुनें व पाठ प्लेयर चलाएं!' : '🔁 Pick target loops and start Chanting!';
         break;
 
       case 'step-more-temples':
         triggerHaptic('tap').catch(() => {});
-        toastMsg = isHi ? '🛕 द्वादश ज्योतिर्लिंग, चार धाम व शक्तिपीठ गाइड' : '🛕 12 Jyotirlingas, Char Dham & Shakti Peethas';
+        toastMsg = isHi ? '🛕 १२ ज्योतिर्लिंग, चार धाम व पंचभूत तीर्थ!' : '🛕 Filter 12 Jyotirlingas, Char Dham & Pancha Bhoota!';
         break;
 
       case 'step-more-devatas-vrat':
         triggerHaptic('tap').catch(() => {});
-        toastMsg = isHi ? '🔱 देवी-देवता दर्शन, महामन्त्र व व्रत कथा विधि' : '🔱 Sacred Deities, Iconography & Puja Vidhi';
+        toastMsg = isHi ? '🔱 किसी देवता कार्ड पर टैप कर मन्त्र देखें!' : '🔱 Tap any deity card to open mantras!';
+        break;
+
+      case 'step-more-vrat-katha':
+        triggerHaptic('tap').catch(() => {});
+        toastMsg = isHi ? '📜 व्रत चुनकर पूजा विधि व पारण नियम देखें!' : '📜 Pick a Vrat to read Vidhi & Parana!';
         break;
 
       case 'step-settings-profile':
@@ -420,12 +627,22 @@ export const InteractiveTourOverlay: React.FC = () => {
         toastMsg = isHi ? '🧭 जब चाहें सेटिंग्स से यह टूर दोबारा देखें!' : '🧭 Replay This Walkthrough Anytime from Settings!';
         break;
 
+      case 'step-community-hub':
+        triggerHaptic('tap').catch(() => {});
+        toastMsg = isHi ? '🤝 नए अपडेट्स व योगदानकर्ताओं को देखें!' : '🤝 Explore Latest Releases & Contributors!';
+        break;
+
+      case 'step-community-feedback':
+        triggerHaptic('tap').catch(() => {});
+        toastMsg = isHi ? '💬 नीचे अपनी रेटिंग और सुझाव साझा करें!' : '💬 Try sharing a rating, idea, or bug report below!';
+        break;
+
       default:
         triggerHaptic('tap').catch(() => {});
         break;
     }
 
-    setHasTriedCurrentStep(true);
+    setTriedStepIndex(currentStepIndex);
     setTrySuccessToast(toastMsg);
     toastOpacityAnim.setValue(1);
 
@@ -444,7 +661,7 @@ export const InteractiveTourOverlay: React.FC = () => {
 
     // Enter hands-on Try Mode: temporarily collapses the tour overlay so screen is 100% interactable
     enterTryMode();
-  }, [currentTourStep, isHi, language, setLanguage, enterTryMode, toastOpacityAnim]);
+  }, [currentTourStep, currentStepIndex, isHi, language, setLanguage, enterTryMode, toastOpacityAnim]);
 
   // Swipe gesture detection
   const handleTouchStart = (e: any) => {
@@ -474,7 +691,7 @@ export const InteractiveTourOverlay: React.FC = () => {
   // 1. Completion Celebration Card
   if (isCompleted) {
     return (
-      <Modal visible={true} transparent animationType="fade">
+      <Modal visible={true} transparent animationType="fade" onRequestClose={finishTour}>
         <View style={styles.backdrop}>
           <View style={[styles.celebrationCard, isDark && styles.celebrationCardDark]}>
             <View style={styles.celebrationIconBox}>
@@ -482,13 +699,19 @@ export const InteractiveTourOverlay: React.FC = () => {
             </View>
 
             <Text style={[styles.celebrationTitle, isDark && styles.textDark]}>
-              {isHi ? 'हार्दिक बधाई! टूर पूर्ण हुआ' : 'Congratulations! Tour Completed'}
+              {activeSectionId
+                ? (isHi ? 'अनुभाग टूर पूर्ण हुआ!' : 'Section Walkthrough Complete!')
+                : (isHi ? 'हार्दिक बधाई! टूर पूर्ण हुआ' : 'Congratulations! Tour Completed')}
             </Text>
 
             <Text style={[styles.celebrationSubtitle, isDark && styles.subTextDark]}>
-              {isHi
-                ? 'अब आप सनातन ऍप के सभी फीचर्स — पञ्चाङ्ग, दिन योजना, शुभ मुहूर्त, पर्व-व्रत, स्तोत्र व तीर्थ दर्शन — से भलीभांति परिचित हैं।'
-                : 'You are now ready to explore every feature of Sanatan — Panchang, Day Planner, Shubh Muhurta, Festivals, Prayers, and Pilgrimages.'}
+              {activeSectionId
+                ? (isHi
+                    ? 'आपने इस स्क्रीन के मुख्य फ़ीचर्स व बटनों को भलीभांति समझ लिया है।'
+                    : 'You are ready to use every feature on this screen confidently.')
+                : (isHi
+                    ? 'अब आप सनातन ऍप के सभी ७ टैब्स — पञ्चाङ्ग, दिन योजना, शुभ मुहूर्त, पर्व-व्रत, स्तोत्र, तीर्थ व प्रोजेक्ट हब — से भलीभांति परिचित हैं।'
+                    : 'You are now ready to explore all 7 tabs of Sanatan — Panchang, Day Planner, Shubh Muhurta, Festivals, Prayers, Pilgrimages, and Project Hub.')}
             </Text>
 
             <View style={[styles.celebrationFeatureList, isDark && styles.celebrationFeatureListDark]}>
@@ -514,7 +737,9 @@ export const InteractiveTourOverlay: React.FC = () => {
 
             <TouchableOpacity
               testID="tour-celebration-finish-btn"
-              style={styles.celebrationActionBtn}
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? 'सनातन ऍप का उपयोग आरम्भ करें' : 'Start Using Sanatan App'}
+              style={[styles.celebrationActionBtn, { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' }]}
               onPress={finishTour}
               activeOpacity={0.88}
             >
@@ -531,7 +756,7 @@ export const InteractiveTourOverlay: React.FC = () => {
   // 2. Exit Confirmation Modal
   if (isExitConfirmVisible) {
     return (
-      <Modal visible={true} transparent animationType="fade">
+      <Modal visible={true} transparent animationType="fade" onRequestClose={cancelExitTour}>
         <View style={styles.backdrop}>
           <View testID="tour-exit-confirm-dialog" style={[styles.confirmCard, isDark && styles.confirmCardDark]}>
             <View style={styles.confirmHeader}>
@@ -550,7 +775,9 @@ export const InteractiveTourOverlay: React.FC = () => {
             <View style={styles.confirmActionsRow}>
               <TouchableOpacity
                 testID="tour-exit-cancel-btn"
-                style={[styles.confirmCancelBtn, isDark && styles.confirmCancelBtnDark]}
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'टूर जारी रखें' : 'Continue Tour'}
+                style={[styles.confirmCancelBtn, { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' }, isDark && styles.confirmCancelBtnDark]}
                 onPress={cancelExitTour}
                 activeOpacity={0.8}
               >
@@ -561,7 +788,9 @@ export const InteractiveTourOverlay: React.FC = () => {
 
               <TouchableOpacity
                 testID="tour-exit-confirm-btn"
-                style={styles.confirmExitBtn}
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'टूर समाप्त करें' : 'Exit Tour'}
+                style={[styles.confirmExitBtn, { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' }]}
                 onPress={confirmExitTour}
                 activeOpacity={0.8}
               >
@@ -586,6 +815,7 @@ export const InteractiveTourOverlay: React.FC = () => {
         {trySuccessToast && (
           <Animated.View
             testID="tour-try-success-toast"
+            accessibilityLiveRegion="polite"
             pointerEvents="none"
             style={[
               styles.trySuccessToastFloating,
@@ -618,7 +848,7 @@ export const InteractiveTourOverlay: React.FC = () => {
                     ? `⚡ आज़माएं (${currentStepIndex + 1}/${totalSteps})`
                     : `⚡ TRYING (${currentStepIndex + 1}/${totalSteps})`}
                 </Text>
-                <Text style={[styles.tryModeTitle, isDark && styles.tryModeTitleDark]} numberOfLines={1}>
+                <Text style={[styles.tryModeTitle, isDark && styles.tryModeTitleDark]}>
                   {getStepTryLabel(currentTourStep.id, isHi)}
                 </Text>
               </View>
@@ -627,6 +857,8 @@ export const InteractiveTourOverlay: React.FC = () => {
             <View style={styles.tryModeBannerActions}>
               <TouchableOpacity
                 testID="tour-reopen-step-btn"
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'इस चरण का विवरण पुनः खोलें' : 'Reopen step instructions'}
                 style={[styles.tryModeReopenBtn, isDark && styles.tryModeReopenBtnDark]}
                 onPress={exitTryMode}
                 activeOpacity={0.8}
@@ -637,7 +869,13 @@ export const InteractiveTourOverlay: React.FC = () => {
 
               <TouchableOpacity
                 testID="tour-continue-btn"
-                style={styles.continueTourBtn}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  currentStepIndex >= totalSteps - 1
+                    ? (isHi ? 'टूर पूर्ण करें' : 'Finish Tour')
+                    : (isHi ? 'अगले चरण पर जाएं' : 'Go to Next Step')
+                }
+                style={[styles.continueTourBtn, { minHeight: MIN_TOUCH_TARGET }]}
                 onPress={continueTourFromTryMode}
                 activeOpacity={0.85}
               >
@@ -654,9 +892,21 @@ export const InteractiveTourOverlay: React.FC = () => {
     );
   }
 
-  const progressPercent = Math.round(((currentStepIndex + 1) / totalSteps) * 100);
-  const isFirstStep = currentStepIndex === 0;
-  const isLastStep = currentStepIndex === totalSteps - 1;
+  const rangeStart = sectionStepRange ? sectionStepRange.start : 0;
+  const rangeEnd = sectionStepRange ? sectionStepRange.end : totalSteps - 1;
+  const displayIndex = Math.max(0, currentStepIndex - rangeStart);
+  const displayTotal = Math.max(1, rangeEnd - rangeStart + 1);
+  const remainingSteps = Math.max(1, displayTotal - displayIndex);
+  const estimatedMins = Math.max(1, Math.ceil((remainingSteps * 5) / 60));
+  const conditionInsight = getConditionInsight(
+    currentTourStep.conditionType,
+    tourRuntimeContext,
+    isHi
+  );
+
+  const progressPercent = Math.round(((displayIndex + 1) / displayTotal) * 100);
+  const isFirstStep = currentStepIndex <= rangeStart;
+  const isLastStep = currentStepIndex >= rangeEnd;
 
   const spotlight = getStepSpotlightRect(
     currentTourStep,
@@ -665,62 +915,48 @@ export const InteractiveTourOverlay: React.FC = () => {
     SCREEN_HEIGHT,
     insets
   );
-  // Safe insets: account for Dynamic Island / notch at top, and bottom tab bar (~60px + home indicator)
-  const safeTop = Math.max(insets.top || 0, Platform.OS === 'ios' ? 50 : 28) + 8;
-  const safeBottom = (insets.bottom || 0) + (Platform.OS === 'ios' ? 64 : 66);
+  // Safe insets for tooltip & beacon layout only (never shift a measured top highlight down)
+  const safeTop = Math.max(
+    4,
+    Math.max(insets.top || 0, Platform.OS === 'ios' ? 44 : 24) - overlayOrigin.y + 4
+  );
+  const safeBottom = Math.max(
+    (insets.bottom || 0) + (Platform.OS === 'ios' ? 64 : 66),
+    keyboardHeight > 0 ? keyboardHeight + 12 : 0
+  );
 
-  const pad = 4;
-  const sX = Math.max(2, Math.min(SCREEN_WIDTH - 20, spotlight.x - pad));
-  const sY = Math.max(safeTop, Math.min(SCREEN_HEIGHT - safeBottom - 30, spotlight.y - pad));
-  const sW = Math.max(20, Math.min(SCREEN_WIDTH - sX - 4, spotlight.width + pad * 2));
-  const sH = Math.max(20, Math.min(SCREEN_HEIGHT - sY - 4, spotlight.height + pad * 2));
-  const sRadius = Math.max(8, (spotlight.borderRadius ?? 16) + pad);
+  const frame = computeHighlightFrame(
+    spotlight,
+    overlayOrigin,
+    SCREEN_WIDTH,
+    SCREEN_HEIGHT
+  );
+  const { x: sX, y: sY, width: sW, height: sH, borderRadius: sRadius } = frame;
 
-  const BEACON_HEIGHT = 30;
+  const BEACON_HEIGHT = 32;
   const GAP = 8;
-
-  // Space calculation relative to the spotlighted element and safe viewport boundaries
-  const spaceBelow = Math.max(0, SCREEN_HEIGHT - safeBottom - (sY + sH + BEACON_HEIGHT + GAP));
-  const spaceAbove = Math.max(0, sY - BEACON_HEIGHT - GAP - safeTop);
-
-  // Choose whether to place card slightly below or slightly above the highlighter.
-  // Prefer whichever side has substantially more room, ensuring comfortable reading space.
-  const isCardBelow = (spaceBelow >= spaceAbove && spaceBelow >= 220) || spaceAbove < 200;
-
-  // Position beacon with arrow pointing towards the target
-  const beaconTop = isCardBelow
-    ? Math.min(SCREEN_HEIGHT - safeBottom - 44, sY + sH + 6)
-    : Math.max(safeTop + 8, sY - BEACON_HEIGHT - 6);
-
-  const beaconLeft = Math.max(16, Math.min(SCREEN_WIDTH - 236, sX + sW / 2 - 80));
-  const beaconArrowName = isCardBelow ? 'arrow-up' : 'arrow-down';
-
-  // Dynamic card positioning & content-based max height constraint
-  const cardTop = sY + sH + BEACON_HEIGHT + GAP;
-  const cardBottomY = beaconTop - GAP;
-
-  const maxCardHeight = isCardBelow
-    ? Math.max(160, SCREEN_HEIGHT - safeBottom - cardTop - 6)
-    : Math.max(160, cardBottomY - safeTop);
-
-  const cardPlacementStyle = isCardBelow
-    ? {
-        top: Math.max(
-          safeTop,
-          Math.min(SCREEN_HEIGHT - safeBottom - 200, cardTop)
-        ),
-        bottom: undefined,
-      }
-    : {
-        bottom: Math.max(
-          safeBottom,
-          Math.min(SCREEN_HEIGHT - safeTop - 200, SCREEN_HEIGHT - cardBottomY)
-        ),
-        top: undefined,
-      };
+  const maxBeaconWidth = Math.min(220, Math.max(150, SCREEN_WIDTH - 32));
+  const tooltipLayout = computeTooltipLayout({
+    highlight: frame,
+    screenWidth: SCREEN_WIDTH,
+    screenHeight: SCREEN_HEIGHT,
+    safeTop,
+    safeBottom,
+    preferredPlacement: currentTourStep.tooltipPlacement,
+    beaconHeight: BEACON_HEIGHT,
+    beaconWidth: maxBeaconWidth,
+    gap: GAP,
+  });
+  const { beaconTop, beaconLeft, beaconArrowName } = tooltipLayout;
 
   return (
-    <View testID="interactive-tour-overlay" style={styles.interactiveOverlay} pointerEvents="box-none">
+    <View
+      ref={overlayRef}
+      onLayout={measureOverlayOrigin}
+      testID="interactive-tour-overlay"
+      style={styles.interactiveOverlay}
+      pointerEvents="box-none"
+    >
       {/* 1. Seamless Rounded Scrim Cutout (Smooth corners, zero white square artifacts) */}
       <View
         style={styles.scrimContainer}
@@ -780,6 +1016,8 @@ export const InteractiveTourOverlay: React.FC = () => {
       {/* 2c. Interactive Hands-on Touch Target directly over the spotlight */}
       <TouchableOpacity
         testID="tour-spotlight-interactive-target"
+        accessibilityRole="button"
+        accessibilityLabel={getStepTryLabel(currentTourStep.id, isHi)}
         style={[
           styles.spotlightTouchTarget,
           {
@@ -798,13 +1036,15 @@ export const InteractiveTourOverlay: React.FC = () => {
       {trySuccessToast && (
         <Animated.View
           testID="tour-try-success-toast"
+          accessibilityLiveRegion="polite"
           pointerEvents="none"
           style={[
             styles.trySuccessToast,
             {
-              top: isCardBelow
-                ? Math.max(safeTop, sY - 44)
-                : Math.min(SCREEN_HEIGHT - safeBottom - 44, sY + sH + 12),
+              top:
+                tooltipLayout.placement === 'bottom'
+                  ? Math.max(safeTop, sY - 44)
+                  : Math.min(SCREEN_HEIGHT - safeBottom - 44, sY + sH + 12),
               left: Math.max(16, Math.min(SCREEN_WIDTH - 180, sX + sW / 2 - 75)),
               opacity: toastOpacityAnim,
             },
@@ -817,6 +1057,8 @@ export const InteractiveTourOverlay: React.FC = () => {
       {/* 3. Spotlight Beacon Pointer Badge */}
       <TouchableOpacity
         testID="tour-spotlight-beacon"
+        accessibilityRole="button"
+        accessibilityLabel={getStepTryLabel(currentTourStep.id, isHi)}
         activeOpacity={0.85}
         onPress={handleSpotlightPress}
         style={[
@@ -842,38 +1084,42 @@ export const InteractiveTourOverlay: React.FC = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* 4. Adaptive Guide Card (Slightly below or above highlighter with dynamic height) */}
+      {/* 4. Adaptive Guide Card (Dynamic top/bottom/side positioning with non-overlapping max height) */}
       <View
         testID="tour-step-card"
         style={[
           styles.guideCardWrapper,
-          cardPlacementStyle,
+          tooltipLayout.cardStyle,
         ]}
         pointerEvents="auto"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <View style={[styles.guideCard, isDark && styles.guideCardDark, { maxHeight: maxCardHeight }]}>
+        <View style={[styles.guideCard, isDark && styles.guideCardDark, { maxHeight: tooltipLayout.maxCardHeight }]}>
           {/* Header Row: Tab badge, time estimate, step counter, skip button */}
           <View style={styles.guideHeaderRow}>
             <View style={styles.tagBadge}>
               <Text style={styles.tagBadgeEmoji}>{currentTourStep.emoji}</Text>
-              <Text style={styles.tagBadgeText} numberOfLines={1}>
+              <Text style={styles.tagBadgeText}>
                 {isHi ? currentTourStep.tabNameHi : currentTourStep.tabNameEn} • {isHi ? currentTourStep.badgeHi : currentTourStep.badgeEn}
               </Text>
             </View>
 
             <View style={styles.guideHeaderRight}>
               <View style={styles.timeEstimateBadge}>
-                <Text style={styles.timeEstimateText}>⏱️ {isHi ? '~२ मि.' : '~2 min'}</Text>
+                <Text style={styles.timeEstimateText}>
+                  {isHi ? `⏱️ ~${estimatedMins} मि.` : `⏱️ ~${estimatedMins} min`}
+                </Text>
               </View>
 
-              <Text style={styles.stepProgressText}>
-                {isHi ? `${currentStepIndex + 1}/${totalSteps}` : `${currentStepIndex + 1}/${totalSteps}`}
+              <Text testID="tour-step-progress-text" style={styles.stepProgressText}>
+                {`${displayIndex + 1}/${displayTotal}`}
               </Text>
 
               <TouchableOpacity
                 testID="tour-interactive-skip-btn"
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'टूर छोड़ें' : 'Skip tour'}
                 style={[styles.skipBtn, isDark && styles.skipBtnDark]}
                 onPress={requestSkipTour}
                 activeOpacity={0.7}
@@ -894,11 +1140,14 @@ export const InteractiveTourOverlay: React.FC = () => {
           >
             {TOUR_SECTIONS.map((sec) => {
               const isCurrentSec = currentStepIndex >= sec.startStep && currentStepIndex <= sec.endStep;
-              const isPastSec = currentStepIndex > sec.endStep;
+              const isPastSec =
+                currentStepIndex > sec.endStep || completedSections.includes(sec.id);
               return (
                 <TouchableOpacity
                   key={sec.id}
                   testID={`tour-section-chip-${sec.id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? `${sec.nameHi} अनुभाग` : `${sec.nameEn} section`}
                   style={[
                     styles.sectionChip,
                     isDark && styles.sectionChipDark,
@@ -932,7 +1181,10 @@ export const InteractiveTourOverlay: React.FC = () => {
 
           {/* Content Body */}
           <ScrollView
-            style={[styles.guideScrollView, { maxHeight: Math.max(80, maxCardHeight - 165) }]}
+            style={[
+              styles.guideScrollView,
+              { maxHeight: Math.max(80, tooltipLayout.maxCardHeight - 165) },
+            ]}
             contentContainerStyle={styles.guideScrollContent}
             showsVerticalScrollIndicator={false}
           >
@@ -944,6 +1196,28 @@ export const InteractiveTourOverlay: React.FC = () => {
               {isHi ? currentTourStep.subtitleHi : currentTourStep.subtitleEn}
             </Text>
 
+            {conditionInsight && (
+              <View
+                testID="tour-state-insight-box"
+                style={[
+                  styles.conditionInsightBox,
+                  conditionInsight.tone === 'warn' && styles.conditionInsightWarnBox,
+                  isDark && styles.conditionInsightBoxDark,
+                ]}
+              >
+                <Text style={styles.conditionInsightEmoji}>{conditionInsight.emoji}</Text>
+                <Text
+                  style={[
+                    styles.conditionInsightText,
+                    conditionInsight.tone === 'warn' && styles.conditionInsightWarnText,
+                    isDark && styles.textDark,
+                  ]}
+                >
+                  {conditionInsight.text}
+                </Text>
+              </View>
+            )}
+
             <Text style={[styles.guideDescription, isDark && styles.textDark]}>
               {isHi ? currentTourStep.descriptionHi : currentTourStep.descriptionEn}
             </Text>
@@ -951,10 +1225,13 @@ export const InteractiveTourOverlay: React.FC = () => {
             {/* Interactive "Try This Now" Hands-On Action Bar */}
             <TouchableOpacity
               testID="tour-interactive-try-btn"
+              accessibilityRole="button"
+              accessibilityLabel={getStepTryLabel(currentTourStep.id, isHi)}
               style={[
                 styles.tryThisCardBtn,
+                { minHeight: MIN_TOUCH_TARGET },
                 isDark && styles.tryThisCardBtnDark,
-                hasTriedCurrentStep && styles.tryThisCardBtnTried,
+                hasTriedCurrentStep && (isDark ? styles.tryThisCardBtnTriedDark : styles.tryThisCardBtnTried),
               ]}
               onPress={handleSpotlightPress}
               activeOpacity={0.82}
@@ -973,7 +1250,7 @@ export const InteractiveTourOverlay: React.FC = () => {
                       ? (isHi ? '✓ आपने आज़माया! (पुनः टैप करें)' : '✓ Action Tried! (Tap to retry)')
                       : (isHi ? '⚡ अभी आज़माएं (Try This):' : '⚡ Try This Interactive Action:')}
                   </Text>
-                  <Text style={[styles.tryThisBtnSub, isDark && styles.tryThisBtnSubDark]} numberOfLines={1}>
+                  <Text style={[styles.tryThisBtnSub, isDark && styles.tryThisBtnSubDark]}>
                     {getStepTryLabel(currentTourStep.id, isHi)}
                   </Text>
                 </View>
@@ -1003,8 +1280,12 @@ export const InteractiveTourOverlay: React.FC = () => {
           <View style={[styles.guideActionsRow, isDark && styles.guideActionsRowDark]}>
             <TouchableOpacity
               testID="tour-interactive-back-btn"
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? 'पिछला चरण' : 'Previous step'}
+              accessibilityState={{ disabled: isFirstStep }}
               style={[
                 styles.backActionBtn,
+                { minHeight: MIN_TOUCH_TARGET },
                 isDark && styles.backActionBtnDark,
                 isFirstStep && styles.actionBtnDisabled,
               ]}
@@ -1036,7 +1317,9 @@ export const InteractiveTourOverlay: React.FC = () => {
 
             <TouchableOpacity
               testID={isLastStep ? 'tour-interactive-finish-btn' : 'tour-interactive-next-btn'}
-              style={styles.nextActionBtn}
+              accessibilityRole="button"
+              accessibilityLabel={isLastStep ? (isHi ? 'टूर पूरा करें' : 'Finish tour') : (isHi ? 'अगला चरण' : 'Next step')}
+              style={[styles.nextActionBtn, { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' }]}
               onPress={nextStep}
               activeOpacity={0.88}
             >
@@ -1134,17 +1417,18 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   tryModeTag: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#b45309',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   tryModeTitle: {
-    fontSize: 13,
+    fontSize: 14.5,
     fontWeight: '700',
     color: '#451a03',
-    marginTop: 1,
+    marginTop: 2,
+    lineHeight: 20,
   },
   tryModeTitleDark: {
     color: '#fef3c7',
@@ -1155,9 +1439,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tryModeReopenBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: MIN_TOUCH_TARGET,
+    height: MIN_TOUCH_TARGET,
+    borderRadius: 22,
     backgroundColor: '#fef3c7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1173,7 +1457,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#d97706',
     paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderRadius: Radius.pill,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
@@ -1183,7 +1467,7 @@ const styles = StyleSheet.create({
   },
   continueTourBtnText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '800',
     letterSpacing: 0.2,
   },
@@ -1300,6 +1584,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0fdf4',
     borderColor: '#22c55e',
   },
+  tryThisCardBtnTriedDark: {
+    backgroundColor: '#064e3b',
+    borderColor: '#10b981',
+  },
   tryThisBtnLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1319,7 +1607,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#16a34a',
   },
   tryThisBtnLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#b45309',
     textTransform: 'uppercase',
@@ -1329,18 +1617,19 @@ const styles = StyleSheet.create({
     color: '#fbbf24',
   },
   tryThisBtnSub: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#451a03',
-    marginTop: 1,
+    marginTop: 2,
+    lineHeight: 19,
   },
   tryThisBtnSubDark: {
     color: '#fef3c7',
   },
   tryThisActionPill: {
     backgroundColor: '#d97706',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: Radius.pill,
   },
   tryThisActionPillTried: {
@@ -1348,13 +1637,11 @@ const styles = StyleSheet.create({
   },
   tryThisActionPillText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
   },
   guideCardWrapper: {
     position: 'absolute',
-    left: 12,
-    right: 12,
     zIndex: 100001,
   },
   guideCard: {
@@ -1376,6 +1663,8 @@ const styles = StyleSheet.create({
   },
   guideHeaderRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
@@ -1384,18 +1673,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(217, 119, 6, 0.12)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radius.pill,
     flexShrink: 1,
     marginRight: 6,
   },
   tagBadgeEmoji: {
-    fontSize: 13,
-    marginRight: 4,
+    fontSize: 14,
+    marginRight: 5,
   },
   tagBadgeText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#b45309',
   },
@@ -1405,13 +1694,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stepProgressText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#52525b',
   },
   skipBtn: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: Radius.sm,
     backgroundColor: '#f4f4f5',
   },
@@ -1419,27 +1710,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#27272a',
   },
   skipBtnText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#71717a',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#52525b',
   },
   skipBtnTextDark: {
-    color: '#a1a1aa',
+    color: '#d4d4d8',
   },
   timeEstimateBadge: {
     backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: Radius.pill,
     marginRight: 2,
   },
   timeEstimateText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#b45309',
   },
   sectionScroll: {
-    maxHeight: 34,
+    maxHeight: 56,
     marginBottom: 8,
   },
   sectionScrollContent: {
@@ -1450,11 +1741,12 @@ const styles = StyleSheet.create({
   sectionChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
     backgroundColor: '#f4f4f5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: Radius.pill,
-    marginRight: 6,
+    marginRight: 8,
     borderWidth: 1,
     borderColor: '#e4e4e7',
   },
@@ -1479,13 +1771,13 @@ const styles = StyleSheet.create({
     borderColor: '#059669',
   },
   sectionChipEmoji: {
-    fontSize: 11,
-    marginRight: 4,
+    fontSize: 13,
+    marginRight: 5,
   },
   sectionChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#52525b',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#3f3f46',
   },
   sectionChipTextDark: {
     color: '#d4d4d8',
@@ -1568,7 +1860,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   howToUseHeading: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: '#b45309',
   },
@@ -1576,20 +1868,22 @@ const styles = StyleSheet.create({
     color: '#fbbf24',
   },
   howToUseText: {
-    fontSize: 11.5,
+    fontSize: 13.5,
     fontWeight: '600',
     color: '#92400e',
-    lineHeight: 16,
+    lineHeight: 20,
   },
   howToUseTextDark: {
     color: '#fef3c7',
   },
   guideActionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 10,
-    paddingTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#f4f4f5',
   },
@@ -1599,9 +1893,9 @@ const styles = StyleSheet.create({
   backActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: Radius.md,
     backgroundColor: '#f4f4f5',
   },
@@ -1609,8 +1903,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#27272a',
   },
   backActionBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13.5,
+    fontWeight: '700',
     color: '#3f3f46',
   },
   backActionBtnTextDark: {
@@ -1623,8 +1917,8 @@ const styles = StyleSheet.create({
     color: '#a1a1aa',
   },
   swipeHintBox: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     backgroundColor: '#fbfbfb',
     borderRadius: Radius.pill,
     borderWidth: 1,
@@ -1635,9 +1929,9 @@ const styles = StyleSheet.create({
     borderColor: '#3f3f46',
   },
   swipeHintText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#a1a1aa',
+    color: '#71717a',
   },
   swipeHintTextDark: {
     color: '#a1a1aa',
@@ -1785,8 +2079,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   confirmCancelBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: Radius.md,
     backgroundColor: '#f4f4f5',
   },
@@ -1794,21 +2088,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#27272a',
   },
   confirmCancelBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#52525b',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#3f3f46',
   },
   confirmCancelBtnTextDark: {
     color: '#e4e4e7',
   },
   confirmExitBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: Radius.md,
     backgroundColor: '#dc2626',
   },
   confirmExitBtnText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: '#ffffff',
   },
@@ -1818,5 +2112,39 @@ const styles = StyleSheet.create({
   },
   subTextDark: {
     color: '#a1a1aa',
+  },
+  conditionInsightBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    borderColor: '#bfdbfe',
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 8,
+  },
+  conditionInsightWarnBox: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#fcd34d',
+  },
+  conditionInsightBoxDark: {
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+  },
+  conditionInsightEmoji: {
+    fontSize: 13,
+    marginTop: 1,
+  },
+  conditionInsightText: {
+    flex: 1,
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: '#1e40af',
+    fontWeight: '600',
+  },
+  conditionInsightWarnText: {
+    color: '#92400e',
   },
 });

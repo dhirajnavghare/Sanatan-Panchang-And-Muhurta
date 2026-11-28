@@ -149,7 +149,7 @@ function getRawFestivals(
   month: number,
   day: number,
   location: GeoLocation
-): Array<{ event: FestivalEvent; rule: RawFestivalRule }> {
+): { event: FestivalEvent; rule: RawFestivalRule }[] {
   const sunTimes = calculateSunTimes(year, month, day, location.latitude, location.longitude, location.altitude);
   const sr = sunTimes.sunrise.getTime();
   const ss = sunTimes.sunset.getTime();
@@ -177,7 +177,7 @@ function getRawFestivals(
     };
   }
 
-  const results: Array<{ event: FestivalEvent; rule: RawFestivalRule }> = [];
+  const results: { event: FestivalEvent; rule: RawFestivalRule }[] = [];
   const hitKeys = new Set<string>();
 
   for (const rule of FESTIVAL_RULES) {

@@ -1,0 +1,60 @@
+appId: cc.sanatan.app
+---
+# End-to-End Flow 01: First-Time Onboarding Slides + Live 32-Step Guided Tour
+- clearState
+- launchApp
+- assertVisible:
+    id: app-tour-modal
+- tapOn:
+    id: tour-next-btn
+- tapOn:
+    id: tour-start-interactive-btn
+- assertVisible:
+    id: interactive-tour-overlay
+- assertVisible:
+    id: tour-spotlight-box
+- assertVisible:
+    id: tour-spotlight-beacon
+- assertVisible:
+    id: tour-step-card
+- tapOn:
+    id: tour-interactive-next-btn
+- assertVisible:
+    id: tour-spotlight-box
+- tapOn:
+    id: tour-section-chip-muhurta
+- assertVisible:
+    id: category-pill-griha_pravesh
+- assertVisible:
+    id: tour-spotlight-box
+- tapOn:
+    id: tour-interactive-try-btn
+- assertVisible:
+    id: tour-try-mode-banner
+- tapOn:
+    id: tour-continue-btn
+- tapOn:
+    id: tour-section-chip-festivals
+- assertVisible:
+    id: festival-search-input
+- assertVisible:
+    id: tour-spotlight-box
+- tapOn:
+    id: tour-section-chip-community
+- assertVisible:
+    id: community-hero-card
+- assertVisible:
+    id: tour-spotlight-box
+- tapOn:
+    id: tour-interactive-skip-btn
+- runFlow:
+    when:
+      visible:
+        id: tour-exit-confirm-btn
+    commands:
+      - tapOn:
+          id: tour-exit-confirm-btn
+- assertNotVisible:
+    id: interactive-tour-overlay
+- assertVisible:
+    id: community-hero-card

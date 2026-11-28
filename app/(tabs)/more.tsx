@@ -1,18 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Linking, Modal, Text, View } from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import {
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Linking,
+  Modal,
+  Text,
+  View,
+  useColorScheme,
+  useWindowDimensions,
+  PixelRatio,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { TEMPLES_DATABASE } from '@/src/core/temples/data';
 import { TempleRecord } from '@/src/core/temples/types';
 import { DEITIES_DATABASE } from '@/src/core/devatas/data';
-import { DeityRecord, DeityTradition } from '@/src/core/devatas/types';
-import { VRAT_KATHAS_DATABASE, VratKathaRecord } from '@/src/core/vrat-katha/data';
+import { DeityRecord } from '@/src/core/devatas/types';
+import { VRAT_KATHAS_DATABASE } from '@/src/core/vrat-katha/data';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
-import { cleanBilingualTitle } from '@/src/core/i18n/formatters';
+import {
+  cleanBilingualTitle,
+  cleanDarshanTimings,
+  cleanTempleSignificance,
+} from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
-import { Palette, Radius, Spacing } from '@/constants/Colors';
+import { Radius, Spacing } from '@/constants/Colors';
 import {
   loadUserProfile,
+  loadUserLocation,
   saveUserProfile,
   UserSacredProfile,
   DEFAULT_USER_PROFILE,
@@ -20,47 +36,80 @@ import {
 import { SacredProfileEditorModal } from '@/src/components/SacredProfileEditorModal';
 import { triggerHaptic } from '@/src/services/sacredAudio';
 import { scheduleDailySacredReminders } from '@/src/services/sacredNotifications';
-import { calculatePanchang, PRESET_CITIES } from '@/src/core/panchang';
+import { calculatePanchang, GeoLocation, PRESET_CITIES } from '@/src/core/panchang';
 import { getDayPlans } from '@/src/services/dayplanner';
 import { getDateKey } from '@/src/services/sadhana';
 import { useTour } from '@/src/services/appTourContext';
 import { TourTarget } from '@/src/components/TourTarget';
+import { useTourScroll } from '@/src/hooks/useTourScroll';
+import { COMFORT_TOUCH_TARGET, displayProfileName, getAppTheme, MIN_TOUCH_TARGET } from '@/src/utils/theme';
+import { AppButton } from '@/src/components/ui/AppButton';
 
 type MoreSection = 'temples' | 'devatas' | 'vrat_katha';
 
 export default function MoreScreen() {
-  const { language, calendarSystem } = useLanguage();
+  const { language } = useLanguage();
   const isHi = language === 'hi';
+  const isDark = useColorScheme() === 'dark';
+  const theme = getAppTheme(isDark);
+  const { width: windowWidth } = useWindowDimensions();
+  const isCompactLayout = windowWidth < 380 || PixelRatio.getFontScale() > 1.25;
   const { openHelp, isInteractiveTourActive, isTryModeActive, currentTourStep } = useTour();
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
-
-  // Auto-scroll to spotlighted pilgrimage elements during guided tour
-  useEffect(() => {
-    if (isInteractiveTourActive && !isTryModeActive && currentTourStep) {
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
-      const timer = setTimeout(() => {
-        scrollRef.current?.scrollTo({ y: 0, animated: false });
-      }, 60);
-      return () => clearTimeout(timer);
-    }
-  }, [isInteractiveTourActive, isTryModeActive, currentTourStep]);
+  const {
+    onScroll: onTourScroll,
+    onMomentumScrollEnd: onTourMomentumScrollEnd,
+    onScrollEndDrag: onTourScrollEndDrag,
+  } = useTourScroll('/(tabs)/more', scrollRef);
 
   const [userProfile, setUserProfile] = useState<UserSacredProfile>(DEFAULT_USER_PROFILE);
+  const [userLocation, setUserLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  useEffect(() => {
-    loadUserProfile().then(setUserProfile);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+      loadUserProfile()
+        .then((p) => {
+          if (mounted) setUserProfile(p);
+        })
+        .catch(() => {});
+      loadUserLocation()
+        .then((loc) => {
+          if (mounted && loc) setUserLocation(loc);
+        })
+        .catch(() => {});
+      return () => {
+        mounted = false;
+      };
+    }, [])
+  );
 
   const handleSaveProfile = async (updated: UserSacredProfile) => {
     setUserProfile(updated);
     await saveUserProfile(updated);
-    const panchang = calculatePanchang(new Date(), PRESET_CITIES[0]);
+    const panchang = calculatePanchang(new Date(), userLocation);
     const plans = await getDayPlans(getDateKey(new Date()));
-    await scheduleDailySacredReminders(panchang, updated, plans, undefined, 7, undefined, language);
+    await scheduleDailySacredReminders(
+      panchang,
+      updated,
+      plans,
+      userLocation.timezone,
+      7,
+      userLocation,
+      language
+    );
   };
 
   const [activeSection, setActiveSection] = useState<MoreSection>('temples');
+  const [manualSectionStepId, setManualSectionStepId] = useState<string | null>(null);
+  const effectiveSection: MoreSection =
+    isInteractiveTourActive &&
+    currentTourStep?.tab === '/(tabs)/more' &&
+    currentTourStep.moreSection &&
+    manualSectionStepId !== currentTourStep.id
+      ? currentTourStep.moreSection
+      : activeSection;
   const [isCalculating, setIsCalculating] = useState(false);
 
   // Temples state
@@ -84,7 +133,10 @@ export default function MoreScreen() {
   const activeVrat = VRAT_KATHAS_DATABASE.find((v) => v.id === selectedVratId) || VRAT_KATHAS_DATABASE[0];
 
   const handleSectionSelect = (s: MoreSection) => {
-    if (s === activeSection) return;
+    if (isInteractiveTourActive && currentTourStep?.id) {
+      setManualSectionStepId(currentTourStep.id);
+    }
+    if (s === effectiveSection) return;
     setIsCalculating(true);
     setTimeout(() => {
       setActiveSection(s);
@@ -122,99 +174,117 @@ export default function MoreScreen() {
   return (
     <ScrollView
       ref={scrollRef}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bg }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      onScroll={onTourScroll}
+      onMomentumScrollEnd={onTourMomentumScrollEnd}
+      onScrollEndDrag={onTourScrollEndDrag}
+      scrollEventThrottle={16}
       scrollEnabled={!isInteractiveTourActive || isTryModeActive}
     >
-      {/* Sacred Devotee Profile Banner */}
-      <View style={styles.profileBanner}>
-        <View style={styles.profileAvatarBox}>
-          <Text style={styles.profileAvatarEmoji}>🕉️</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.profileGreeting}>
-            {isHi ? 'श्री' : 'Sri'} {userProfile.name} {isHi ? 'जी' : ''}
-          </Text>
-          <Text style={styles.profileGotraText}>
-            {userProfile.gotra ? `${isHi ? 'गोत्र:' : 'Gotra:'} ${userProfile.gotra}` : ''} • {userProfile.ishtaDevata}
-          </Text>
-          {userProfile.kuldeviOrDevata ? (
-            <Text style={styles.profileKuldeviText}>
-              {isHi ? 'कुलदेवी:' : 'Family Deity:'} {userProfile.kuldeviOrDevata}
+      {/* Slim Devotee & Quick Action Bar */}
+      <View
+        style={[
+          styles.quickActionBar,
+          isDark && { backgroundColor: theme.card, borderColor: theme.border },
+        ]}
+      >
+        <TouchableOpacity
+          testID="more-edit-profile-btn"
+          accessibilityRole="button"
+          accessibilityLabel={isHi ? 'धार्मिक प्रोफाइल बदलें' : 'Edit sacred profile'}
+          style={[
+            styles.quickProfileChip,
+            isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+          ]}
+          onPress={() => {
+            triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+            setIsProfileModalOpen(true);
+          }}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.quickProfileEmoji}>🕉️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.quickProfileName, isDark && { color: theme.text }]}>
+              {isHi ? 'श्री' : 'Sri'} {displayProfileName(userProfile.name, isHi)} {isHi ? 'जी' : ''}
             </Text>
-          ) : null}
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.quickProfileMeta, isDark && { color: theme.textSecondary }]}>
+              {userProfile.gotra ? `${userProfile.gotra} • ` : ''}{userProfile.ishtaDevata}
+            </Text>
+          </View>
+          <Ionicons name="create-outline" size={18} color={theme.primary} />
+        </TouchableOpacity>
+
+        <View style={styles.quickActionRight}>
           <TouchableOpacity
-            testID="more-edit-profile-btn"
-            style={styles.editProfilePill}
-            onPress={async () => {
-              await triggerHaptic('tap', userProfile.hapticsEnabled);
-              setIsProfileModalOpen(true);
+            testID="more-to-settings-btn"
+            accessibilityRole="button"
+            accessibilityLabel={isHi ? 'ऍप सेटिंग्स खोलें' : 'Open App Settings'}
+            style={[
+              styles.quickIconBtn,
+              { minHeight: MIN_TOUCH_TARGET },
+              isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+            ]}
+            onPress={() => {
+              triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+              router.push('/(tabs)/settings');
             }}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <Ionicons name="create-outline" size={15} color="#b45309" />
-            <Text style={styles.editProfilePillText}>{isHi ? 'बदलें' : 'Edit'}</Text>
+            <Ionicons name="settings-outline" size={18} color={theme.primary} />
+            <Text style={[styles.quickSettingsLabel, isDark && { color: theme.text }]}>
+              {isHi ? 'सेटिंग्स' : 'Settings'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             testID="more-help-btn"
-            style={styles.helpBtn}
+            accessibilityRole="button"
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            style={[
+              styles.helpBtn,
+              { minWidth: MIN_TOUCH_TARGET, minHeight: MIN_TOUCH_TARGET },
+              isDark && { backgroundColor: theme.cardMuted, borderColor: theme.primaryBorder },
+            ]}
             onPress={() => openHelp('more')}
             accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
             activeOpacity={0.7}
           >
-            <Ionicons name="help-circle-outline" size={18} color="#b45309" />
+            <Ionicons name="help-circle-outline" size={22} color={theme.primary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Quick Navigation to Settings Tab */}
-      <TouchableOpacity
-        testID="more-to-settings-btn"
-        style={styles.settingsNavPill}
-        onPress={() => {
-          triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
-          router.push('/(tabs)/settings');
-        }}
-        activeOpacity={0.8}
-      >
-        <View style={styles.settingsNavPillLeft}>
-          <View style={styles.settingsNavIconBox}>
-            <Ionicons name="settings-sharp" size={17} color="#d97706" />
-          </View>
-          <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-            <Text style={styles.settingsNavTitle}>
-              {isHi ? 'ऍप सेटिंग्स एवं अलर्ट प्राथमिकताएं' : 'App Settings & Muhurta Alerts'}
-            </Text>
-            <Text style={styles.settingsNavSubtitle}>
-              {isHi
-                ? 'भाषा, चान्द्र पद्धति, फोन पैनल सूचनाएं व गोत्र प्रोफाइल'
-                : 'Configure language, notifications, audio & profile'}
-            </Text>
-          </View>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color="#b45309" />
-      </TouchableOpacity>
-
       {/* Main Feature Switcher */}
-      <View style={styles.featureSwitcher}>
+      <View style={[styles.featureSwitcher, isDark && { backgroundColor: theme.cardMuted }]}>
         {[
           { id: 'temples' as const, labelHi: '🛕 तीर्थ-मन्दिर', labelEn: '🛕 Temples' },
           { id: 'devatas' as const, labelHi: '🔱 देवी-देवता', labelEn: '🔱 Deities' },
           { id: 'vrat_katha' as const, labelHi: '📖 व्रत कथा', labelEn: '📖 Vrat Katha' },
         ].map((tab) => {
-          const isActive = activeSection === tab.id;
+          const isActive = effectiveSection === tab.id;
           const tabNode = (
             <TouchableOpacity
               key={tab.id}
               testID={`more-tab-${tab.id}`}
-              style={[styles.featureTab, { width: '100%' }, isActive && styles.featureTabActive]}
+              accessibilityRole="tab"
+              accessibilityLabel={isHi ? tab.labelHi : tab.labelEn}
+              accessibilityState={{ selected: isActive }}
+              style={[
+                styles.featureTab,
+                { width: '100%', minHeight: COMFORT_TOUCH_TARGET, justifyContent: 'center' },
+                isActive && [styles.featureTabActive, isDark && { backgroundColor: theme.card }],
+              ]}
               onPress={() => handleSectionSelect(tab.id)}
             >
-              <Text style={[styles.featureTabText, isActive && styles.featureTabTextActive]}>
+              <Text
+                style={[
+                  styles.featureTabText,
+                  isDark && { color: theme.textSecondary },
+                  isActive && [styles.featureTabTextActive, isDark && { color: theme.text }],
+                ]}
+              >
                 {isHi ? tab.labelHi : tab.labelEn}
               </Text>
             </TouchableOpacity>
@@ -235,9 +305,9 @@ export default function MoreScreen() {
             );
           }
           return (
-            <View key={tab.id} style={{ flex: 1 }}>
+            <TourTarget key={tab.id} targetId="more-tab-vrat_katha" borderRadius={14} style={{ flex: 1 }}>
               {tabNode}
-            </View>
+            </TourTarget>
           );
         })}
       </View>
@@ -253,9 +323,9 @@ export default function MoreScreen() {
       ) : (
         <>
           {/* SECTION 1: TEMPLES */}
-          {activeSection === 'temples' && (
+          {effectiveSection === 'temples' && (
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>
+              <Text style={[styles.sectionTitle, isDark && { color: theme.text }]}>
                 {isHi ? '🛕 पवित्र तीर्थ एवं मन्दिर दर्शन' : '🛕 Sacred Pilgrimage Sanctuaries'}
               </Text>
 
@@ -269,67 +339,86 @@ export default function MoreScreen() {
                   <TouchableOpacity
                     key={c.id}
                     testID={`circuit-pill-${c.id}`}
-                    style={[styles.circuitPill, circuitFilter === c.id && styles.circuitPillActive]}
+                    accessibilityRole="button"
+                    accessibilityLabel={isHi ? c.labelHi : c.labelEn}
+                    accessibilityState={{ selected: circuitFilter === c.id }}
+                    style={[
+                      styles.circuitPill,
+                      isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                      circuitFilter === c.id && styles.circuitPillActive,
+                    ]}
                     onPress={() => handleCircuitSelect(c.id as typeof circuitFilter)}
                   >
-                <Text
+                    <Text
+                      style={[
+                        styles.circuitText,
+                        isDark && { color: theme.textSecondary },
+                        circuitFilter === c.id && styles.circuitTextActive,
+                      ]}
+                    >
+                      {isHi ? c.labelHi : c.labelEn}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {filteredTemples.map((temple: TempleRecord) => (
+                <View
+                  key={temple.id}
                   style={[
-                    styles.circuitText,
-                    circuitFilter === c.id && styles.circuitTextActive,
+                    styles.card,
+                    isDark && { backgroundColor: theme.card, borderColor: theme.border },
                   ]}
                 >
-                  {isHi ? c.labelHi : c.labelEn}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <View style={styles.templeHeader}>
+                    <Text style={[styles.templeTitle, isDark && { color: theme.text }]}>
+                      {isHi ? temple.nameDevanagari : temple.name}
+                    </Text>
+                    <View style={styles.templeLocationRow}>
+                      <Text style={[styles.cardLocation, isDark && { color: theme.primary }]}>
+                        📍 {temple.location.city}, {temple.location.state}
+                      </Text>
+                    </View>
+                  </View>
 
-          {filteredTemples.map((temple: TempleRecord) => (
-            <View key={temple.id} style={styles.card}>
-              <View style={styles.templeHeader}>
-                <Text style={styles.templeTitle}>
-                  {isHi ? temple.nameDevanagari : temple.name}
-                </Text>
-                <View style={styles.templeLocationRow}>
-                  <Text style={styles.cardLocation}>
-                    📍 {temple.location.city}, {temple.location.state}
+                  <Text style={[styles.cardSubText, isDark && { color: theme.textSecondary }]}>
+                    {isHi ? 'प्रधान आराध्य:' : 'Primary Deity:'}{' '}
+                    <Text style={{ fontWeight: 'bold' }}>
+                      {isHi ? (temple.primaryDeityDevanagari || temple.primaryDeity) : temple.primaryDeity}
+                    </Text>
                   </Text>
+
+                  {temple.sacredRiver && (
+                    <Text style={[styles.cardSubText, isDark && { color: theme.textSecondary }]}>
+                      🌊 {isHi ? 'पवित्र नदी:' : 'Sacred River:'}{' '}
+                      {cleanBilingualTitle(temple.sacredRiver, isHi)}
+                    </Text>
+                  )}
+
+                  <Text style={[styles.cardDesc, isDark && { color: theme.textSecondary }]}>
+                    {cleanTempleSignificance(temple.significance, isHi)}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.darshanBox,
+                      isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder, borderWidth: 1 },
+                    ]}
+                  >
+                    <Ionicons name="time" size={16} color={theme.primary} />
+                    <Text style={[styles.darshanText, isDark && { color: theme.primary }]}>
+                      {isHi ? 'दर्शन समय:' : 'Darshan:'} {cleanDarshanTimings(temple.darshanTimings, isHi)}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-
-              <Text style={styles.cardSubText}>
-                {isHi ? 'प्रधान आराध्य:' : 'Primary Deity:'}{' '}
-                <Text style={{ fontWeight: 'bold' }}>
-                  {isHi ? (temple.primaryDeityDevanagari || temple.primaryDeity) : temple.primaryDeity}
-                </Text>
-              </Text>
-
-              {temple.sacredRiver && (
-                <Text style={styles.cardSubText}>
-                  🌊 {isHi ? 'पवित्र नदी:' : 'Sacred River:'}{' '}
-                  {cleanBilingualTitle(temple.sacredRiver, isHi)}
-                </Text>
-              )}
-
-              <Text style={styles.cardDesc} numberOfLines={2}>
-                {temple.significance}
-              </Text>
-
-              <View style={styles.darshanBox}>
-                <Ionicons name="time" size={13} color="#d97706" />
-                <Text style={styles.darshanText}>
-                  {isHi ? 'दर्शन समय:' : 'Darshan:'} {temple.darshanTimings}
-                </Text>
-              </View>
+              ))}
             </View>
-          ))}
-        </View>
-      )}
+          )}
 
       {/* SECTION 2: DEVI DEVATAS */}
-      {activeSection === 'devatas' && (
+      {effectiveSection === 'devatas' && (
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, isDark && { color: theme.text }]}>
             {isHi ? '🔱 सनातन देवी-देवता दर्शन एवं महामन्त्र' : '🔱 Sacred Hindu Deities & Mantras'}
           </Text>
 
@@ -345,10 +434,22 @@ export default function MoreScreen() {
               <TouchableOpacity
                 key={t.id}
                 testID={`tradition-pill-${t.id}`}
-                style={[styles.circuitPill, devataTradition === t.id && styles.circuitPillActive]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: devataTradition === t.id }}
+                style={[
+                  styles.circuitPill,
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                  devataTradition === t.id && (isDark ? { backgroundColor: theme.primary, borderColor: theme.primary } : styles.circuitPillActive),
+                ]}
                 onPress={() => handleDevataTraditionSelect(t.id)}
               >
-                <Text style={[styles.circuitText, devataTradition === t.id && styles.circuitTextActive]}>
+                <Text
+                  style={[
+                    styles.circuitText,
+                    isDark && { color: theme.textSecondary },
+                    devataTradition === t.id && styles.circuitTextActive,
+                  ]}
+                >
                   {isHi ? t.labelHi : t.labelEn}
                 </Text>
               </TouchableOpacity>
@@ -359,56 +460,63 @@ export default function MoreScreen() {
             <TouchableOpacity
               key={deity.id}
               testID={`deity-card-${deity.id}`}
-              style={styles.card}
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? deity.nameDevanagari : deity.name}
+              style={[styles.card, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}
               onPress={() => setSelectedDeityModal(deity)}
               activeOpacity={0.8}
             >
               <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardTitle}>
+                <Text style={[styles.cardTitle, isDark && { color: theme.text }]}>
                   {isHi ? deity.nameDevanagari : deity.name}
                 </Text>
-                <View style={styles.badgeTradition}>
-                  <Text style={styles.badgeTraditionText}>{deity.tradition}</Text>
+                <View style={[styles.badgeTradition, isDark && { backgroundColor: theme.primaryBg }]}>
+                  <Text style={[styles.badgeTraditionText, isDark && { color: theme.primary }]}>{deity.tradition}</Text>
                 </View>
               </View>
 
-              <Text style={styles.deitySubtitle}>
+              <Text style={[styles.deitySubtitle, isDark && { color: theme.primary }]}>
                 {isHi ? deity.subtitleDevanagari : deity.subtitle}
               </Text>
 
               {deity.consort && (
-                <Text style={styles.cardSubText}>
+                <Text style={[styles.cardSubText, isDark && { color: theme.textSecondary }]}>
                   {isHi ? 'शक्ति / सहचरी:' : 'Consort:'}{' '}
                   <Text style={{ fontWeight: '600' }}>{deity.consort}</Text>
                 </Text>
               )}
 
               {deity.vahana && (
-                <Text style={styles.cardSubText}>
+                <Text style={[styles.cardSubText, isDark && { color: theme.textSecondary }]}>
                   {isHi ? 'दिव्य वाहन:' : 'Vahana:'}{' '}
                   <Text style={{ fontWeight: '600' }}>{deity.vahana}</Text>
                 </Text>
               )}
 
               {deity.tatva && (
-                <Text style={styles.cardDesc} numberOfLines={2}>
+                <Text style={[styles.cardDesc, isDark && { color: theme.textSecondary }]}>
                   {deity.tatva}
                 </Text>
               )}
 
               {deity.keyMantras.length > 0 && (
-                <View style={styles.mantraBox}>
-                  <Text style={styles.mantraTitle}>
+                <View
+                  style={[
+                    styles.mantraBox,
+                    isDark && { backgroundColor: theme.primaryBg, borderLeftColor: theme.primary },
+                  ]}
+                >
+                  <Text style={[styles.mantraTitle, isDark && { color: theme.primary }]}>
                     {deity.keyMantras[0].title}
                   </Text>
-                  <Text style={styles.mantraDevanagari}>
+                  <Text style={[styles.mantraDevanagari, isDark && { color: theme.text }]}>
                     {deity.keyMantras[0].devanagari}
                   </Text>
                 </View>
               )}
 
               <View style={styles.cardFooterAction}>
-                <Text style={styles.cardFooterActionText}>
+                <Text style={[styles.cardFooterActionText, isDark && { color: theme.primary }]}>
                   {isHi ? 'सम्पूर्ण दर्शन, मन्त्र एवं विवरण देखें →' : 'View Full Philosophy, Mantras & Temples →'}
                 </Text>
               </View>
@@ -418,9 +526,9 @@ export default function MoreScreen() {
       )}
 
       {/* SECTION 3: VRAT KATHA */}
-      {activeSection === 'vrat_katha' && (
+      {effectiveSection === 'vrat_katha' && (
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, isDark && { color: theme.text }]}>
             {isHi ? '📖 पावन व्रत कथाएँ एवं पारण विधि' : '📖 Sacred Vrat Kathas & Fasting Guides'}
           </Text>
 
@@ -432,10 +540,22 @@ export default function MoreScreen() {
                 <TouchableOpacity
                   key={vrat.id}
                   testID={`vrat-pill-${vrat.id}`}
-                  style={[styles.circuitPill, isSelected && styles.circuitPillActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  style={[
+                    styles.circuitPill,
+                    isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                    isSelected && (isDark ? { backgroundColor: theme.primary, borderColor: theme.primary } : styles.circuitPillActive),
+                  ]}
                   onPress={() => handleVratSelect(vrat.id)}
                 >
-                  <Text style={[styles.circuitText, isSelected && styles.circuitTextActive]}>
+                  <Text
+                    style={[
+                      styles.circuitText,
+                      isDark && { color: theme.textSecondary },
+                      isSelected && styles.circuitTextActive,
+                    ]}
+                  >
                     {isHi ? vrat.titleDevanagari : vrat.title}
                   </Text>
                 </TouchableOpacity>
@@ -443,11 +563,11 @@ export default function MoreScreen() {
             })}
           </ScrollView>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
+          <View style={[styles.card, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.cardTitle, isDark && { color: theme.text }]}>
               {isHi ? activeVrat.titleDevanagari : activeVrat.title}
             </Text>
-            <Text style={styles.cardSubText}>
+            <Text style={[styles.cardSubText, isDark && { color: theme.textSecondary }]}>
               {isHi ? 'आराध्य देव:' : 'Deity:'}{' '}
               <Text style={{ fontWeight: 'bold' }}>
                 {isHi ? activeVrat.deityDevanagari : activeVrat.deity}
@@ -456,64 +576,101 @@ export default function MoreScreen() {
               {isHi ? activeVrat.tithiDevanagari : activeVrat.tithi}
             </Text>
 
-            <Text style={styles.cardDesc}>{activeVrat.significance}</Text>
+            <Text style={[styles.cardDesc, isDark && { color: theme.textSecondary }]}>
+              {activeVrat.significance}
+            </Text>
 
             {/* Puja Steps */}
-            <Text style={styles.subHeading}>
-              {isHi ? '🙏 प्रामाणिक पूजा विधि (Vidhi Steps)' : '🙏 Sacred Puja Vidhi'}
+            <Text style={[styles.subHeading, isDark && { color: theme.text }]}>
+              {isHi ? '🙏 प्रामाणिक पूजा विधि (Puja Steps)' : '🙏 Sacred Puja Vidhi'}
             </Text>
             {activeVrat.pujaVidhiSteps.map((step, idx) => (
               <View key={idx} style={styles.stepRow}>
-                <Text style={styles.stepNum}>{idx + 1}.</Text>
-                <Text style={styles.stepText}>{step}</Text>
+                <Text style={[styles.stepNum, isDark && { color: theme.primary }]}>{idx + 1}.</Text>
+                <Text style={[styles.stepText, isDark && { color: theme.textSecondary }]}>{step}</Text>
               </View>
             ))}
 
             {/* Fasting Rules (Allowed & Prohibited) */}
-            <View style={styles.rulesGrid}>
-              <View style={styles.rulesColumnAllowed}>
-                <Text style={styles.rulesHeadingAllowed}>
+            <View style={[styles.rulesGrid, isCompactLayout && { flexDirection: 'column' }]}>
+              <View
+                style={[
+                  styles.rulesColumnAllowed,
+                  isDark && { backgroundColor: '#064e3b', borderColor: '#059669' },
+                ]}
+              >
+                <Text style={[styles.rulesHeadingAllowed, isDark && { color: '#6ee7b7' }]}>
                   {isHi ? '✅ फलाहार में ग्राह्य' : '✅ Allowed Foods'}
                 </Text>
                 {activeVrat.fastingRules.allowed.map((item, idx) => (
-                  <Text key={idx} style={styles.ruleItem}>• {item}</Text>
+                  <Text key={idx} style={[styles.ruleItem, isDark && { color: '#d1fae5' }]}>
+                    • {item}
+                  </Text>
                 ))}
               </View>
 
-              <View style={styles.rulesColumnProhibited}>
-                <Text style={styles.rulesHeadingProhibited}>
+              <View
+                style={[
+                  styles.rulesColumnProhibited,
+                  isDark && { backgroundColor: '#450a0a', borderColor: '#b91c1c' },
+                ]}
+              >
+                <Text style={[styles.rulesHeadingProhibited, isDark && { color: '#fca5a5' }]}>
                   {isHi ? '⛔ पूर्णतः वर्जित' : '⛔ Prohibited'}
                 </Text>
                 {activeVrat.fastingRules.prohibited.map((item, idx) => (
-                  <Text key={idx} style={styles.ruleItem}>• {item}</Text>
+                  <Text key={idx} style={[styles.ruleItem, isDark && { color: '#fee2e2' }]}>
+                    • {item}
+                  </Text>
                 ))}
               </View>
             </View>
 
             {/* Parana Timing Guidance */}
-            <View style={styles.paranaBox}>
-              <Text style={styles.paranaHeading}>
+            <View
+              style={[
+                styles.paranaBox,
+                isDark && { backgroundColor: theme.infoBg, borderColor: theme.infoBorder },
+              ]}
+            >
+              <Text style={[styles.paranaHeading, isDark && { color: '#93c5fd' }]}>
                 {isHi ? '⏳ पारण समय व शास्त्र सम्मत विधि' : '⏳ Auspicious Parana Timing & Guidance'}
               </Text>
-              <Text style={styles.paranaText}>{activeVrat.paranaTimingGuidance}</Text>
+              <Text style={[styles.paranaText, isDark && { color: theme.text }]}>
+                {activeVrat.paranaTimingGuidance}
+              </Text>
             </View>
 
             {/* Sacred Story */}
-            <Text style={styles.subHeading}>
+            <Text style={[styles.subHeading, isDark && { color: theme.text }]}>
               {isHi ? '📜 पावन व्रत कथा' : '📜 Sacred Katha'}
             </Text>
-            <View style={styles.kathaBox}>
-              <Text style={styles.kathaText}>{activeVrat.sacredKathaText}</Text>
+            <View
+              style={[
+                styles.kathaBox,
+                isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+              ]}
+            >
+              <Text style={[styles.kathaText, isDark && { color: theme.textSecondary }]}>
+                {activeVrat.sacredKathaText}
+              </Text>
             </View>
 
             {/* Aarti */}
             {activeVrat.sacredAartiText ? (
               <>
-                <Text style={styles.subHeading}>
+                <Text style={[styles.subHeading, isDark && { color: theme.text }]}>
                   {isHi ? '🪔 पावन आरती' : '🪔 Sacred Aarti'}
                 </Text>
-                <View style={styles.aartiBox}>
-                  <Text style={styles.aartiText}>{activeVrat.sacredAartiText}</Text>
+                <View
+                  style={[
+                    styles.aartiBox,
+                    isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+                  ]}
+                >
+                  <Text style={[styles.aartiText, isDark && { color: theme.text }]}>
+                    {activeVrat.sacredAartiText}
+                  </Text>
                 </View>
               </>
             ) : null}
@@ -524,14 +681,19 @@ export default function MoreScreen() {
       )}
 
       {/* About & Shastra Foundation */}
-      <View style={styles.aboutCard}>
-        <Text style={styles.aboutTitle}>sanatan.cc</Text>
-        <Text style={styles.aboutSubtitle}>
+      <View
+        style={[
+          styles.aboutCard,
+          isDark && { backgroundColor: theme.card, borderColor: theme.border },
+        ]}
+      >
+        <Text style={[styles.aboutTitle, isDark && { color: theme.primary }]}>sanatan.cc</Text>
+        <Text style={[styles.aboutSubtitle, isDark && { color: theme.text }]}>
           {isHi
             ? '१००% निःशुल्क शास्त्रीय वैदिक खगोल विज्ञान'
             : '100% Free Vedic Ephemeris'}
         </Text>
-        <Text style={styles.aboutDesc}>
+        <Text style={[styles.aboutDesc, isDark && { color: theme.textMuted }]}>
           {isHi
             ? 'नासा JPL VSOP87 एवं Chapront ELP-2000 खगोलीय सिद्धांतों तथा मुहूर्तचिन्तामणि व निर्णयसिन्धु शास्त्रीय ग्रन्थों पर आधारित पूर्णतः ऑफलाइन गणना।'
             : 'Powered by NASA JPL VSOP87, Chapront ELP-2000 theories, and classical Muhurta Chintamani scriptures. Operates 100% offline with zero tabular approximations.'}
@@ -539,94 +701,122 @@ export default function MoreScreen() {
 
         <View style={styles.aboutActionRow}>
           <TouchableOpacity
-            style={styles.modalBtn}
+            testID="more-about-btn"
+            accessibilityRole="button"
+            accessibilityLabel={isHi ? 'विस्तृत परिचय' : 'About'}
+            style={[styles.modalBtn, { minHeight: COMFORT_TOUCH_TARGET }]}
             onPress={() => router.push('/modal')}
           >
-            <Ionicons name="information-circle" size={16} color="#ffffff" />
+            <Ionicons name="information-circle" size={18} color="#ffffff" />
             <Text style={styles.modalBtnText}>
               {isHi ? 'विस्तृत परिचय' : 'About'}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.githubBtn}
-            onPress={() => Linking.openURL('https://github.com/dhirajnavghare/sanatan.cc')}
+            testID="more-github-btn"
+            accessibilityRole="link"
+            accessibilityLabel="GitHub"
+            style={[styles.githubBtn, { minHeight: COMFORT_TOUCH_TARGET }]}
+            onPress={() => {
+              Linking.openURL('https://github.com/dhirajnavghare/sanatan.cc').catch(() => {});
+            }}
           >
-            <Ionicons name="logo-github" size={16} color="#ffffff" />
+            <Ionicons name="logo-github" size={18} color="#ffffff" />
             <Text style={styles.githubBtnText}>GitHub</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Deity Details Modal */}
-      <Modal visible={!!selectedDeityModal} animationType="slide" transparent>
+      <Modal
+        visible={!!selectedDeityModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSelectedDeityModal(null)}
+      >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View
+            style={[
+              styles.modalContent,
+              isDark && { backgroundColor: theme.surface, borderColor: theme.border, borderTopWidth: 1 },
+            ]}
+          >
             {selectedDeityModal && (
               <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.modalHeader}>
-                  <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-                    <Text style={styles.modalDeityName}>
+                  <View style={{ flex: 1, backgroundColor: 'transparent', paddingRight: 8 }}>
+                    <Text style={[styles.modalDeityName, isDark && { color: theme.text }]}>
                       {isHi ? selectedDeityModal.nameDevanagari : selectedDeityModal.name}
                     </Text>
-                    <Text style={styles.modalDeitySubtitle}>
+                    <Text style={[styles.modalDeitySubtitle, isDark && { color: theme.primary }]}>
                       {isHi ? selectedDeityModal.subtitleDevanagari : selectedDeityModal.subtitle}
                     </Text>
                   </View>
                   <TouchableOpacity
                     testID="deity-modal-close-btn"
+                    accessibilityRole="button"
+                    accessibilityLabel={isHi ? 'बंद करें' : 'Close deity details'}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    style={{ minWidth: MIN_TOUCH_TARGET, minHeight: MIN_TOUCH_TARGET, justifyContent: 'center', alignItems: 'center' }}
                     onPress={() => setSelectedDeityModal(null)}
                   >
-                    <Ionicons name="close-circle" size={26} color="#71717a" />
+                    <Ionicons name="close-circle" size={30} color={isDark ? theme.textSecondary : '#52525b'} />
                   </TouchableOpacity>
                 </View>
 
                 {/* Attributes */}
-                <View style={styles.deityAttrGrid}>
+                <View style={[styles.deityAttrGrid, isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border, borderWidth: 1 }]}>
                   {selectedDeityModal.consort && (
-                    <Text style={styles.attrRow}>
-                      <Text style={styles.attrLabel}>{isHi ? 'शक्ति:' : 'Consort:'} </Text>
+                    <Text style={[styles.attrRow, isDark && { color: theme.text }]}>
+                      <Text style={[styles.attrLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'शक्ति:' : 'Consort:'} </Text>
                       {selectedDeityModal.consort}
                     </Text>
                   )}
                   {selectedDeityModal.vahana && (
-                    <Text style={styles.attrRow}>
-                      <Text style={styles.attrLabel}>{isHi ? 'वाहन:' : 'Vahana:'} </Text>
+                    <Text style={[styles.attrRow, isDark && { color: theme.text }]}>
+                      <Text style={[styles.attrLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'वाहन:' : 'Vahana:'} </Text>
                       {selectedDeityModal.vahana}
                     </Text>
                   )}
                   {selectedDeityModal.abode && (
-                    <Text style={styles.attrRow}>
-                      <Text style={styles.attrLabel}>{isHi ? 'धाम:' : 'Abode:'} </Text>
+                    <Text style={[styles.attrRow, isDark && { color: theme.text }]}>
+                      <Text style={[styles.attrLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'धाम:' : 'Abode:'} </Text>
                       {selectedDeityModal.abode}
                     </Text>
                   )}
                   {selectedDeityModal.sacredDay && (
-                    <Text style={styles.attrRow}>
-                      <Text style={styles.attrLabel}>{isHi ? 'प्रिय वार:' : 'Sacred Day:'} </Text>
+                    <Text style={[styles.attrRow, isDark && { color: theme.text }]}>
+                      <Text style={[styles.attrLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'प्रिय वार:' : 'Sacred Day:'} </Text>
                       {selectedDeityModal.sacredDay}
                     </Text>
                   )}
                   {selectedDeityModal.ayudhas && (
-                    <Text style={styles.attrRow}>
-                      <Text style={styles.attrLabel}>{isHi ? 'आयुध:' : 'Weapons:'} </Text>
+                    <Text style={[styles.attrRow, isDark && { color: theme.text }]}>
+                      <Text style={[styles.attrLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'आयुध:' : 'Weapons:'} </Text>
                       {selectedDeityModal.ayudhas.join(', ')}
                     </Text>
                   )}
                 </View>
 
                 {/* Tatva */}
-                <Text style={styles.subHeading}>{isHi ? 'दार्शनिक स्वरूप (Tatva)' : 'Spiritual Tatva'}</Text>
-                <Text style={styles.tatvaText}>{selectedDeityModal.tatva}</Text>
+                <Text style={[styles.subHeading, isDark && { color: theme.text }]}>{isHi ? 'दार्शनिक स्वरूप (Philosophy)' : 'Spiritual Meaning'}</Text>
+                <Text style={[styles.tatvaText, isDark && { color: theme.textSecondary }]}>{selectedDeityModal.tatva}</Text>
 
                 {/* Key Mantras */}
-                <Text style={styles.subHeading}>{isHi ? 'महामन्त्र' : 'Sacred Mantras'}</Text>
+                <Text style={[styles.subHeading, isDark && { color: theme.text }]}>{isHi ? 'महामन्त्र' : 'Sacred Mantras'}</Text>
                 {selectedDeityModal.keyMantras.map((m, idx) => (
-                  <View key={idx} style={styles.mantraCardFull}>
-                    <Text style={styles.mantraTitle}>{m.title}</Text>
-                    <Text style={styles.mantraDevanagariLarge}>{m.devanagari}</Text>
-                    <Text style={styles.mantraTranslit}>{m.transliteration}</Text>
-                    <Text style={styles.mantraMeaning}>
+                  <View
+                    key={idx}
+                    style={[
+                      styles.mantraCardFull,
+                      isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+                    ]}
+                  >
+                    <Text style={[styles.mantraTitle, isDark && { color: theme.primary }]}>{m.title}</Text>
+                    <Text style={[styles.mantraDevanagariLarge, isDark && { color: theme.text }]}>{m.devanagari}</Text>
+                    <Text style={[styles.mantraTranslit, isDark && { color: theme.textSecondary }]}>{m.transliteration}</Text>
+                    <Text style={[styles.mantraMeaning, isDark && { color: theme.textSecondary }]}>
                       <Text style={{ fontWeight: 'bold' }}>{isHi ? 'अर्थ:' : 'Meaning:'} </Text>
                       {m.meaning}
                     </Text>
@@ -636,16 +826,30 @@ export default function MoreScreen() {
                 {/* Major Temples */}
                 {selectedDeityModal.majorTemples.length > 0 && (
                   <>
-                    <Text style={styles.subHeading}>{isHi ? 'प्रमुख तीर्थ व मन्दिर' : 'Major Temples'}</Text>
+                    <Text style={[styles.subHeading, isDark && { color: theme.text }]}>{isHi ? 'प्रमुख तीर्थ व मन्दिर' : 'Major Temples'}</Text>
                     {selectedDeityModal.majorTemples.map((temple, idx) => (
-                      <View key={idx} style={styles.templeItemMini}>
-                        <Text style={styles.templeMiniName}>{temple.name}</Text>
-                        <Text style={styles.templeMiniLoc}>📍 {temple.location}</Text>
-                        <Text style={styles.templeMiniSig}>{temple.significance}</Text>
+                      <View
+                        key={idx}
+                        style={[
+                          styles.templeItemMini,
+                          isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border, borderWidth: 1 },
+                        ]}
+                      >
+                        <Text style={[styles.templeMiniName, isDark && { color: theme.text }]}>{temple.name}</Text>
+                        <Text style={[styles.templeMiniLoc, isDark && { color: theme.primary }]}>📍 {temple.location}</Text>
+                        <Text style={[styles.templeMiniSig, isDark && { color: theme.textSecondary }]}>{temple.significance}</Text>
                       </View>
                     ))}
                   </>
                 )}
+
+                <AppButton
+                  testID="deity-modal-done-btn"
+                  label={isHi ? 'बंद करें' : 'Close'}
+                  variant="outline"
+                  onPress={() => setSelectedDeityModal(null)}
+                  style={{ marginTop: 12 }}
+                />
               </ScrollView>
             )}
           </View>
@@ -672,66 +876,68 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     paddingBottom: Spacing.dockClearance,
   },
-  profileBanner: {
+  quickActionBar: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: Radius.lg,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    marginBottom: Spacing.md,
+  },
+  quickProfileChip: {
+    flex: 1,
+    minWidth: 180,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fffdf5',
-    borderRadius: Radius.lg,
-    padding: 14,
-    borderWidth: 1.5,
-    borderColor: '#fde68a',
-    marginBottom: Spacing.md,
-    shadowColor: '#d97706',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-    gap: 12,
-  },
-  profileAvatarBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fef3c7',
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#fffbeb',
+    borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: '#fcd34d',
+    borderColor: '#fde68a',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: COMFORT_TOUCH_TARGET,
   },
-  profileAvatarEmoji: {
-    fontSize: 22,
+  quickProfileEmoji: {
+    fontSize: 20,
   },
-  profileGreeting: {
-    fontSize: 16,
+  quickProfileName: {
+    fontSize: 15,
     fontWeight: '800',
     color: '#18181b',
+    lineHeight: 20,
   },
-  profileGotraText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#b45309',
+  quickProfileMeta: {
+    fontSize: 12.5,
+    color: '#92400e',
     marginTop: 2,
+    lineHeight: 18,
   },
-  profileKuldeviText: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 1,
-  },
-  editProfilePill: {
+  quickActionRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#fffbeb',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: '#fcd34d',
+    gap: 8,
+    backgroundColor: 'transparent',
   },
-  editProfilePillText: {
-    fontSize: 11,
+  quickIconBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    borderRadius: Radius.md,
+    backgroundColor: '#f4f4f5',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+  },
+  quickSettingsLabel: {
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#b45309',
+    color: '#18181b',
   },
   helpBtn: {
     padding: 6,
@@ -821,9 +1027,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   featureTabText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#71717a',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#52525b',
   },
   featureTabTextActive: {
     color: '#18181b',
@@ -834,13 +1040,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
     color: '#18181b',
     marginBottom: Spacing.md,
+    lineHeight: 25,
   },
   circuitRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginBottom: Spacing.md,
     backgroundColor: 'transparent',
@@ -849,8 +1057,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   circuitPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: Radius.xl,
     backgroundColor: '#ffffff',
     borderWidth: 1,
@@ -862,13 +1072,13 @@ const styles = StyleSheet.create({
     borderColor: '#18181b',
   },
   circuitText: {
-    fontSize: 12,
-    color: '#71717a',
-    fontWeight: '600',
+    fontSize: 13.5,
+    color: '#3f3f46',
+    fontWeight: '700',
   },
   circuitTextActive: {
     color: '#ffffff',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   card: {
     backgroundColor: '#ffffff',
@@ -883,25 +1093,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
     marginBottom: 6,
     backgroundColor: 'transparent',
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
     color: '#18181b',
     flexShrink: 1,
     marginRight: 8,
+    lineHeight: 24,
   },
   templeHeader: {
     marginBottom: 8,
   },
   templeTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
     color: '#18181b',
-    lineHeight: 22,
+    lineHeight: 24,
     marginBottom: 4,
   },
   templeLocationRow: {
@@ -909,113 +1120,118 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardLocation: {
-    fontSize: 12,
-    color: '#71717a',
-    lineHeight: 16,
+    fontSize: 13.5,
+    color: '#52525b',
+    lineHeight: 20,
     flexShrink: 1,
   },
   cardSubText: {
-    fontSize: 12,
-    color: '#71717a',
-    marginBottom: 4,
+    fontSize: 13.5,
+    color: '#52525b',
+    marginBottom: 5,
+    lineHeight: 20,
   },
   cardDesc: {
-    fontSize: 12,
-    color: '#52525b',
-    lineHeight: 18,
+    fontSize: 14,
+    color: '#3f3f46',
+    lineHeight: 21,
     marginTop: 6,
     marginBottom: 10,
   },
   deitySubtitle: {
-    fontSize: 12,
-    color: '#d97706',
-    fontWeight: '500',
+    fontSize: 13.5,
+    color: '#b45309',
+    fontWeight: '600',
     marginBottom: 8,
+    lineHeight: 20,
   },
   badgeTradition: {
-    backgroundColor: 'rgba(217, 119, 6, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: 'rgba(217, 119, 6, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 10,
   },
   badgeTraditionText: {
-    fontSize: 11,
-    color: '#d97706',
+    fontSize: 12,
+    color: '#b45309',
     fontWeight: 'bold',
   },
   darshanBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 6,
   },
   darshanText: {
-    fontSize: 11,
-    color: '#b45309',
-    fontWeight: '500',
+    flex: 1,
+    fontSize: 13,
+    color: '#92400e',
+    fontWeight: '600',
+    lineHeight: 19,
   },
   mantraBox: {
     backgroundColor: '#fffbeb',
     borderLeftWidth: 3,
     borderLeftColor: '#d97706',
-    padding: 10,
-    borderRadius: 6,
+    padding: 12,
+    borderRadius: 8,
     marginVertical: 8,
   },
   mantraTitle: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#b45309',
     marginBottom: 4,
   },
   mantraDevanagari: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#18181b',
-    lineHeight: 20,
+    lineHeight: 23,
   },
   mantraDevanagariLarge: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: 'bold',
     color: '#18181b',
-    lineHeight: 24,
+    lineHeight: 26,
     marginVertical: 6,
   },
   mantraTranslit: {
-    fontSize: 12,
-    color: '#71717a',
+    fontSize: 13.5,
+    color: '#52525b',
     fontStyle: 'italic',
     marginBottom: 6,
+    lineHeight: 20,
   },
   mantraMeaning: {
-    fontSize: 12,
+    fontSize: 13.5,
     color: '#27272a',
-    lineHeight: 18,
+    lineHeight: 20,
   },
   mantraCardFull: {
     backgroundColor: '#fffbeb',
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
+    padding: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   cardFooterAction: {
-    marginTop: 6,
+    marginTop: 8,
     alignItems: 'flex-end',
     backgroundColor: 'transparent',
   },
   cardFooterActionText: {
-    fontSize: 11,
-    color: '#d97706',
+    fontSize: 13.5,
+    color: '#b45309',
     fontWeight: 'bold',
   },
   subHeading: {
-    fontSize: 14,
+    fontSize: 15.5,
     fontWeight: 'bold',
     color: '#18181b',
     marginTop: 14,
@@ -1023,19 +1239,19 @@ const styles = StyleSheet.create({
   },
   stepRow: {
     flexDirection: 'row',
-    marginBottom: 6,
+    marginBottom: 8,
     backgroundColor: 'transparent',
-    gap: 6,
+    gap: 8,
   },
   stepNum: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#d97706',
+    color: '#b45309',
   },
   stepText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#3f3f46',
-    lineHeight: 18,
+    lineHeight: 21,
     flex: 1,
   },
   rulesGrid: {
@@ -1061,66 +1277,66 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   rulesHeadingAllowed: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#065f46',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   rulesHeadingProhibited: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#991b1b',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   ruleItem: {
-    fontSize: 11,
+    fontSize: 13.5,
     color: '#374151',
-    lineHeight: 16,
-    marginBottom: 2,
+    lineHeight: 20,
+    marginBottom: 4,
   },
   paranaBox: {
     backgroundColor: '#eff6ff',
     borderWidth: 1,
     borderColor: '#bfdbfe',
     borderRadius: 10,
-    padding: 12,
-    marginVertical: 8,
+    padding: 14,
+    marginVertical: 10,
   },
   paranaHeading: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#1e40af',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   paranaText: {
-    fontSize: 12,
+    fontSize: 13.5,
     color: '#1e3a8a',
-    lineHeight: 18,
+    lineHeight: 21,
   },
   kathaBox: {
     backgroundColor: '#fafafa',
     borderWidth: 1,
     borderColor: '#f4f4f5',
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
+    padding: 14,
+    marginBottom: 12,
   },
   kathaText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#27272a',
-    lineHeight: 20,
+    lineHeight: 23,
   },
   aartiBox: {
     backgroundColor: '#fffbeb',
     borderRadius: 10,
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   aartiText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#78350f',
-    lineHeight: 20,
+    lineHeight: 23,
     fontStyle: 'italic',
   },
   aboutCard: {
@@ -1133,56 +1349,60 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   aboutTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#d97706',
+    color: '#b45309',
   },
   aboutSubtitle: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: 'bold',
     color: '#18181b',
     marginTop: 4,
     textAlign: 'center',
   },
   aboutDesc: {
-    fontSize: 11,
-    color: '#71717a',
+    fontSize: 14,
+    color: '#52525b',
     textAlign: 'center',
-    lineHeight: 16,
-    marginTop: 6,
+    lineHeight: 21,
+    marginTop: 8,
     marginBottom: 16,
   },
   aboutActionRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 10,
     backgroundColor: 'transparent',
   },
   modalBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#d97706',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 6,
+    justifyContent: 'center',
+    backgroundColor: '#b45309',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
   },
   modalBtnText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   githubBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#27272a',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
   },
   githubBtnText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   modalOverlay: {
@@ -1205,55 +1425,59 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   modalDeityName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#18181b',
+    lineHeight: 27,
   },
   modalDeitySubtitle: {
-    fontSize: 12,
-    color: '#d97706',
-    fontWeight: '500',
-    marginTop: 2,
+    fontSize: 14,
+    color: '#b45309',
+    fontWeight: '600',
+    marginTop: 3,
+    lineHeight: 20,
   },
   deityAttrGrid: {
     backgroundColor: '#f4f4f5',
     borderRadius: 12,
-    padding: 12,
+    padding: 14,
     marginBottom: 12,
-    gap: 4,
+    gap: 6,
   },
   attrRow: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#27272a',
+    lineHeight: 20,
   },
   attrLabel: {
     fontWeight: 'bold',
-    color: '#71717a',
+    color: '#52525b',
   },
   tatvaText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#3f3f46',
-    lineHeight: 18,
-    marginBottom: 12,
+    lineHeight: 21,
+    marginBottom: 14,
   },
   templeItemMini: {
     backgroundColor: '#f4f4f5',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 6,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
   },
   templeMiniName: {
-    fontSize: 12,
+    fontSize: 14.5,
     fontWeight: 'bold',
     color: '#18181b',
   },
   templeMiniLoc: {
-    fontSize: 11,
-    color: '#71717a',
-    marginVertical: 2,
+    fontSize: 13,
+    color: '#52525b',
+    marginVertical: 3,
   },
   templeMiniSig: {
-    fontSize: 11,
-    color: '#52525b',
+    fontSize: 13.5,
+    color: '#3f3f46',
+    lineHeight: 20,
   },
 });

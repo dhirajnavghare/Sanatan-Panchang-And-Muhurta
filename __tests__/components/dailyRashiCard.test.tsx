@@ -1,4 +1,6 @@
 import React from 'react';
+import { Platform, NativeModules, Share } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import { DailyRashiCard } from '../../src/components/DailyRashiCard';
 
@@ -55,8 +57,8 @@ describe('DailyRashiCard Component', () => {
   });
 
   it('should trigger WhatsApp share with horoscope and app link when share button is tapped', async () => {
-    const shareSpy = jest.spyOn(require('react-native').Share, 'share').mockImplementation(() =>
-      Promise.resolve({ action: 'sharedAction' })
+    const shareSpy = jest.spyOn(Share, 'share').mockImplementation(() =>
+      Promise.resolve({ action: Share.sharedAction, activityType: undefined })
     );
 
     await render(
@@ -89,7 +91,6 @@ describe('DailyRashiCard Component', () => {
   });
 
   it('should call NativeModules.SanatanShare.shareImageWithText on Android when available', async () => {
-    const { Platform, NativeModules } = require('react-native');
     const originalOS = Platform.OS;
     Platform.OS = 'android';
     NativeModules.SanatanShare = {
@@ -149,7 +150,6 @@ describe('DailyRashiCard Component', () => {
   });
 
   it('should restore selected Rashi from AsyncStorage when savedRashiIndex is undefined', async () => {
-    const AsyncStorage = require('@react-native-async-storage/async-storage');
     await AsyncStorage.setItem('@sanatan_selected_rashi_v1', '2');
 
     await render(
@@ -168,7 +168,6 @@ describe('DailyRashiCard Component', () => {
   });
 
   it('should persist selected Rashi to AsyncStorage when a pill is tapped', async () => {
-    const AsyncStorage = require('@react-native-async-storage/async-storage');
     await AsyncStorage.clear();
 
     await render(

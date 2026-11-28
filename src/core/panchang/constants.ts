@@ -72,7 +72,7 @@ export const YOGA_DEVANAGARI = [
   'इन्द्र', 'वैधृति'
 ];
 
-export const YOGA_NATURE: Array<'Auspicious' | 'Inauspicious' | 'Neutral'> = [
+export const YOGA_NATURE: ('Auspicious' | 'Inauspicious' | 'Neutral')[] = [
   'Inauspicious', 'Auspicious', 'Auspicious', 'Auspicious', 'Auspicious',
   'Inauspicious', 'Auspicious', 'Auspicious', 'Inauspicious', 'Inauspicious',
   'Auspicious', 'Auspicious', 'Inauspicious', 'Auspicious', 'Inauspicious',
@@ -112,7 +112,7 @@ export const RASHI_LORDS = [
   'Shukra (Venus)', 'Mangala (Mars)', 'Guru (Jupiter)', 'Shani (Saturn)', 'Shani (Saturn)', 'Guru (Jupiter)'
 ];
 
-export const RASHI_ELEMENTS: Array<'Fire' | 'Earth' | 'Air' | 'Water'> = [
+export const RASHI_ELEMENTS: ('Fire' | 'Earth' | 'Air' | 'Water')[] = [
   'Fire', 'Earth', 'Air', 'Water', 'Fire', 'Earth',
   'Air', 'Water', 'Fire', 'Earth', 'Air', 'Water'
 ];
@@ -136,7 +136,7 @@ export const RAHU_KAAL_PARTS = [8, 2, 7, 5, 6, 4, 3]; // 1-indexed eighth of the
 export const YAMAGANDA_PARTS = [5, 4, 3, 2, 1, 7, 6];
 export const GULIKA_PARTS = [7, 6, 5, 4, 3, 2, 1];
 
-export const CHOGHADIYA_DAY_SEQUENCES: Record<number, Array<'Udveg' | 'Char' | 'Labh' | 'Amrit' | 'Kaal' | 'Shubh' | 'Rog'>> = {
+export const CHOGHADIYA_DAY_SEQUENCES: Record<number, ('Udveg' | 'Char' | 'Labh' | 'Amrit' | 'Kaal' | 'Shubh' | 'Rog')[]> = {
   0: ['Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg'], // Sun
   1: ['Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg', 'Char', 'Labh', 'Amrit'], // Mon
   2: ['Rog', 'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog'], // Tue
@@ -146,7 +146,7 @@ export const CHOGHADIYA_DAY_SEQUENCES: Record<number, Array<'Udveg' | 'Char' | '
   6: ['Kaal', 'Shubh', 'Rog', 'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal'], // Sat
 };
 
-export const CHOGHADIYA_NIGHT_SEQUENCES: Record<number, Array<'Udveg' | 'Char' | 'Labh' | 'Amrit' | 'Kaal' | 'Shubh' | 'Rog'>> = {
+export const CHOGHADIYA_NIGHT_SEQUENCES: Record<number, ('Udveg' | 'Char' | 'Labh' | 'Amrit' | 'Kaal' | 'Shubh' | 'Rog')[]> = {
   0: ['Shubh', 'Amrit', 'Char', 'Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh'], // Sun
   1: ['Amrit', 'Char', 'Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit'], // Mon
   2: ['Char', 'Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit', 'Char'], // Tue

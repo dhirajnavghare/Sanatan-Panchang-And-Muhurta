@@ -1,14 +1,11 @@
 import {
   calculatePanchang,
   PRESET_CITIES,
-  calculateSunTimes,
-  calculateMoonTimes,
   toJulianDay,
 } from '../src/core/panchang';
 
 describe('Panchang & Astronomical Engine - Comprehensive Test Suite', () => {
   const ujjain = PRESET_CITIES.find((c) => c.name.includes('Ujjain')) || PRESET_CITIES[0];
-  const varanasi = PRESET_CITIES.find((c) => c.name.includes('Varanasi')) || PRESET_CITIES[1];
 
   describe('Julian Day and Ephemeris Computations', () => {
     it('should compute valid Julian Day for known epoch dates', () => {

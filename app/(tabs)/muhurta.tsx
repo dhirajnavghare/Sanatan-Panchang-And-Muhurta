@@ -1,61 +1,119 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, FlatList, Text, View } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Text,
+  View,
+  Platform,
+  useColorScheme,
+  useWindowDimensions,
+  PixelRatio,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { MUHURTA_CATEGORIES } from '@/src/core/muhurta-finder/categories';
 import { findMuhurtas } from '@/src/core/muhurta-finder/calculator';
 import { MuhurtaCategoryId, MuhurtaDayEvaluation } from '@/src/core/muhurta-finder/types';
-import { calculatePanchang, PRESET_CITIES } from '@/src/core/panchang';
+import { calculatePanchang, GeoLocation, PRESET_CITIES } from '@/src/core/panchang';
+import { loadUserLocation } from '@/src/services/userProfile';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
-import { cleanBilingualTitle } from '@/src/core/i18n/formatters';
+import { cleanBilingualTitle, formatHumanIsoDate } from '@/src/core/i18n/formatters';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { Palette, Radius, Spacing } from '@/constants/Colors';
 import { useTour } from '@/src/services/appTourContext';
 import { TourTarget } from '@/src/components/TourTarget';
+import { useTourScroll, useTourHorizontalScroll } from '@/src/hooks/useTourScroll';
+import { getAppTheme, MIN_TOUCH_TARGET, Typography } from '@/src/utils/theme';
+import { ScreenStateView } from '@/src/components/ui/ScreenStateView';
+
+const MUHURTA_HORIZONTAL_TOUR_TARGETS = ['category-pill-griha_pravesh'] as const;
 
 export default function MuhurtaScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
+  const isDark = useColorScheme() === 'dark';
+  const theme = getAppTheme(isDark);
+  const { width: windowWidth } = useWindowDimensions();
+  const isCompactWidth = windowWidth < 400 || PixelRatio.getFontScale() > 1.2;
+
   const { openHelp, isInteractiveTourActive, isTryModeActive, currentTourStep } = useTour();
-  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+  const listRef = useRef<FlatList<MuhurtaDayEvaluation>>(null);
+  const hListRef = useRef<FlatList<(typeof MUHURTA_CATEGORIES)[number]>>(null);
+  const {
+    onScroll: onTourScroll,
+    onMomentumScrollEnd: onTourMomentumScrollEnd,
+    onScrollEndDrag: onTourScrollEndDrag,
+  } = useTourScroll('/(tabs)/muhurta', listRef);
+  const {
+    onHorizontalScroll,
+    onHorizontalMomentumScrollEnd,
+    onHorizontalScrollEndDrag,
+  } = useTourHorizontalScroll(
+    '/(tabs)/muhurta',
+    hListRef,
+    MUHURTA_HORIZONTAL_TOUR_TARGETS
+  );
 
-  // Auto-scroll to spotlighted muhurta elements during guided tour
-  useEffect(() => {
-    if (isInteractiveTourActive && !isTryModeActive && currentTourStep) {
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
-      const timer = setTimeout(() => {
-        scrollRef.current?.scrollTo({ y: 0, animated: false });
-      }, 60);
-      return () => clearTimeout(timer);
-    }
-  }, [isInteractiveTourActive, isTryModeActive, currentTourStep]);
-
+  const [userLocation, setUserLocation] = useState<GeoLocation>(PRESET_CITIES[0]);
   const [selectedCategory, setSelectedCategory] = useState<MuhurtaCategoryId>('griha_pravesh');
   const [daysCount, setDaysCount] = useState<30 | 60 | 90>(60);
   const [suitabilityFilter, setSuitabilityFilter] = useState<'All' | 'Good' | 'Optimal'>('Good');
-  const [evaluations, setEvaluations] = useState<MuhurtaDayEvaluation[]>([]);
-  const [isCalculating, setIsCalculating] = useState(true);
+  const [calcResult, setCalcResult] = useState<{
+    key: string;
+    evaluations: MuhurtaDayEvaluation[];
+  } | null>(null);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [isAvoidExpanded, setIsAvoidExpanded] = useState(false);
+  const [manualAvoidStepId, setManualAvoidStepId] = useState<string | null>(null);
+  const effectiveAvoidExpanded =
+    isInteractiveTourActive &&
+    currentTourStep?.tab === '/(tabs)/muhurta' &&
+    currentTourStep.muhurtaExpandAvoid !== undefined &&
+    manualAvoidStepId !== currentTourStep.id
+      ? Boolean(currentTourStep.muhurtaExpandAvoid)
+      : isAvoidExpanded;
+
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+      loadUserLocation()
+        .then((loc) => {
+          if (mounted && loc) {
+            setUserLocation(loc);
+          }
+        })
+        .catch(() => {});
+      return () => {
+        mounted = false;
+      };
+    }, [])
+  );
+
+  const currentQueryKey = `${selectedCategory}|${daysCount}|${suitabilityFilter}|${userLocation.name}_${userLocation.latitude}_${userLocation.longitude}`;
+  const isCalculating = calcResult?.key !== currentQueryKey;
+  const evaluations = useMemo(
+    () => (calcResult?.key === currentQueryKey ? calcResult.evaluations : []),
+    [calcResult, currentQueryKey]
+  );
 
   // Defer heavy astrological search off the critical render path
   useEffect(() => {
     let isMounted = true;
-    setIsCalculating(true);
     const timer = setTimeout(() => {
       try {
         const all = findMuhurtas(
           { category: selectedCategory, daysCount, minimumSuitability: suitabilityFilter },
-          PRESET_CITIES[0],
+          userLocation,
           new Date(),
           'Lahiri'
         );
         if (isMounted) {
-          setEvaluations(all);
-          setIsCalculating(false);
+          setCalcResult({ key: currentQueryKey, evaluations: all });
         }
       } catch {
         if (isMounted) {
-          setEvaluations([]);
-          setIsCalculating(false);
+          setCalcResult({ key: currentQueryKey, evaluations: [] });
         }
       }
     }, 40);
@@ -64,7 +122,7 @@ export default function MuhurtaScreen() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [selectedCategory, daysCount, suitabilityFilter]);
+  }, [selectedCategory, daysCount, suitabilityFilter, userLocation, currentQueryKey]);
 
   const handleCategorySelect = (id: MuhurtaCategoryId) => {
     if (id === selectedCategory) return;
@@ -90,8 +148,8 @@ export default function MuhurtaScreen() {
   }, [selectedCategory]);
 
   const todayPanchang = useMemo(() => {
-    return calculatePanchang(new Date(), PRESET_CITIES[0]);
-  }, []);
+    return calculatePanchang(new Date(), userLocation);
+  }, [userLocation]);
 
   const formatTime = (d: Date | string | null): string => {
     if (!d) return '—';
@@ -101,39 +159,52 @@ export default function MuhurtaScreen() {
         hour: '2-digit',
         minute: '2-digit',
         hour12: true,
+        timeZone: userLocation.timezone,
       }).format(dateObj);
     } catch {
       return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
   };
 
-  return (
-    <ScrollView
-      ref={scrollRef}
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      scrollEnabled={!isInteractiveTourActive || isTryModeActive}
-    >
+  const listHeader = (
+    <View>
       {/* Category Horizontal Pill Selector */}
       <View style={styles.categoryContainer}>
         <FlatList
+          ref={hListRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           data={MUHURTA_CATEGORIES}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 2 }}
+          onScroll={onHorizontalScroll}
+          onMomentumScrollEnd={onHorizontalMomentumScrollEnd}
+          onScrollEndDrag={onHorizontalScrollEndDrag}
+          scrollEventThrottle={16}
           renderItem={({ item }) => {
             const isSelected = item.id === selectedCategory;
             const pillNode = (
               <TouchableOpacity
                 testID={`category-pill-${item.id}`}
-                style={[styles.categoryPill, isSelected && styles.categoryPillSelected]}
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? item.titleDevanagari : item.title}
+                accessibilityState={{ selected: isSelected }}
+                style={[
+                  styles.categoryPill,
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                  isSelected && (isDark ? { backgroundColor: theme.primary, borderColor: theme.primary } : styles.categoryPillSelected),
+                ]}
                 onPress={() => handleCategorySelect(item.id)}
                 activeOpacity={0.8}
               >
                 <Text style={styles.categoryIcon}>{item.icon}</Text>
-                <Text style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>
+                <Text
+                  style={[
+                    styles.categoryText,
+                    isDark && { color: theme.textSecondary },
+                    isSelected && styles.categoryTextSelected,
+                  ]}
+                >
                   {isHi ? item.titleDevanagari : item.title}
                 </Text>
               </TouchableOpacity>
@@ -151,100 +222,187 @@ export default function MuhurtaScreen() {
       </View>
 
       {/* Active Category Shastric Reference Callout Banner */}
-      <View style={styles.categoryBanner}>
+      <View
+        style={[
+          styles.categoryBanner,
+          isDark && { backgroundColor: '#251d0e', borderColor: theme.primaryBorder },
+        ]}
+      >
         <View style={styles.bannerHeader}>
-          <Text style={styles.bannerTitle}>
+          <Text style={[styles.bannerTitle, isDark && { color: theme.primary }]}>
             {isHi ? activeCategoryMeta.titleDevanagari : activeCategoryMeta.title}
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={styles.cityBadge}>
-              <Ionicons name="location-sharp" size={11} color={Palette.primary} />
-              <Text style={styles.cityBadgeText}>{PRESET_CITIES[0].name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View
+              style={[
+                styles.cityBadge,
+                isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder },
+              ]}
+            >
+              <Ionicons name="location-sharp" size={13} color={theme.primary} />
+              <Text style={[styles.cityBadgeText, isDark && { color: theme.primary }]}>
+                {userLocation.name}
+              </Text>
             </View>
             <TouchableOpacity
               testID="muhurta-help-btn"
-              onPress={() => openHelp('muhurta')}
-              style={styles.helpBtn}
+              accessibilityRole="button"
               accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
+              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              onPress={() => openHelp('muhurta')}
+              style={[
+                styles.helpBtn,
+                isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+              ]}
             >
-              <Ionicons name="help-circle-outline" size={18} color={Palette.textSecondaryLight} />
+              <Ionicons name="help-circle-outline" size={22} color={isDark ? theme.textSecondary : Palette.textSecondaryLight} />
             </TouchableOpacity>
           </View>
         </View>
-        <Text style={styles.bannerDesc}>{activeCategoryMeta.description}</Text>
-        <View style={styles.scriptureBadge}>
-          <Text style={styles.scriptureBadgeText}>
+        <Text style={[styles.bannerDesc, isDark && { color: theme.textSecondary }]}>
+          {activeCategoryMeta.description}
+        </Text>
+        <View style={[styles.scriptureBadge, isDark && { backgroundColor: theme.card }]}>
+          <Text style={[styles.scriptureBadgeText, isDark && { color: theme.primary }]}>
             📜 {activeCategoryMeta.traditionalReference}
           </Text>
         </View>
       </View>
 
-      {/* Today's Inauspicious & Avoidable Windows */}
+      {/* Today's Inauspicious & Avoidable Windows (Compact Collapsible Strip above fold) */}
       <TourTarget targetId="muhurta-inauspicious-card" borderRadius={20}>
-        <View style={styles.inauspiciousCard} testID="muhurta-inauspicious-card">
+        <TouchableOpacity
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: effectiveAvoidExpanded }}
+          accessibilityLabel={
+            isHi
+              ? 'आज के त्याज्य काल विस्तृत करें या समेटें'
+              : 'Toggle all inauspicious windows today'
+          }
+          onPress={() => {
+            if (isInteractiveTourActive && currentTourStep?.id) {
+              setManualAvoidStepId(currentTourStep.id);
+            }
+            setIsAvoidExpanded(!effectiveAvoidExpanded);
+          }}
+          style={[
+            styles.inauspiciousCard,
+            isDark && { backgroundColor: '#271710', borderColor: theme.primaryBorder },
+          ]}
+          testID="muhurta-inauspicious-card"
+        >
           <View style={styles.inauspiciousHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 13 }}>⚠️</Text>
-              <Text style={styles.inauspiciousTitle}>
-                {isHi ? 'आज के त्याज्य व अशुभ काल' : "Today's Inauspicious Windows"}
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, flex: 1, paddingRight: 8 }}>
+              <Text style={{ fontSize: 16 }}>⚠️</Text>
+              <Text style={[styles.inauspiciousTitle, isDark && { color: '#fdba74' }]}>
+                {isHi ? 'आज के त्याज्य काल' : "Today's Avoid Windows"}
               </Text>
+              {!effectiveAvoidExpanded && (
+                <Text style={[styles.inauspiciousCompactTime, isDark && { color: theme.dangerText }]}>
+                  • {isHi ? 'राहु' : 'Rahu'}{' '}
+                  {formatTime(todayPanchang.muhurtas.rahuKaal.startTime)} -{' '}
+                  {formatTime(todayPanchang.muhurtas.rahuKaal.endTime)}
+                </Text>
+              )}
             </View>
-            <Text style={styles.inauspiciousSub}>
-              {isHi ? 'आरम्भ वर्जित' : 'Avoid Beginnings'}
-            </Text>
-          </View>
-
-          <View style={styles.inauspiciousRow}>
-            {/* Rahu Kaal */}
-            <View style={styles.inauspiciousItem}>
-              <Text style={styles.inauspiciousBadgeRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
-              <Text style={styles.inauspiciousTime}>
-                {formatTime(todayPanchang.muhurtas.rahuKaal.startTime)} - {formatTime(todayPanchang.muhurtas.rahuKaal.endTime)}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={[styles.inauspiciousSub, isDark && { color: '#fb923c' }]}>
+                {effectiveAvoidExpanded ? (isHi ? 'छुपाएं' : 'Hide') : (isHi ? 'सभी ३ काल' : 'Show All 3')}
               </Text>
-              <Text style={styles.inauspiciousDesc}>
-                {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
-              </Text>
-            </View>
-
-            {/* Yamagandam */}
-            <View style={styles.inauspiciousItem}>
-              <Text style={styles.inauspiciousBadgeOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
-              <Text style={styles.inauspiciousTime}>
-                {formatTime(todayPanchang.muhurtas.yamaganda.startTime)} - {formatTime(todayPanchang.muhurtas.yamaganda.endTime)}
-              </Text>
-              <Text style={styles.inauspiciousDesc}>
-                {isHi ? 'यात्रा व सौदा वर्जित' : 'Avoid deals/travel'}
-              </Text>
-            </View>
-
-            {/* Gulika Kaal */}
-            <View style={styles.inauspiciousItem}>
-              <Text style={styles.inauspiciousBadgePurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
-              <Text style={styles.inauspiciousTime}>
-                {formatTime(todayPanchang.muhurtas.gulikaKaal.startTime)} - {formatTime(todayPanchang.muhurtas.gulikaKaal.endTime)}
-              </Text>
-              <Text style={styles.inauspiciousDesc}>
-                {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
-              </Text>
+              <Ionicons
+                name={effectiveAvoidExpanded ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={isDark ? '#fb923c' : '#c2410c'}
+              />
             </View>
           </View>
-        </View>
+
+          {effectiveAvoidExpanded && (
+            <View style={[styles.inauspiciousRow, isCompactWidth && { flexDirection: 'column' }]}>
+              {/* Rahu Kaal */}
+              <View
+                style={[
+                  styles.inauspiciousItem,
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+              >
+                <Text style={styles.inauspiciousBadgeRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
+                <Text style={[styles.inauspiciousTime, isDark && { color: theme.text }]}>
+                  {formatTime(todayPanchang.muhurtas.rahuKaal.startTime)} - {formatTime(todayPanchang.muhurtas.rahuKaal.endTime)}
+                </Text>
+                <Text style={[styles.inauspiciousDesc, isDark && { color: theme.textMuted }]}>
+                  {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
+                </Text>
+              </View>
+
+              {/* Yamagandam */}
+              <View
+                style={[
+                  styles.inauspiciousItem,
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+              >
+                <Text style={styles.inauspiciousBadgeOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
+                <Text style={[styles.inauspiciousTime, isDark && { color: theme.text }]}>
+                  {formatTime(todayPanchang.muhurtas.yamaganda.startTime)} - {formatTime(todayPanchang.muhurtas.yamaganda.endTime)}
+                </Text>
+                <Text style={[styles.inauspiciousDesc, isDark && { color: theme.textMuted }]}>
+                  {isHi ? 'यात्रा व सौदा वर्जित' : 'Avoid deals/travel'}
+                </Text>
+              </View>
+
+              {/* Gulika Kaal */}
+              <View
+                style={[
+                  styles.inauspiciousItem,
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+              >
+                <Text style={styles.inauspiciousBadgePurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
+                <Text style={[styles.inauspiciousTime, isDark && { color: theme.text }]}>
+                  {formatTime(todayPanchang.muhurtas.gulikaKaal.startTime)} - {formatTime(todayPanchang.muhurtas.gulikaKaal.endTime)}
+                </Text>
+                <Text style={[styles.inauspiciousDesc, isDark && { color: theme.textMuted }]}>
+                  {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
+                </Text>
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
       </TourTarget>
 
-      {/* Modern Filter Strip: Horizon & Quality */}
+      {/* Responsive Filter Strip: Horizon & Quality */}
       <TourTarget targetId="days-pill-30" borderRadius={16}>
-        <View style={styles.filterSection}>
+        <View
+          style={[
+            styles.filterSection,
+            isCompactWidth && { flexDirection: 'column' },
+          ]}
+        >
           {/* Horizon Filter (30 / 60 / 90 Days) */}
-          <View style={styles.segmentedFilter}>
+          <View style={[styles.segmentedFilter, isDark && { backgroundColor: theme.cardMuted }]}>
             {([30, 60, 90] as const).map((d) => (
               <TouchableOpacity
                 key={d}
                 testID={`days-pill-${d}`}
-                style={[styles.segmentBtn, { width: '100%' }, daysCount === d && styles.segmentBtnActive]}
+                accessibilityRole="button"
+                accessibilityLabel={`${d} ${isHi ? 'दिन' : 'Days'}`}
+                accessibilityState={{ selected: daysCount === d }}
+                style={[
+                  styles.segmentBtn,
+                  daysCount === d && [styles.segmentBtnActive, isDark && { backgroundColor: theme.card }],
+                ]}
                 onPress={() => handleDaysSelect(d)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.segmentText, daysCount === d && styles.segmentTextActive]}>
+                <Text
+                  style={[
+                    styles.segmentText,
+                    isDark && { color: theme.textMuted },
+                    daysCount === d && [styles.segmentTextActive, isDark && { color: theme.text }],
+                  ]}
+                >
                   {d} {isHi ? 'दिन' : 'Days'}
                 </Text>
               </TouchableOpacity>
@@ -252,17 +410,29 @@ export default function MuhurtaScreen() {
           </View>
 
           {/* Quality Filter (Good / Optimal) */}
-          <View style={styles.segmentedFilter}>
+          <View style={[styles.segmentedFilter, isDark && { backgroundColor: theme.cardMuted }]}>
             {(['Good', 'Optimal'] as const).map((s) => (
               <TouchableOpacity
                 key={s}
                 testID={`suitability-pill-${s}`}
-                style={[styles.segmentBtn, suitabilityFilter === s && styles.segmentBtnActive]}
+                accessibilityRole="button"
+                accessibilityLabel={s}
+                accessibilityState={{ selected: suitabilityFilter === s }}
+                style={[
+                  styles.segmentBtn,
+                  suitabilityFilter === s && [styles.segmentBtnActive, isDark && { backgroundColor: theme.card }],
+                ]}
                 onPress={() => handleSuitabilitySelect(s)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.segmentText, suitabilityFilter === s && styles.segmentTextActive]}>
-                  {s === 'Optimal' ? (isHi ? '🌟 श्रेष्ठ' : '🌟 Optimal') : (isHi ? '✨ उत्तम' : '✨ Good')}
+                <Text
+                  style={[
+                    styles.segmentText,
+                    isDark && { color: theme.textMuted },
+                    suitabilityFilter === s && [styles.segmentTextActive, isDark && { color: theme.text }],
+                  ]}
+                >
+                  {s === 'Optimal' ? (isHi ? '🌟 श्रेष्ठ' : '🌟 Best (Optimal)') : (isHi ? '✨ उत्तम' : '✨ Good')}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -270,185 +440,234 @@ export default function MuhurtaScreen() {
         </View>
       </TourTarget>
 
-      {isCalculating ? (
-        <LoadingIndicator
-          message={
-            isHi
-              ? 'शास्त्रसम्मत शुभ मुहूर्त की खगोलीय गणना जारी है...'
-              : 'Calculating Astrological Muhurtas...'
-          }
-        />
-      ) : (
-        <>
-          {/* Results Summary Bar */}
-          <View style={styles.resultsSummaryBar}>
-            <Text style={styles.resultsCountText}>
+      {!isCalculating && (
+        <View style={styles.resultsSummaryBar}>
+          <Text style={[styles.resultsCountText, isDark && { color: theme.text }]}>
+            {isHi
+              ? `कुल ${evaluations.length} अनुकूल मुहूर्त उपलब्ध (${daysCount} दिनों में)`
+              : `Found ${evaluations.length} auspicious dates across ${daysCount} days`}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+
+  const listEmpty = isCalculating ? (
+    <LoadingIndicator
+      message={
+        isHi
+          ? 'शास्त्रसम्मत शुभ मुहूर्त की खगोलीय गणना जारी है...'
+          : 'Calculating Astrological Muhurtas...'
+      }
+    />
+  ) : (
+    <ScreenStateView
+      iconEmoji="🔍"
+      title={isHi ? 'कोई अनुकूल मुहूर्त नहीं मिला' : 'No matching muhurta found'}
+      description={
+        isHi
+          ? 'चयनित मापदंडों में कोई निर्दोष काल उपलब्ध नहीं है। समय सीमा ९० दिन करें अथवा "उत्तम" चुनें।'
+          : 'No dates match the current criteria. Expand to 90 days or switch quality filter to Good.'
+      }
+      actionLabel={isHi ? '९० दिनों में खोजें' : 'Search Next 90 Days'}
+      actionTestID="expand-days-90-btn"
+      onAction={() => {
+        setDaysCount(90);
+        setSuitabilityFilter('Good');
+      }}
+    />
+  );
+
+  const renderEvaluationItem = ({ item }: { item: MuhurtaDayEvaluation }) => {
+    const isOptimal = item.suitability === 'Optimal';
+    const isExpanded = expandedDate === item.isoDate;
+
+    return (
+      <View
+        style={[
+          styles.evalCard,
+          isDark && { backgroundColor: theme.card, borderColor: theme.border },
+        ]}
+      >
+        {/* Top Date & Score Row */}
+        <View style={styles.evalHeaderRow}>
+          <View style={{ flex: 1, backgroundColor: 'transparent', paddingRight: 8 }}>
+            <Text style={[styles.evalDateText, isDark && { color: theme.text }]}>
+              {formatHumanIsoDate(item.isoDate, isHi)}
+            </Text>
+            <Text style={[styles.evalLimbSummaryText, isDark && { color: theme.textMuted }]}>
               {isHi
-                ? `कुल ${evaluations.length} अनुकूल मुहूर्त उपलब्ध (${daysCount} दिनों में)`
-                : `Found ${evaluations.length} auspicious dates across ${daysCount} days`}
+                ? `${item.panchangSummary.tithiNameDevanagari || item.panchangSummary.tithiName} • ${item.panchangSummary.nakshatraNameDevanagari || item.panchangSummary.nakshatraName}`
+                : `${item.panchangSummary.tithiName} • ${item.panchangSummary.nakshatraName}`}
             </Text>
           </View>
 
-          {/* Evaluations List */}
-          {evaluations.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <View style={styles.emptyIconCircle}>
-                <Text style={{ fontSize: 32 }}>🔍</Text>
-              </View>
-              <Text style={styles.emptyTitle}>
-                {isHi ? 'कोई अनुकूल मुहूर्त नहीं मिला' : 'No matching muhurta found'}
-              </Text>
-              <Text style={styles.emptySubtitle}>
-                {isHi
-                  ? 'चयनित मापदंडों में कोई निर्दोष काल उपलब्ध नहीं है। कृपया समय सीमा को ९० दिन करें अथवा उत्तम गुणवत्ता चुनें।'
-                  : 'No dates match the strict astrological criteria in this period. Try expanding to 90 days.'}
-              </Text>
-              <TouchableOpacity
-                style={styles.expandDaysBtn}
-                onPress={() => {
-                  setDaysCount(90);
-                  setSuitabilityFilter('Good');
-                }}
+          <View
+            style={[
+              styles.suitabilityBadge,
+              isOptimal
+                ? [styles.badgeOptimal, isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder }]
+                : [styles.badgeGood, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }],
+            ]}
+          >
+            <Text
+              style={[
+                styles.suitabilityBadgeText,
+                isOptimal
+                  ? [styles.suitTextOptimal, isDark && { color: theme.successText }]
+                  : [styles.suitTextGood, isDark && { color: theme.primary }],
+              ]}
+            >
+              {isOptimal ? (isHi ? '🌟 अति उत्तम' : '🌟 Best') : (isHi ? '✨ उत्तम' : '✨ Good')}{' '}
+              {item.score}%
+            </Text>
+          </View>
+        </View>
+
+        {/* Special Auspicious Yogas Chips */}
+        {item.specialYogas.length > 0 && (
+          <View style={styles.yogasRow}>
+            {item.specialYogas.map((y) => (
+              <View
+                key={y}
+                style={[
+                  styles.yogaPill,
+                  isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+                ]}
               >
-                <Text style={styles.expandDaysBtnText}>
-                  {isHi ? '९० दिनों में खोजें' : 'Search Next 90 Days'}
+                <Text style={[styles.yogaPillText, isDark && { color: theme.primary }]}>
+                  ✨ {cleanBilingualTitle(y, isHi)}
                 </Text>
-              </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Recommended Time Windows */}
+        {item.windows.length > 0 && (
+          <View
+            style={[
+              styles.windowsContainer,
+              isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder },
+            ]}
+          >
+            <View style={styles.windowHeaderRow}>
+              <Ionicons name="time" size={13} color={isDark ? theme.successText : '#047857'} />
+              <Text style={[styles.windowLabel, isDark && { color: theme.successText }]}>
+                {isHi ? 'सर्वोत्तम समय खिड़की:' : 'Recommended Time Window:'}
+              </Text>
             </View>
-          ) : (
-            evaluations.map((item) => {
-              const isOptimal = item.suitability === 'Optimal';
-              const isExpanded = expandedDate === item.isoDate;
+            {item.windows.slice(0, 2).map((w, idx) => (
+              <View key={idx} style={styles.windowItem}>
+                <Text style={[styles.windowName, isDark && { color: theme.text }]}>
+                  {cleanBilingualTitle(w.label, isHi)}
+                </Text>
+                <Text style={[styles.windowTime, isDark && { color: theme.successText }]}>
+                  {formatTime(w.startTime)} - {formatTime(w.endTime)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
-              return (
-                <View key={item.isoDate} style={styles.evalCard}>
-                  {/* Top Date & Score Row */}
-                  <View style={styles.evalHeaderRow}>
-                    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-                      <Text style={styles.evalDateText}>{item.isoDate}</Text>
-                      <Text style={styles.evalLimbSummaryText}>
-                        {isHi
-                          ? `${item.panchangSummary.tithiNameDevanagari || item.panchangSummary.tithiName} • ${item.panchangSummary.nakshatraNameDevanagari || item.panchangSummary.nakshatraName}`
-                          : `${item.panchangSummary.tithiName} • ${item.panchangSummary.nakshatraName}`}
-                      </Text>
-                    </View>
+        {/* Avoid Windows Warning Callout */}
+        {item.avoidWindows.length > 0 && (
+          <View
+            style={[
+              styles.avoidContainer,
+              isDark && { backgroundColor: theme.dangerBg, borderColor: theme.dangerBorder },
+            ]}
+          >
+            <Ionicons name="alert-circle" size={16} color={isDark ? theme.dangerText : '#b91c1c'} />
+            <Text style={[styles.avoidLabel, isDark && { color: theme.dangerText }]}>
+              {isHi ? 'त्याज्य काल:' : 'Avoid:'}
+            </Text>
+            <Text style={[styles.avoidText, isDark && { color: theme.textSecondary }]}>
+              {item.avoidWindows
+                .map((a) => cleanBilingualTitle(a.label, isHi))
+                .join(', ')}
+            </Text>
+          </View>
+        )}
 
-                    <View
-                      style={[
-                        styles.suitabilityBadge,
-                        isOptimal ? styles.badgeOptimal : styles.badgeGood,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.suitabilityBadgeText,
-                          isOptimal ? styles.suitTextOptimal : styles.suitTextGood,
-                        ]}
-                      >
-                        {isOptimal ? (isHi ? 'अति उत्तम' : 'Optimal') : (isHi ? 'उत्तम' : 'Good')}{' '}
-                        {item.score}%
-                      </Text>
-                    </View>
-                  </View>
+        {/* Expand/Collapse Shastric Details */}
+        <TouchableOpacity
+          testID={`expand-toggle-${item.isoDate}`}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isExpanded
+              ? isHi ? 'संक्षिप्त करें' : 'Hide astrological breakdown'
+              : isHi ? 'विस्तृत शास्त्रीय विश्लेषण देखें' : 'View astrological breakdown'
+          }
+          accessibilityState={{ expanded: isExpanded }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={[
+            styles.expandToggleRow,
+            isDark && { borderTopColor: theme.border },
+          ]}
+          onPress={() => toggleExpand(item.isoDate)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.expandToggleText, isDark && { color: theme.primary }]}>
+            {isExpanded
+              ? isHi ? 'संक्षिप्त करें' : 'Hide astrological breakdown'
+              : isHi ? 'विस्तृत शास्त्रीय विश्लेषण देखें' : 'View astrological breakdown'}
+          </Text>
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={14}
+            color={theme.primary}
+          />
+        </TouchableOpacity>
 
-                  {/* Special Auspicious Yogas Chips */}
-                  {item.specialYogas.length > 0 && (
-                    <View style={styles.yogasRow}>
-                      {item.specialYogas.map((y) => (
-                        <View key={y} style={styles.yogaPill}>
-                          <Text style={styles.yogaPillText}>✨ {cleanBilingualTitle(y, isHi)}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
+        {/* Collapsible Details */}
+        {isExpanded && (
+          <View
+            style={[
+              styles.expandedDetailsBox,
+              isDark && { backgroundColor: theme.surface },
+            ]}
+          >
+            <Text style={[styles.expandedDetailTitle, isDark && { color: theme.text }]}>
+              {isHi ? 'पञ्चाङ्ग शुद्धि:' : 'Panchang Purity:'}
+            </Text>
+            <Text style={[styles.expandedDetailText, isDark && { color: theme.textSecondary }]}>
+              • {isHi ? 'तिथि:' : 'Tithi:'} {item.panchangSummary.tithiName} (
+              {item.panchangSummary.tithiPaksha} Paksha)
+            </Text>
+            <Text style={[styles.expandedDetailText, isDark && { color: theme.textSecondary }]}>
+              • {isHi ? 'नक्षत्र:' : 'Nakshatra:'} {item.panchangSummary.nakshatraName}
+            </Text>
+            <Text style={[styles.expandedDetailText, isDark && { color: theme.textSecondary }]}>
+              • {isHi ? 'सौर वार:' : 'Weekday:'} {item.panchangSummary.varaName}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
-                  {/* Recommended Time Windows (Highlighted Box) */}
-                  {item.windows.length > 0 && (
-                    <View style={styles.windowsContainer}>
-                      <View style={styles.windowHeaderRow}>
-                        <Ionicons name="time" size={13} color="#047857" />
-                        <Text style={styles.windowLabel}>
-                          {isHi ? 'सर्वोत्तम समय खिड़की:' : 'Recommended Time Window:'}
-                        </Text>
-                      </View>
-                      {item.windows.slice(0, 2).map((w, idx) => (
-                        <View key={idx} style={styles.windowItem}>
-                          <Text style={styles.windowName}>
-                            {cleanBilingualTitle(w.label, isHi)}
-                          </Text>
-                          <Text style={styles.windowTime}>
-                            {new Date(w.startTime).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}{' '}
-                            -{' '}
-                            {new Date(w.endTime).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* Avoid Windows Warning Callout */}
-                  {item.avoidWindows.length > 0 && (
-                    <View style={styles.avoidContainer}>
-                      <Ionicons name="alert-circle" size={13} color="#b91c1c" />
-                      <Text style={styles.avoidLabel}>{isHi ? 'त्याज्य काल:' : 'Avoid:'}</Text>
-                      <Text style={styles.avoidText} numberOfLines={1}>
-                        {item.avoidWindows
-                          .map((a) => cleanBilingualTitle(a.label, isHi))
-                          .join(', ')}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Expand/Collapse Shastric Details */}
-                  <TouchableOpacity
-                    testID={`expand-toggle-${item.isoDate}`}
-                    style={styles.expandToggleRow}
-                    onPress={() => toggleExpand(item.isoDate)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.expandToggleText}>
-                      {isExpanded
-                        ? isHi ? 'संक्षिप्त करें' : 'Hide astrological breakdown'
-                        : isHi ? 'विस्तृत शास्त्रीय विश्लेषण देखें' : 'View astrological breakdown'}
-                    </Text>
-                    <Ionicons
-                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                      size={14}
-                      color={Palette.primary}
-                    />
-                  </TouchableOpacity>
-
-                  {/* Collapsible Details */}
-                  {isExpanded && (
-                    <View style={styles.expandedDetailsBox}>
-                      <Text style={styles.expandedDetailTitle}>
-                        {isHi ? 'पञ्चाङ्ग शुद्धि:' : 'Panchang Purity:'}
-                      </Text>
-                      <Text style={styles.expandedDetailText}>
-                        • {isHi ? 'तिथि:' : 'Tithi:'} {item.panchangSummary.tithiName} (
-                        {item.panchangSummary.tithiPaksha} Paksha)
-                      </Text>
-                      <Text style={styles.expandedDetailText}>
-                        • {isHi ? 'नक्षत्र:' : 'Nakshatra:'} {item.panchangSummary.nakshatraName}
-                      </Text>
-                      <Text style={styles.expandedDetailText}>
-                        • {isHi ? 'सौर वार:' : 'Weekday:'} {item.panchangSummary.varaName}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              );
-            })
-          )}
-        </>
-      )}
-    </ScrollView>
+  return (
+    <FlatList
+      ref={listRef}
+      style={[styles.container, { backgroundColor: theme.bg }]}
+      contentContainerStyle={styles.content}
+      data={isCalculating ? [] : evaluations}
+      keyExtractor={(item) => item.isoDate}
+      renderItem={renderEvaluationItem}
+      ListHeaderComponent={listHeader}
+      ListEmptyComponent={listEmpty}
+      initialNumToRender={12}
+      maxToRenderPerBatch={12}
+      windowSize={7}
+      removeClippedSubviews={Platform.OS !== 'web'}
+      showsVerticalScrollIndicator={false}
+      onScroll={onTourScroll}
+      onMomentumScrollEnd={onTourMomentumScrollEnd}
+      onScrollEndDrag={onTourScrollEndDrag}
+      scrollEventThrottle={16}
+      scrollEnabled={!isInteractiveTourActive || isTryModeActive}
+    />
   );
 }
 
@@ -470,35 +689,26 @@ const styles = StyleSheet.create({
   categoryPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
     backgroundColor: '#ffffff',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: Radius.xl,
     marginRight: Spacing.sm,
-    gap: 6,
+    gap: 8,
     borderWidth: 1,
     borderColor: '#e4e4e7',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
   },
   categoryPillSelected: {
-    backgroundColor: '#18181b',
-    borderColor: '#18181b',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
+    backgroundColor: '#b45309',
+    borderColor: '#b45309',
   },
   categoryIcon: {
-    fontSize: 16,
+    fontSize: 18,
   },
   categoryText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14.5,
+    fontWeight: '700',
     color: '#3f3f46',
   },
   categoryTextSelected: {
@@ -518,52 +728,56 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 6,
     backgroundColor: 'transparent',
   },
   bannerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+    ...Typography.sectionHeading,
     color: '#92400e',
+    flexShrink: 1,
   },
   cityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: Palette.primaryBorder,
   },
   cityBadgeText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#92400e',
   },
   helpBtn: {
-    padding: 4,
-    borderRadius: Radius.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: MIN_TOUCH_TARGET / 2,
+    borderWidth: 1,
+    borderColor: Palette.primaryBorder,
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   bannerDesc: {
-    fontSize: 12,
+    ...Typography.bodyMuted,
     color: '#78350f',
-    lineHeight: 18,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   scriptureBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radius.sm,
   },
   scriptureBadgeText: {
-    fontSize: 10,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#b45309',
   },
@@ -580,13 +794,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#f4f4f5',
     borderRadius: Radius.md,
-    padding: 3,
+    padding: 4,
   },
   segmentBtn: {
     flex: 1,
+    minHeight: MIN_TOUCH_TARGET,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 7,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderRadius: Radius.sm,
   },
   segmentBtnActive: {
@@ -598,13 +814,14 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   segmentText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#71717a',
+    color: '#52525b',
+    textAlign: 'center',
   },
   segmentTextActive: {
     color: '#18181b',
-    fontWeight: '700',
+    fontWeight: '800',
   },
 
   // Results Summary Bar
@@ -613,9 +830,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   resultsCountText: {
-    fontSize: 13,
+    ...Typography.body,
     fontWeight: '700',
     color: '#18181b',
+  },
+  inauspiciousCompactTime: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#b91c1c',
+    flexShrink: 1,
   },
 
   // Empty State
@@ -680,23 +903,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 8,
     backgroundColor: 'transparent',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   evalDateText: {
-    fontSize: 15,
+    ...Typography.cardTitle,
+    fontSize: 17,
     fontWeight: '800',
     color: '#18181b',
   },
   evalLimbSummaryText: {
-    fontSize: 12,
-    color: '#71717a',
+    ...Typography.bodyMuted,
+    color: '#52525b',
     marginTop: 2,
-    fontWeight: '500',
   },
   suitabilityBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: Radius.md,
   },
   badgeOptimal: {
@@ -710,7 +935,7 @@ const styles = StyleSheet.create({
     borderColor: '#fde68a',
   },
   suitabilityBadgeText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
   suitTextOptimal: {
@@ -730,14 +955,14 @@ const styles = StyleSheet.create({
   },
   yogaPill: {
     backgroundColor: '#fffbeb',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: '#fef3c7',
   },
   yogaPillText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: '#b45309',
   },
@@ -746,20 +971,20 @@ const styles = StyleSheet.create({
   windowsContainer: {
     backgroundColor: '#f0fdf4',
     borderRadius: Radius.md,
-    padding: 10,
-    marginBottom: 8,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#bbf7d0',
   },
   windowHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     marginBottom: 6,
     backgroundColor: 'transparent',
   },
   windowLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: '#047857',
   },
@@ -767,16 +992,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
     backgroundColor: 'transparent',
-    paddingVertical: 2,
+    paddingVertical: 3,
   },
   windowName: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#15803d',
   },
   windowTime: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: '#166534',
   },
@@ -785,21 +1012,22 @@ const styles = StyleSheet.create({
   avoidContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
     backgroundColor: '#fef2f2',
-    padding: 8,
+    padding: 10,
     borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: '#fecaca',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   avoidLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: '#b91c1c',
   },
   avoidText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#991b1b',
     flex: 1,
   },
@@ -809,33 +1037,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingTop: 6,
+    minHeight: MIN_TOUCH_TARGET,
+    gap: 6,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#f4f4f5',
     backgroundColor: 'transparent',
   },
   expandToggleText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 13.5,
+    fontWeight: '700',
     color: Palette.primary,
   },
   expandedDetailsBox: {
     marginTop: 8,
     backgroundColor: '#f8fafc',
-    padding: 10,
+    padding: 12,
     borderRadius: Radius.sm,
-    gap: 3,
+    gap: 5,
   },
   expandedDetailTitle: {
-    fontSize: 11,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#475569',
-    marginBottom: 2,
+    color: '#334155',
+    marginBottom: 3,
   },
   expandedDetailText: {
-    fontSize: 11,
-    color: '#64748b',
+    fontSize: 13.5,
+    color: '#475569',
+    lineHeight: 20,
   },
 
   // Today's Inauspicious Windows Card
@@ -844,70 +1074,75 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: '#fed7aa',
-    padding: 12,
+    padding: 14,
     marginBottom: 16,
   },
   inauspiciousHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    minHeight: MIN_TOUCH_TARGET - 8,
+    marginBottom: 6,
   },
   inauspiciousIcon: {
-    fontSize: 13,
+    fontSize: 16,
   },
   inauspiciousTitle: {
-    fontSize: 12.5,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#9a3412',
   },
   inauspiciousSub: {
-    fontSize: 10.5,
-    fontWeight: '600',
+    fontSize: 12.5,
+    fontWeight: '700',
     color: '#c2410c',
   },
   inauspiciousRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
+    marginTop: 6,
   },
   inauspiciousItem: {
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: Radius.sm,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#fed7aa',
   },
   inauspiciousBadgeRed: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
     color: '#dc2626',
-    marginBottom: 2,
+    marginBottom: 3,
+    textAlign: 'center',
   },
   inauspiciousBadgeOrange: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#d97706',
-    marginBottom: 2,
+    color: '#b45309',
+    marginBottom: 3,
+    textAlign: 'center',
   },
   inauspiciousBadgePurple: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
     color: '#7c3aed',
-    marginBottom: 2,
+    marginBottom: 3,
+    textAlign: 'center',
   },
   inauspiciousTime: {
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '700',
     color: '#1f2937',
     textAlign: 'center',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   inauspiciousDesc: {
-    fontSize: 9,
-    color: '#6b7280',
+    fontSize: 12,
+    color: '#52525b',
     textAlign: 'center',
   },
 });

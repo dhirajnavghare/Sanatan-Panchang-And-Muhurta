@@ -1,0 +1,3721 @@
+{
+  "type": "RCTScrollView",
+  "style": {
+    "backgroundColor": "#f8f8fa"
+  },
+  "children": [
+    {
+      "type": "View",
+      "children": [
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 8
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "#f4f4f5",
+                            "borderRadius": 14,
+                            "flexDirection": "row",
+                            "padding": 4
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "testID": "year-btn-2025",
+                              "role": "button",
+                              "style": {
+                                "borderRadius": 10,
+                                "minHeight": 40,
+                                "opacity": 1,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 14.5,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "2025"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "year-btn-2026",
+                              "role": "button",
+                              "style": {
+                                "backgroundColor": "#d97706",
+                                "borderRadius": 10,
+                                "minHeight": 40,
+                                "opacity": 1,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#ffffff",
+                                    "fontSize": 14.5,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "2026"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "year-btn-2027",
+                              "role": "button",
+                              "style": {
+                                "borderRadius": 10,
+                                "minHeight": 40,
+                                "opacity": 1,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 14.5,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "2027"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "#ffffff",
+                            "borderColor": "#e4e4e7",
+                            "borderRadius": 14,
+                            "borderWidth": 1,
+                            "flexDirection": "row",
+                            "gap": 5,
+                            "minHeight": 44,
+                            "paddingHorizontal": 10,
+                            "paddingVertical": 8
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#d97706",
+                                "fontSize": 14,
+                                "fontWeight": "normal"
+                              },
+                              "children": [
+                                ""
+                              ]
+                            },
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#3f3f46",
+                                "fontSize": 13,
+                                "fontWeight": "600"
+                              },
+                              "children": [
+                                "Ujjain, India (Standard Meridian)"
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "View",
+                          "testID": "festivals-help-btn",
+                          "role": "button",
+                          "style": {
+                            "backgroundColor": "#ffffff",
+                            "borderColor": "#e4e4e7",
+                            "borderRadius": 22,
+                            "borderWidth": 1,
+                            "minHeight": 44,
+                            "opacity": 1
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#52525b",
+                                "fontSize": 22,
+                                "fontWeight": "normal"
+                              },
+                              "children": [
+                                ""
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "#ffffff",
+                            "borderColor": "#e4e4e7",
+                            "borderRadius": 18,
+                            "borderWidth": 1,
+                            "flexDirection": "row",
+                            "gap": 8,
+                            "minHeight": 48,
+                            "paddingHorizontal": 12,
+                            "paddingVertical": 8
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#71717a",
+                                "fontSize": 20,
+                                "fontWeight": "normal"
+                              },
+                              "children": [
+                                ""
+                              ]
+                            },
+                            {
+                              "type": "TextInput",
+                              "testID": "festival-search-input",
+                              "style": {
+                                "color": "#18181b",
+                                "fontSize": 15,
+                                "paddingVertical": 6
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "RCTScrollView",
+                      "children": [
+                        {
+                          "type": "View",
+                          "children": [
+                            {
+                              "type": "View",
+                              "children": [
+                                {
+                                  "type": "View",
+                                  "testID": "category-chip-all",
+                                  "role": "button",
+                                  "style": {
+                                    "backgroundColor": "#d97706",
+                                    "borderColor": "#d97706",
+                                    "borderRadius": 22,
+                                    "borderWidth": 1,
+                                    "flexDirection": "row",
+                                    "gap": 6,
+                                    "minHeight": 44,
+                                    "opacity": 1,
+                                    "paddingHorizontal": 14,
+                                    "paddingVertical": 8
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "fontSize": 15
+                                      },
+                                      "children": [
+                                        "✨"
+                                      ]
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "color": "#ffffff",
+                                        "fontSize": 13.5,
+                                        "fontWeight": "700"
+                                      },
+                                      "children": [
+                                        "सभी"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "category-chip-major",
+                              "role": "button",
+                              "style": {
+                                "backgroundColor": "#ffffff",
+                                "borderColor": "#e4e4e7",
+                                "borderRadius": 22,
+                                "borderWidth": 1,
+                                "flexDirection": "row",
+                                "gap": 6,
+                                "minHeight": 44,
+                                "opacity": 1,
+                                "paddingHorizontal": 14,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "fontSize": 15
+                                  },
+                                  "children": [
+                                    "🪔"
+                                  ]
+                                },
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#3f3f46",
+                                    "fontSize": 13.5,
+                                    "fontWeight": "600"
+                                  },
+                                  "children": [
+                                    "प्रमुख पर्व"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "category-chip-vrat",
+                              "role": "button",
+                              "style": {
+                                "backgroundColor": "#ffffff",
+                                "borderColor": "#e4e4e7",
+                                "borderRadius": 22,
+                                "borderWidth": 1,
+                                "flexDirection": "row",
+                                "gap": 6,
+                                "minHeight": 44,
+                                "opacity": 1,
+                                "paddingHorizontal": 14,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "fontSize": 15
+                                  },
+                                  "children": [
+                                    "🌾"
+                                  ]
+                                },
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#3f3f46",
+                                    "fontSize": 13.5,
+                                    "fontWeight": "600"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "category-chip-jayanti",
+                              "role": "button",
+                              "style": {
+                                "backgroundColor": "#ffffff",
+                                "borderColor": "#e4e4e7",
+                                "borderRadius": 22,
+                                "borderWidth": 1,
+                                "flexDirection": "row",
+                                "gap": 6,
+                                "minHeight": 44,
+                                "opacity": 1,
+                                "paddingHorizontal": 14,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "fontSize": 15
+                                  },
+                                  "children": [
+                                    "🕉️"
+                                  ]
+                                },
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#3f3f46",
+                                    "fontSize": 13.5,
+                                    "fontWeight": "600"
+                                  },
+                                  "children": [
+                                    "जयन्तियां"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "category-chip-sankranti",
+                              "role": "button",
+                              "style": {
+                                "backgroundColor": "#ffffff",
+                                "borderColor": "#e4e4e7",
+                                "borderRadius": 22,
+                                "borderWidth": 1,
+                                "flexDirection": "row",
+                                "gap": 6,
+                                "minHeight": 44,
+                                "opacity": 1,
+                                "paddingHorizontal": 14,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "fontSize": 15
+                                  },
+                                  "children": [
+                                    "☀️"
+                                  ]
+                                },
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#3f3f46",
+                                    "fontSize": 13.5,
+                                    "fontWeight": "600"
+                                  },
+                                  "children": [
+                                    "संक्रान्ति"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#52525b",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "वर्ष 2026 में कुल 158 पर्व एवं व्रत (158 प्रदर्शित)"
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#fffbeb",
+                        "borderColor": "#fde68a",
+                        "borderRadius": 9999,
+                        "borderWidth": 1,
+                        "flexDirection": "row",
+                        "gap": 6,
+                        "paddingHorizontal": 11,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d97706",
+                            "fontSize": 14,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d97706",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "अगला: Kalabhairav Jayanti"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "01"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Shukla Pradosh Vrat"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "गुरुवार",
+                            " • ",
+                            "पौष",
+                            " • ",
+                            "त्रयोदशी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-shukla-pradosh-vrat-2026-01-01",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "06"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Sankashti Chaturthi"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "मंगलवार",
+                            " • ",
+                            "पौष",
+                            " • ",
+                            "चतुर्थी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-sankashti-chaturthi-2026-01-06",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "14"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Shattila Ekadashi"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "बुधवार",
+                            " • ",
+                            "पौष",
+                            " • ",
+                            "एकादशी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-shattila-ekadashi-2026-01-14",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "14"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "संक्रान्ति"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "मकर संक्रांति / पोंगल / उत्तरायण"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "बुधवार",
+                            " • ",
+                            "पौष",
+                            " • ",
+                            "एकादशी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "सूर्योदय के समय महापुण्य काल एवं पुण्य काल"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-makar-sankranti-pongal-uttarayana-2026-01-14",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "16"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Krishna Pradosh Vrat"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "शुक्रवार",
+                            " • ",
+                            "पौष",
+                            " • ",
+                            "त्रयोदशी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-krishna-pradosh-vrat-2026-01-16",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "16"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Masik Shivaratri"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "शुक्रवार",
+                            " • ",
+                            "पौष",
+                            " • ",
+                            "त्रयोदशी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-masik-shivaratri-2026-01-16",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "18"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "प्रमुख पर्व"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "पौष अमावस्या"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "रविवार",
+                            " • ",
+                            "पौष",
+                            " • ",
+                            "अमावस्या"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Madhyahna / अपराह्न काल"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-pausha-amavasya-2026-01-18",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "22"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Vinayaka Chaturthi"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "गुरुवार",
+                            " • ",
+                            "माघ",
+                            " • ",
+                            "चतुर्थी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-vinayaka-chaturthi-2026-01-22",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "23"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "प्रमुख पर्व"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "वसन्त पञ्चमी (सरस्वती पूजा)"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "शुक्रवार",
+                            " • ",
+                            "माघ",
+                            " • ",
+                            "पञ्चमी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "पूर्वाह्न काल (प्रातः से मध्याह्न)"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-vasant-panchami-saraswati-puja-2026-01-23",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "25"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "प्रमुख पर्व"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "रथ सप्तमी (सूर्य जयंती)"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "रविवार",
+                            " • ",
+                            "माघ",
+                            " • ",
+                            "सप्तमी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "अरुणोदय / सूर्योदय स्नान"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-ratha-saptami-2026-01-25",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "29"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Jaya Ekadashi"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "गुरुवार",
+                            " • ",
+                            "माघ",
+                            " • ",
+                            "द्वादशी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-jaya-ekadashi-2026-01-29",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "30"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "जन"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Shukla Pradosh Vrat"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "शुक्रवार",
+                            " • ",
+                            "माघ",
+                            " • ",
+                            "त्रयोदशी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-shukla-pradosh-vrat-2026-01-30",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "01"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "फ़र"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "प्रमुख पर्व"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Purnima Vrat"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "रविवार",
+                            " • ",
+                            "माघ",
+                            " • ",
+                            "पूर्णिमा"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-purnima-vrat-2026-02-01",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "05"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "फ़र"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Sankashti Chaturthi"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "गुरुवार",
+                            " • ",
+                            "माघ",
+                            " • ",
+                            "चतुर्थी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-sankashti-chaturthi-2026-02-05",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#f4f4f5",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "minHeight": 62,
+                        "paddingHorizontal": 6,
+                        "paddingVertical": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 20,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "13"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "फ़र"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "transparent",
+                            "flexDirection": "row",
+                            "flexWrap": "wrap",
+                            "gap": 6
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderRadius": 6,
+                                "paddingHorizontal": 9,
+                                "paddingVertical": 3
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "व्रत"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "Vijaya Ekadashi"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "शुक्रवार",
+                            " • ",
+                            "माघ",
+                            " • ",
+                            "द्वादशी"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#f0fdf4",
+                    "borderColor": "#bbf7d0",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#047857",
+                        "fontSize": 13,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#166534",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "पूजा मुहूर्त:",
+                        " ",
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#15803d",
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "दिन भर शास्त्रसम्मत शुभ मुहूर्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "fest-expand-vijaya-ekadashi-2026-02-13",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "माहात्म्य व पूजा विधि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d97706",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View"
+        }
+      ]
+    }
+  ]
+}

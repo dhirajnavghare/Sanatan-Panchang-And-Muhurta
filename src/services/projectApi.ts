@@ -1,11 +1,75 @@
 /**
  * Project Community, Feedback, Issues, Changelog, and Lead Generation API Service
  * Endpoint: https://dhirajnavghare.com/api/v1/public/*
- * Project Key: pk_live_7z3v2fjl8iwpxtn2
+ * Uses public publishable project key (overridable via EXPO_PUBLIC_SANATAN_PROJECT_KEY).
  */
 
 const BASE_URL = 'https://dhirajnavghare.com/api/v1/public';
-const PROJECT_KEY = 'pk_live_7z3v2fjl8iwpxtn2';
+const PUBLIC_PROJECT_KEY =
+  process.env.EXPO_PUBLIC_SANATAN_PROJECT_KEY || 'pk_live_7z3v2fjl8iwpxtn2';
+const DEFAULT_TIMEOUT_MS = 10000;
+
+export class ProjectApiError extends Error {
+  public readonly code: 'OFFLINE_OR_TIMEOUT' | 'HTTP_ERROR' | 'INVALID_RESPONSE';
+  public readonly status?: number;
+
+  constructor(
+    message: string,
+    code: 'OFFLINE_OR_TIMEOUT' | 'HTTP_ERROR' | 'INVALID_RESPONSE',
+    status?: number
+  ) {
+    super(message);
+    this.name = 'ProjectApiError';
+    this.code = code;
+    this.status = status;
+  }
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller
+    ? setTimeout(() => {
+        controller.abort();
+      }, timeoutMs)
+    : null;
+
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller ? controller.signal : init.signal,
+    });
+  } catch (err: any) {
+    const isAbort = err?.name === 'AbortError';
+    throw new ProjectApiError(
+      isAbort
+        ? 'Request timed out. Please check your internet connection and try again.'
+        : 'Unable to connect. This screen requires an internet connection while core Panchang works 100% offline.',
+      'OFFLINE_OR_TIMEOUT'
+    );
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function parseJsonResponse<T>(response: Response, fallbackLabel: string): Promise<T> {
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Network error');
+    throw new ProjectApiError(
+      `${fallbackLabel} (${response.status}): ${errorText}`,
+      'HTTP_ERROR',
+      response.status
+    );
+  }
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new ProjectApiError(`${fallbackLabel}: Invalid server response`, 'INVALID_RESPONSE');
+  }
+}
 
 export interface ProjectInfo {
   id: number;
@@ -91,11 +155,11 @@ export interface IssueResponse {
  * 1. Submit User Feedback (POST /api/v1/public/feedback)
  */
 export async function submitUserFeedback(payload: FeedbackPayload): Promise<FeedbackResponse> {
-  const response = await fetch(`${BASE_URL}/feedback`, {
+  const response = await fetchWithTimeout(`${BASE_URL}/feedback`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-project-key': PROJECT_KEY,
+      'x-project-key': PUBLIC_PROJECT_KEY,
     },
     body: JSON.stringify({
       ...payload,
@@ -103,23 +167,18 @@ export async function submitUserFeedback(payload: FeedbackPayload): Promise<Feed
     }),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Network error');
-    throw new Error(`Feedback submission failed (${response.status}): ${errorText}`);
-  }
-
-  return response.json();
+  return parseJsonResponse<FeedbackResponse>(response, 'Feedback submission failed');
 }
 
 /**
  * 2. User-Reported Bug / Issue (POST /api/v1/public/issues)
  */
 export async function submitReportedIssue(payload: IssuePayload): Promise<IssueResponse> {
-  const response = await fetch(`${BASE_URL}/issues`, {
+  const response = await fetchWithTimeout(`${BASE_URL}/issues`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-project-key': PROJECT_KEY,
+      'x-project-key': PUBLIC_PROJECT_KEY,
     },
     body: JSON.stringify({
       ...payload,
@@ -127,48 +186,33 @@ export async function submitReportedIssue(payload: IssuePayload): Promise<IssueR
     }),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Network error');
-    throw new Error(`Issue submission failed (${response.status}): ${errorText}`);
-  }
-
-  return response.json();
+  return parseJsonResponse<IssueResponse>(response, 'Issue submission failed');
 }
 
 /**
  * 3. Live Public Changelog (GET /api/v1/public/changelog)
  */
 export async function fetchPublicChangelog(): Promise<ChangelogResponse> {
-  const response = await fetch(`${BASE_URL}/changelog`, {
+  const response = await fetchWithTimeout(`${BASE_URL}/changelog`, {
     method: 'GET',
     headers: {
-      'x-project-key': PROJECT_KEY,
+      'x-project-key': PUBLIC_PROJECT_KEY,
     },
   });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Network error');
-    throw new Error(`Failed to fetch changelog (${response.status}): ${errorText}`);
-  }
-
-  return response.json();
+  return parseJsonResponse<ChangelogResponse>(response, 'Failed to fetch changelog');
 }
 
 /**
  * 4. Project Contributors & Contributions (GET /api/v1/public/contributors)
  */
 export async function fetchPublicContributors(): Promise<ContributorsResponse> {
-  const response = await fetch(`${BASE_URL}/contributors`, {
+  const response = await fetchWithTimeout(`${BASE_URL}/contributors`, {
     method: 'GET',
     headers: {
-      'x-project-key': PROJECT_KEY,
+      'x-project-key': PUBLIC_PROJECT_KEY,
     },
   });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Network error');
-    throw new Error(`Failed to fetch contributors (${response.status}): ${errorText}`);
-  }
-
-  return response.json();
+  return parseJsonResponse<ContributorsResponse>(response, 'Failed to fetch contributors');
 }

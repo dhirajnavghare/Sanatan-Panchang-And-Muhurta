@@ -1,6 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Share, Text, View, Alert } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Share,
+  Text,
+  View,
+  Alert,
+  useColorScheme,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { PRAYERS_DATA } from '@/src/core/prayers/data';
 import { PrayerRecord } from '@/src/core/prayers/types';
 import { useLanguage } from '@/src/core/i18n/LanguageContext';
@@ -11,23 +21,34 @@ import { playTempleBell, playShankhNaad, triggerHaptic } from '@/src/services/sa
 import { loadUserProfile, UserSacredProfile, DEFAULT_USER_PROFILE } from '@/src/services/userProfile';
 import { useTour } from '@/src/services/appTourContext';
 import { TourTarget } from '@/src/components/TourTarget';
+import { useTourScroll, useTourHorizontalScroll } from '@/src/hooks/useTourScroll';
+import { COMFORT_TOUCH_TARGET, getAppTheme, MIN_TOUCH_TARGET } from '@/src/utils/theme';
+import { InlineFeedbackBanner } from '@/src/components/ui/ScreenStateView';
+
+const PRAYERS_HORIZONTAL_TOUR_TARGETS = ['prayer-pill-hanuman-chalisa'] as const;
 
 export default function PrayersScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
-  const { openHelp, isInteractiveTourActive, isTryModeActive, currentTourStep } = useTour();
+  const isDark = useColorScheme() === 'dark';
+  const theme = getAppTheme(isDark);
+  const { openHelp, isInteractiveTourActive, isTryModeActive } = useTour();
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
-
-  // Auto-scroll to spotlighted prayer elements during guided tour
-  useEffect(() => {
-    if (isInteractiveTourActive && !isTryModeActive && currentTourStep) {
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
-      const timer = setTimeout(() => {
-        scrollRef.current?.scrollTo({ y: 0, animated: false });
-      }, 60);
-      return () => clearTimeout(timer);
-    }
-  }, [isInteractiveTourActive, isTryModeActive, currentTourStep]);
+  const hScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+  const {
+    onScroll: onTourScroll,
+    onMomentumScrollEnd: onTourMomentumScrollEnd,
+    onScrollEndDrag: onTourScrollEndDrag,
+  } = useTourScroll('/(tabs)/prayers', scrollRef);
+  const {
+    onHorizontalScroll,
+    onHorizontalMomentumScrollEnd,
+    onHorizontalScrollEndDrag,
+  } = useTourHorizontalScroll(
+    '/(tabs)/prayers',
+    hScrollRef,
+    PRAYERS_HORIZONTAL_TOUR_TARGETS
+  );
 
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRecord>(PRAYERS_DATA[0]);
   const [fontSizeOffset, setFontSizeOffset] = useState<number>(0);
@@ -38,24 +59,48 @@ export default function PrayersScreen() {
   const [isPlayingChant, setIsPlayingChant] = useState(false);
   const [targetLoops, setTargetLoops] = useState<number>(1);
   const [completedLoops, setCompletedLoops] = useState<number>(0);
+  const completedLoopsRef = useRef<number>(0);
   const [activeVerseIndex, setActiveVerseIndex] = useState<number | null>(null);
-  const chantTimerRef = useRef<any>(null);
+  const chantTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    loadUserProfile().then(setUserProfile);
+  const showFeedback = useCallback((message: string) => {
+    setFeedbackMsg(message);
+    if (feedbackTimerRef.current) {
+      clearTimeout(feedbackTimerRef.current);
+    }
+    feedbackTimerRef.current = setTimeout(() => {
+      setFeedbackMsg(null);
+      feedbackTimerRef.current = null;
+    }, 2400);
   }, []);
 
-  const stopChanting = () => {
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+      loadUserProfile()
+        .then((p) => {
+          if (mounted) setUserProfile(p);
+        })
+        .catch(() => {});
+      return () => {
+        mounted = false;
+      };
+    }, [])
+  );
+
+  const stopChanting = useCallback(() => {
     if (chantTimerRef.current) {
       clearInterval(chantTimerRef.current);
       chantTimerRef.current = null;
     }
     setIsPlayingChant(false);
     setActiveVerseIndex(null);
-  };
+  }, []);
 
-  const handleToggleChant = async () => {
-    await triggerHaptic('tap', userProfile.hapticsEnabled);
+  const handleToggleChant = () => {
+    void triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
     if (isPlayingChant) {
       stopChanting();
       return;
@@ -69,44 +114,55 @@ export default function PrayersScreen() {
     setActiveVerseIndex(currentIdx);
 
     const totalVerses = selectedPrayer.verses.length;
-    chantTimerRef.current = setInterval(async () => {
+    chantTimerRef.current = setInterval(() => {
       currentIdx++;
       if (currentIdx >= totalVerses) {
         currentIdx = 0;
-        setCompletedLoops((prev) => {
-          const nextVal = prev + 1;
-          if (userProfile.audioEnabled) {
-            playTempleBell(0.85);
-          }
-          triggerHaptic('quarter', userProfile.hapticsEnabled);
-          if (nextVal >= targetLoops) {
-            stopChanting();
-            triggerHaptic('malaComplete', userProfile.hapticsEnabled);
-            Alert.alert(
-              isHi ? 'पाठ सम्पन्न 🙏' : 'Chanting Completed 🙏',
-              isHi
-                ? `${selectedPrayer.titleDevanagari} के ${targetLoops} पाठ सफलतापूर्वक सम्पन्न हुए।`
-                : `Successfully completed ${targetLoops} sacred rounds of ${selectedPrayer.title}.`
-            );
-            return 0;
-          }
-          return nextVal;
-        });
+        const nextVal = completedLoopsRef.current + 1;
+        completedLoopsRef.current = nextVal;
+        if (userProfile.audioEnabled) {
+          playTempleBell(0.85);
+        }
+        triggerHaptic('quarter', userProfile.hapticsEnabled).catch(() => {});
+        if (nextVal >= targetLoops) {
+          completedLoopsRef.current = 0;
+          setCompletedLoops(0);
+          stopChanting();
+          triggerHaptic('malaComplete', userProfile.hapticsEnabled).catch(() => {});
+          showFeedback(
+            isHi
+              ? `${selectedPrayer.titleDevanagari} के ${targetLoops} पाठ पूर्ण हुए`
+              : `Completed ${targetLoops} rounds of ${selectedPrayer.title}`
+          );
+          Alert.alert(
+            isHi ? 'पाठ सम्पन्न 🙏' : 'Chanting Completed 🙏',
+            isHi
+              ? `${selectedPrayer.titleDevanagari} के ${targetLoops} पाठ सफलतापूर्वक सम्पन्न हुए।`
+              : `Successfully completed ${targetLoops} sacred rounds of ${selectedPrayer.title}.`
+          );
+          return;
+        }
+        setCompletedLoops(nextVal);
       }
       setActiveVerseIndex(currentIdx);
     }, 3500);
   };
 
-  const handleResetChant = async () => {
-    await triggerHaptic('tap', userProfile.hapticsEnabled);
+  const handleResetChant = () => {
+    void triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
     stopChanting();
+    completedLoopsRef.current = 0;
     setCompletedLoops(0);
+    showFeedback(isHi ? 'जप-पाठ गणना रीसेट हो गई' : 'Chanting progress reset');
   };
 
   useEffect(() => {
     return () => {
       if (chantTimerRef.current) {
         clearInterval(chantTimerRef.current);
+      }
+      if (feedbackTimerRef.current) {
+        clearTimeout(feedbackTimerRef.current);
       }
     };
   }, []);
@@ -125,6 +181,7 @@ export default function PrayersScreen() {
   const handlePrayerSelect = (p: PrayerRecord) => {
     if (p.id === selectedPrayer.id) return;
     stopChanting();
+    completedLoopsRef.current = 0;
     setCompletedLoops(0);
     setIsCalculating(true);
     setTimeout(() => {
@@ -138,6 +195,7 @@ export default function PrayersScreen() {
       await Share.share({
         message: `${selectedPrayer.title} (#${index})\n\n${sanskrit}\n\n[अर्थ]: ${meaning}\n\n📲 *सनातन ऍप डाउनलोड करें (Google Play):*\nhttps://play.google.com/store/apps/details?id=cc.sanatan.app\n🌐 https://sanatan.cc\n\n— सनातन पञ्चाङ्ग: हर सनातनी का प्रामाणिक दैनिक साथी`,
       });
+      showFeedback(isHi ? `पद #${index} साझा किया गया` : `Verse #${index} shared`);
     } catch {
       // ignore
     }
@@ -146,14 +204,27 @@ export default function PrayersScreen() {
   return (
     <ScrollView
       ref={scrollRef}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bg }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      onScroll={onTourScroll}
+      onMomentumScrollEnd={onTourMomentumScrollEnd}
+      onScrollEndDrag={onTourScrollEndDrag}
+      scrollEventThrottle={16}
       scrollEnabled={!isInteractiveTourActive || isTryModeActive}
     >
       {/* Horizontal Prayer Selector with Emojis */}
       <View style={styles.selectorContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 2 }}>
+        <ScrollView
+          ref={hScrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 2 }}
+          onScroll={onHorizontalScroll}
+          onMomentumScrollEnd={onHorizontalMomentumScrollEnd}
+          onScrollEndDrag={onHorizontalScrollEndDrag}
+          scrollEventThrottle={16}
+        >
           {PRAYERS_DATA.map((p) => {
             const isSelected = p.id === selectedPrayer.id;
             const icon = prayerIcons[p.id] || '🕉️';
@@ -161,13 +232,25 @@ export default function PrayersScreen() {
               <TouchableOpacity
                 key={p.id}
                 testID={`prayer-pill-${p.id}`}
-                style={[styles.prayerPill, isSelected && styles.prayerPillSelected]}
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? p.titleDevanagari : p.title}
+                accessibilityState={{ selected: isSelected }}
+                style={[
+                  styles.prayerPill,
+                  { minHeight: MIN_TOUCH_TARGET },
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                  isSelected && (isDark ? { backgroundColor: theme.primary, borderColor: theme.primary } : styles.prayerPillSelected),
+                ]}
                 onPress={() => handlePrayerSelect(p)}
                 activeOpacity={0.8}
               >
                 <Text style={styles.prayerIconText}>{icon}</Text>
                 <Text
-                  style={[styles.prayerPillText, isSelected && styles.prayerPillTextSelected]}
+                  style={[
+                    styles.prayerPillText,
+                    isDark && { color: theme.textSecondary },
+                    isSelected && styles.prayerPillTextSelected,
+                  ]}
                 >
                   {isHi ? p.titleDevanagari : p.title}
                 </Text>
@@ -195,70 +278,109 @@ export default function PrayersScreen() {
         />
       ) : (
         <>
+          {feedbackMsg ? (
+            <InlineFeedbackBanner
+              message={feedbackMsg}
+              tone="success"
+              style={{ marginBottom: Spacing.sm }}
+            />
+          ) : null}
+
           {/* Sacred Temple Sound Bar */}
           <View style={styles.soundBar}>
             <TouchableOpacity
               testID="prayers-bell-btn"
-              style={styles.soundBtn}
-              onPress={async () => {
-                await triggerHaptic('tap', userProfile.hapticsEnabled);
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? 'मन्दिर घंटी नाद' : 'Ring Mandir Bell'}
+              style={[
+                styles.soundBtn,
+                { minHeight: COMFORT_TOUCH_TARGET },
+                isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+              ]}
+              onPress={() => {
+                void triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
                 playTempleBell(0.7);
+                showFeedback(isHi ? 'मन्दिर घंटी नाद बज रहा है 🔔' : 'Temple bell sounded');
               }}
               activeOpacity={0.7}
             >
               <Text style={styles.soundBtnIcon}>🔔</Text>
-              <Text style={styles.soundBtnText}>{isHi ? 'मन्दिर घंटी नाद' : 'Ring Mandir Bell'}</Text>
+              <Text style={[styles.soundBtnText, isDark && { color: theme.primary }]}>
+                {isHi ? 'मन्दिर घंटी नाद' : 'Ring Mandir Bell'}
+              </Text>
             </TouchableOpacity>
 
-            <TourTarget targetId="prayers-shankh-btn" borderRadius={18} style={{ flex: 1 }}>
+            <TourTarget targetId="prayers-shankh-btn" borderRadius={18} style={{ flex: 1, minWidth: 130 }}>
               <TouchableOpacity
                 testID="prayers-shankh-btn"
-                style={[styles.soundBtn, { width: '100%' }]}
-                onPress={async () => {
-                  await triggerHaptic('heavy', userProfile.hapticsEnabled);
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'पवित्र शंख नाद' : 'Auspicious Shankha'}
+                style={[
+                  styles.soundBtn,
+                  { width: '100%', minHeight: COMFORT_TOUCH_TARGET },
+                  isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+                ]}
+                onPress={() => {
+                  void triggerHaptic('heavy', userProfile.hapticsEnabled).catch(() => {});
                   playShankhNaad(1.0);
+                  showFeedback(isHi ? 'पवित्र शंख नाद बज रहा है 🐚' : 'Auspicious Shankha sounded');
                 }}
                 activeOpacity={0.7}
               >
                 <Text style={styles.soundBtnIcon}>🐚</Text>
-                <Text style={styles.soundBtnText}>{isHi ? 'पवित्र शंख नाद' : 'Auspicious Shankha'}</Text>
+                <Text style={[styles.soundBtnText, isDark && { color: theme.primary }]}>
+                  {isHi ? 'पवित्र शंख नाद' : 'Auspicious Shankha'}
+                </Text>
               </TouchableOpacity>
             </TourTarget>
 
             <TouchableOpacity
               testID="prayers-help-btn"
-              style={styles.helpBtn}
+              accessibilityRole="button"
+              style={[
+                styles.helpBtn,
+                { minWidth: MIN_TOUCH_TARGET, minHeight: MIN_TOUCH_TARGET },
+                isDark && { backgroundColor: theme.card, borderColor: theme.border },
+              ]}
               onPress={() => openHelp('prayers')}
               accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
               activeOpacity={0.7}
             >
-              <Ionicons name="help-circle-outline" size={20} color={Palette.textSecondaryLight} />
+              <Ionicons name="help-circle-outline" size={22} color={isDark ? theme.textSecondary : Palette.textSecondaryLight} />
             </TouchableOpacity>
           </View>
 
           {/* Tactile 108-Bead Interactive Japa Mala */}
-          <JapaMalaView
-            mantraTitle={isHi ? selectedPrayer.titleDevanagari : selectedPrayer.title}
-            mantraDevanagari={selectedPrayer.verses[0]?.sanskrit || selectedPrayer.titleDevanagari}
-            mantraMeaning={isHi ? selectedPrayer.verses[0]?.hindiMeaning : selectedPrayer.verses[0]?.englishMeaning}
-            audioEnabled={userProfile.audioEnabled}
-            hapticsEnabled={userProfile.hapticsEnabled}
-          />
+          <TourTarget targetId="prayers-japa-mala" borderRadius={22}>
+            <JapaMalaView
+              mantraTitle={isHi ? selectedPrayer.titleDevanagari : selectedPrayer.title}
+              mantraDevanagari={selectedPrayer.verses[0]?.sanskrit || selectedPrayer.titleDevanagari}
+              mantraMeaning={isHi ? selectedPrayer.verses[0]?.hindiMeaning : selectedPrayer.verses[0]?.englishMeaning}
+              audioEnabled={userProfile.audioEnabled}
+              hapticsEnabled={userProfile.hapticsEnabled}
+              isHi={isHi}
+            />
+          </TourTarget>
 
           {/* Interactive Sacred Chanting & Japa Loop Player */}
-          <View style={styles.chantPlayerCard}>
+          <View
+            style={[
+              styles.chantPlayerCard,
+              isDark && { backgroundColor: theme.card, borderColor: theme.border },
+            ]}
+          >
             <View style={styles.chantPlayerHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.chantPlayerTag}>
+                <Text style={[styles.chantPlayerTag, isDark && { color: theme.primary }]}>
                   {isHi ? '📿 नित्य पाठ एवं जप आवर्तन' : '📿 Sacred Chanting & Japa Loop'}
                 </Text>
-                <Text style={styles.chantPlayerTitle}>
+                <Text style={[styles.chantPlayerTitle, isDark && { color: theme.text }]}>
                   {isHi ? selectedPrayer.titleDevanagari : selectedPrayer.title}
                 </Text>
               </View>
 
-              <View style={styles.loopCounterBadge}>
-                <Text style={styles.loopCounterText}>
+              <View style={[styles.loopCounterBadge, isDark && { backgroundColor: theme.primaryBg }]}>
+                <Text style={[styles.loopCounterText, isDark && { color: theme.primary }]}>
                   {isHi ? `पाठ ${completedLoops}/${targetLoops}` : `Round ${completedLoops}/${targetLoops}`}
                 </Text>
               </View>
@@ -266,21 +388,35 @@ export default function PrayersScreen() {
 
             {/* Loop Target Selector */}
             <View style={styles.loopSelectorRow}>
-              <Text style={styles.loopSelectorLabel}>
+              <Text style={[styles.loopSelectorLabel, isDark && { color: theme.textMuted }]}>
                 {isHi ? 'आवर्तन (Loops):' : 'Target Loops:'}
               </Text>
               {[1, 7, 11, 21, 108].map((num) => (
                 <TouchableOpacity
                   key={num}
                   testID={`loop-btn-${num}`}
-                  style={[styles.loopBtn, targetLoops === num && styles.loopBtnActive]}
-                  onPress={async () => {
-                    await triggerHaptic('tap', userProfile.hapticsEnabled);
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? `${num} आवर्तन` : `${num} loops`}
+                  accessibilityState={{ selected: targetLoops === num }}
+                  hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                  style={[
+                    styles.loopBtn,
+                    isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+                    targetLoops === num && styles.loopBtnActive,
+                  ]}
+                  onPress={() => {
+                    void triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
                     setTargetLoops(num);
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.loopBtnText, targetLoops === num && styles.loopBtnTextActive]}>
+                  <Text
+                    style={[
+                      styles.loopBtnText,
+                      isDark && { color: theme.textSecondary },
+                      targetLoops === num && styles.loopBtnTextActive,
+                    ]}
+                  >
                     {num}x
                   </Text>
                 </TouchableOpacity>
@@ -289,16 +425,26 @@ export default function PrayersScreen() {
 
             {/* Chanting Action Buttons */}
             <View style={styles.chantActionRow}>
-              <TourTarget targetId="chant-play-toggle-btn" borderRadius={18} style={{ flex: 1 }}>
+              <TourTarget targetId="chant-play-toggle-btn" borderRadius={18} style={{ flex: 1, minWidth: 180 }}>
                 <TouchableOpacity
                   testID="chant-play-toggle-btn"
-                  style={[styles.chantPlayBtn, { width: '100%' }, isPlayingChant && styles.chantPlayBtnActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isPlayingChant
+                      ? (isHi ? 'पाठ विराम करें' : 'Pause chanting')
+                      : (isHi ? 'पाठ प्रारंभ करें' : 'Start chanting')
+                  }
+                  style={[
+                    styles.chantPlayBtn,
+                    { width: '100%', minHeight: COMFORT_TOUCH_TARGET },
+                    isPlayingChant && styles.chantPlayBtnActive,
+                  ]}
                   onPress={handleToggleChant}
                   activeOpacity={0.8}
                 >
                   <Ionicons
                     name={isPlayingChant ? 'pause' : 'play'}
-                    size={18}
+                    size={20}
                     color="#ffffff"
                   />
                   <Text style={styles.chantPlayBtnText}>
@@ -312,24 +458,37 @@ export default function PrayersScreen() {
               {(isPlayingChant || completedLoops > 0) && (
                 <TouchableOpacity
                   testID="chant-reset-btn"
-                  style={styles.chantResetBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'पाठ रीसेट करें' : 'Reset chanting'}
+                  style={[
+                    styles.chantResetBtn,
+                    { minHeight: COMFORT_TOUCH_TARGET },
+                    isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+                  ]}
                   onPress={handleResetChant}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="refresh" size={16} color="#71717a" />
-                  <Text style={styles.chantResetBtnText}>{isHi ? 'रीसेट' : 'Reset'}</Text>
+                  <Ionicons name="refresh" size={18} color={isDark ? theme.textSecondary : '#52525b'} />
+                  <Text style={[styles.chantResetBtnText, isDark && { color: theme.textSecondary }]}>
+                    {isHi ? 'रीसेट' : 'Reset'}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
           </View>
 
           {/* Reader Controls Bar: Font Size & Header */}
-          <View style={styles.readerControlsCard}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.prayerTitle} numberOfLines={1}>
+          <View
+            style={[
+              styles.readerControlsCard,
+              isDark && { backgroundColor: theme.card, borderColor: theme.border },
+            ]}
+          >
+            <View style={{ flex: 1, minWidth: 180 }}>
+              <Text style={[styles.prayerTitle, isDark && { color: theme.text }]}>
                 {isHi ? selectedPrayer.titleDevanagari : selectedPrayer.title}
               </Text>
-              <Text style={styles.prayerAuthor}>
+              <Text style={[styles.prayerAuthor, isDark && { color: theme.textMuted }]}>
                 {isHi
                   ? `${selectedPrayer.authorDevanagari} • ${selectedPrayer.totalVerses} पद`
                   : `${selectedPrayer.author} • ${selectedPrayer.totalVerses} Verses`}
@@ -337,34 +496,69 @@ export default function PrayersScreen() {
             </View>
 
             {/* Font Size Buttons */}
-            <View style={styles.fontControls}>
-              <TouchableOpacity
-                testID="font-size-decrease"
-                style={[styles.fontSizeBtn, fontSizeOffset === -2 && styles.fontSizeBtnActive]}
-                onPress={() => setFontSizeOffset(-2)}
-              >
-                <Text style={styles.fontSizeText}>A-</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                testID="font-size-reset"
-                style={[styles.fontSizeBtn, fontSizeOffset === 0 && styles.fontSizeBtnActive]}
-                onPress={() => setFontSizeOffset(0)}
-              >
-                <Text style={styles.fontSizeText}>A</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                testID="font-size-increase"
-                style={[styles.fontSizeBtn, fontSizeOffset === 3 && styles.fontSizeBtnActive]}
-                onPress={() => setFontSizeOffset(3)}
-              >
-                <Text style={styles.fontSizeText}>A+</Text>
-              </TouchableOpacity>
+            <View style={{ alignItems: 'flex-end', gap: 4 }}>
+              <View style={[styles.fontControls, isDark && { backgroundColor: theme.cardMuted }]}>
+                <TouchableOpacity
+                  testID="font-size-decrease"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'फ़ॉन्ट छोटा करें' : 'Decrease font size'}
+                  accessibilityState={{ selected: fontSizeOffset === -2 }}
+                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                  style={[
+                    styles.fontSizeBtn,
+                    fontSizeOffset === -2 && [styles.fontSizeBtnActive, isDark && { backgroundColor: theme.card }],
+                  ]}
+                  onPress={() => setFontSizeOffset(-2)}
+                >
+                  <Text style={[styles.fontSizeText, isDark && { color: theme.text }]}>A-</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  testID="font-size-reset"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'मानक फ़ॉन्ट आकार' : 'Reset font size'}
+                  accessibilityState={{ selected: fontSizeOffset === 0 }}
+                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                  style={[
+                    styles.fontSizeBtn,
+                    fontSizeOffset === 0 && [styles.fontSizeBtnActive, isDark && { backgroundColor: theme.card }],
+                  ]}
+                  onPress={() => setFontSizeOffset(0)}
+                >
+                  <Text style={[styles.fontSizeText, isDark && { color: theme.text }]}>A</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  testID="font-size-increase"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'फ़ॉन्ट बड़ा करें' : 'Increase font size'}
+                  accessibilityState={{ selected: fontSizeOffset === 3 }}
+                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                  style={[
+                    styles.fontSizeBtn,
+                    fontSizeOffset === 3 && [styles.fontSizeBtnActive, isDark && { backgroundColor: theme.card }],
+                  ]}
+                  onPress={() => setFontSizeOffset(3)}
+                >
+                  <Text style={[styles.fontSizeText, isDark && { color: theme.text }]}>A+</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.fontScaleHint, isDark && { color: theme.textMuted }]}>
+                {fontSizeOffset < 0
+                  ? (isHi ? 'छोटा • 85%' : 'Compact • 85%')
+                  : fontSizeOffset > 0
+                    ? (isHi ? 'बड़ा • 120%' : 'Large • 120%')
+                    : (isHi ? 'मानक • 100%' : 'Standard • 100%')}
+              </Text>
             </View>
           </View>
 
           {/* Subtitle / Focus Callout */}
-          <View style={styles.prayerSubtitleCard}>
-            <Text style={styles.prayerSubtitle}>
+          <View
+            style={[
+              styles.prayerSubtitleCard,
+              isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+            ]}
+          >
+            <Text style={[styles.prayerSubtitle, isDark && { color: theme.text }]}>
               {isHi ? selectedPrayer.subtitleDevanagari : selectedPrayer.subtitle}
             </Text>
           </View>
@@ -375,13 +569,24 @@ export default function PrayersScreen() {
             return (
               <View
                 key={verse.verseNumber}
-                style={[styles.verseCard, isChantingActive && styles.verseCardActive]}
+                style={[
+                  styles.verseCard,
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                  isChantingActive && [styles.verseCardActive, isDark && { backgroundColor: '#251d0e', borderColor: theme.primary }],
+                ]}
               >
                 <View style={styles.verseHeaderRow}>
-                  <View style={[styles.verseTypeBadge, isChantingActive && styles.verseTypeBadgeActive]}>
+                  <View
+                    style={[
+                      styles.verseTypeBadge,
+                      isDark && { backgroundColor: theme.cardMuted },
+                      isChantingActive && styles.verseTypeBadgeActive,
+                    ]}
+                  >
                     <Text
                       style={[
                         styles.verseTypeBadgeText,
+                        isDark && { color: theme.textSecondary },
                         isChantingActive && styles.verseTypeBadgeTextActive,
                       ]}
                     >
@@ -399,7 +604,12 @@ export default function PrayersScreen() {
 
                   <TouchableOpacity
                     testID={`verse-share-${verse.verseNumber}`}
-                    style={styles.verseShareBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel={isHi ? `श्लोक ${verse.verseNumber} शेयर करें` : `Share verse ${verse.verseNumber}`}
+                    style={[
+                      styles.verseShareBtn,
+                      isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+                    ]}
                     onPress={() =>
                       handleShareVerse(
                         verse.sanskrit,
@@ -407,61 +617,72 @@ export default function PrayersScreen() {
                         verse.verseNumber
                       )
                     }
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
-                    <Ionicons name="share-outline" size={15} color="#71717a" />
+                    <Ionicons name="share-outline" size={16} color={isDark ? theme.textSecondary : '#52525b'} />
+                    <Text style={[styles.verseShareText, isDark && { color: theme.textSecondary }]}>
+                      {isHi ? 'साझा' : 'Share'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
 
-              {/* Sanskrit Text */}
-              <Text
-                style={[
-                  styles.sanskritText,
-                  { fontSize: 16 + fontSizeOffset, lineHeight: (16 + fontSizeOffset) * 1.6 },
-                ]}
-              >
-                {verse.sanskrit}
-              </Text>
-
-              {/* Transliteration for English mode */}
-              {!isHi && (
+                {/* Sanskrit Text */}
                 <Text
                   style={[
-                    styles.translitText,
-                    { fontSize: 13 + fontSizeOffset, lineHeight: (13 + fontSizeOffset) * 1.5 },
+                    styles.sanskritText,
+                    isDark && { color: theme.text },
+                    { fontSize: 17 + fontSizeOffset, lineHeight: (17 + fontSizeOffset) * 1.65 },
                   ]}
                 >
-                  {verse.transliteration}
+                  {verse.sanskrit}
                 </Text>
-              )}
 
-              {/* Meaning */}
-              <View style={styles.meaningBox}>
-                <Text style={styles.meaningLabel}>
-                  {isHi ? 'भावार्थ:' : 'Spiritual Meaning:'}
-                </Text>
-                <Text
-                  style={[
-                    styles.meaningText,
-                    { fontSize: 13 + fontSizeOffset, lineHeight: (13 + fontSizeOffset) * 1.5 },
-                  ]}
-                >
-                  {isHi ? verse.hindiMeaning : verse.englishMeaning}
-                </Text>
+                {/* Transliteration for English mode */}
+                {!isHi && (
+                  <Text
+                    style={[
+                      styles.translitText,
+                      isDark && { color: theme.textMuted },
+                      { fontSize: 14 + fontSizeOffset, lineHeight: (14 + fontSizeOffset) * 1.55 },
+                    ]}
+                  >
+                    {verse.transliteration}
+                  </Text>
+                )}
+
+                {/* Meaning */}
+                <View style={[styles.meaningBox, isDark && { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                  <Text style={[styles.meaningLabel, isDark && { color: theme.primary }]}>
+                    {isHi ? 'भावार्थ:' : 'Meaning:'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.meaningText,
+                      isDark && { color: theme.textSecondary },
+                      { fontSize: 14 + fontSizeOffset, lineHeight: (14 + fontSizeOffset) * 1.55 },
+                    ]}
+                  >
+                    {isHi ? verse.hindiMeaning : verse.englishMeaning}
+                  </Text>
+                </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          })}
 
           {/* Phala-shruti */}
-          <View style={styles.phalaCard}>
+          <View
+            style={[
+              styles.phalaCard,
+              isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder },
+            ]}
+          >
             <View style={styles.phalaHeaderRow}>
-              <Ionicons name="sparkles" size={16} color={Palette.primary} />
-              <Text style={styles.phalaTitle}>
+              <Ionicons name="sparkles" size={16} color={theme.primary} />
+              <Text style={[styles.phalaTitle, isDark && { color: theme.primary }]}>
                 {isHi ? 'फलश्रुति एवं माहात्म्य:' : 'Divine Fruits & Phala Shruti:'}
               </Text>
             </View>
-            <Text style={styles.phalaText}>
+            <Text style={[styles.phalaText, isDark && { color: theme.textSecondary }]}>
               {isHi ? selectedPrayer.phalaShrutiDevanagari : selectedPrayer.phalaShruti}
             </Text>
           </View>
@@ -491,7 +712,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ffffff',
     paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: Radius.xl,
     marginRight: Spacing.sm,
     gap: 6,
@@ -503,10 +724,10 @@ const styles = StyleSheet.create({
     borderColor: '#18181b',
   },
   prayerIconText: {
-    fontSize: 14,
+    fontSize: 16,
   },
   prayerPillText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: '#3f3f46',
   },
@@ -643,6 +864,8 @@ const styles = StyleSheet.create({
   // Reader Controls
   readerControlsCard: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
     alignItems: 'center',
     backgroundColor: '#ffffff',
     borderRadius: Radius.lg,
@@ -652,33 +875,44 @@ const styles = StyleSheet.create({
     borderColor: '#e4e4e7',
   },
   prayerTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
     color: '#18181b',
+    lineHeight: 24,
   },
   prayerAuthor: {
-    fontSize: 11,
-    color: '#71717a',
+    fontSize: 13,
+    color: '#52525b',
     marginTop: 2,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   fontControls: {
     flexDirection: 'row',
     backgroundColor: '#f4f4f5',
     borderRadius: Radius.sm,
-    padding: 2,
+    padding: 3,
+    gap: 2,
   },
   fontSizeBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: Radius.xs,
   },
   fontSizeBtnActive: {
     backgroundColor: '#ffffff',
   },
   fontSizeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#3f3f46',
+  },
+  fontScaleHint: {
+    fontSize: 12.5,
+    fontWeight: '600',
     color: '#52525b',
   },
 
@@ -692,19 +926,21 @@ const styles = StyleSheet.create({
     borderColor: Palette.primaryBorder,
   },
   prayerSubtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#92400e',
-    lineHeight: 18,
+    lineHeight: 21,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   soundBar: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   soundBtn: {
     flex: 1,
+    minWidth: 130,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -722,10 +958,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   soundBtnIcon: {
-    fontSize: 16,
+    fontSize: 17,
   },
   soundBtnText: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#92400e',
   },
@@ -771,17 +1007,17 @@ const styles = StyleSheet.create({
   },
   verseTypeBadge: {
     backgroundColor: '#f4f4f5',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radius.xs,
   },
   verseTypeBadgeActive: {
     backgroundColor: '#fef3c7',
   },
   verseTypeBadgeText: {
-    fontSize: 10,
+    fontSize: 12.5,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#52525b',
   },
   verseTypeBadgeTextActive: {
     color: '#b45309',
@@ -804,51 +1040,57 @@ const styles = StyleSheet.create({
   },
   chantPlayerHeader: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   chantPlayerTag: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#ea580c',
+    color: '#c2410c',
   },
   chantPlayerTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: '#18181b',
     marginTop: 2,
   },
   loopCounterBadge: {
     backgroundColor: '#ffedd5',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#fed7aa',
   },
   loopCounterText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
     color: '#c2410c',
   },
   loopSelectorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 14,
     flexWrap: 'wrap',
   },
   loopSelectorLabel: {
-    fontSize: 11,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#52525b',
     marginRight: 2,
   },
   loopBtn: {
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 8,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
     backgroundColor: '#f4f4f5',
     borderWidth: 1,
     borderColor: '#e4e4e7',
@@ -858,15 +1100,16 @@ const styles = StyleSheet.create({
     borderColor: '#c2410c',
   },
   loopBtnText: {
-    fontSize: 11,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#52525b',
+    color: '#3f3f46',
   },
   loopBtnTextActive: {
     color: '#ffffff',
   },
   chantActionRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     alignItems: 'center',
   },
@@ -877,7 +1120,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#ea580c',
-    paddingVertical: 11,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: Radius.md,
     shadowColor: '#ea580c',
     shadowOffset: { width: 0, height: 2 },
@@ -889,28 +1133,44 @@ const styles = StyleSheet.create({
     backgroundColor: '#b45309',
   },
   chantPlayBtnText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '800',
     color: '#ffffff',
   },
   chantResetBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: Radius.md,
     backgroundColor: '#f4f4f5',
     borderWidth: 1,
     borderColor: '#e4e4e7',
   },
   chantResetBtnText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#52525b',
+    color: '#3f3f46',
   },
   verseShareBtn: {
-    padding: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    minHeight: MIN_TOUCH_TARGET,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    backgroundColor: '#f4f4f5',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+  },
+  verseShareText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#3f3f46',
   },
   sanskritText: {
     fontWeight: '700',
@@ -930,13 +1190,13 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginTop: Spacing.xs,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: '#e2e8f0',
   },
   meaningLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: Palette.primary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   meaningText: {
     color: '#334155',
@@ -954,18 +1214,18 @@ const styles = StyleSheet.create({
   phalaHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
+    gap: 8,
+    marginBottom: 8,
     backgroundColor: 'transparent',
   },
   phalaTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '800',
     color: '#92400e',
   },
   phalaText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 22,
     color: '#78350f',
   },
 });

@@ -1,20 +1,21 @@
-import { TourStep, ContextualHelpTopic, TourSection } from '../types/tour';
+import { TourStep, ContextualHelpTopic, TourSection, TourStepConditionType } from '../types/tour';
 
 /**
- * 7 Major Sections of the App Tour for instant 1-tap navigation
+ * 8 Major Sections of the App Tour covering all 7 tabs for instant 1-tap navigation
  */
 export const TOUR_SECTIONS: TourSection[] = [
-  { id: 'dinacharya', nameHi: 'दिनचर्या', nameEn: 'Daily', emoji: '🌅', startStep: 0, endStep: 9 },
-  { id: 'dayplanner', nameHi: 'दिन योजना', nameEn: 'Planner', emoji: '🎯', startStep: 10, endStep: 15 },
-  { id: 'muhurta', nameHi: 'मुहूर्त', nameEn: 'Muhurta', emoji: '✨', startStep: 16, endStep: 18 },
-  { id: 'festivals', nameHi: 'पर्व-व्रत', nameEn: 'Festivals', emoji: '🪔', startStep: 19, endStep: 20 },
-  { id: 'prayers', nameHi: 'स्तोत्र-जप', nameEn: 'Prayers', emoji: '📿', startStep: 21, endStep: 23 },
-  { id: 'more', nameHi: 'तीर्थ', nameEn: 'Pilgrimage', emoji: '🛕', startStep: 24, endStep: 25 },
-  { id: 'settings', nameHi: 'सेटिंग्स', nameEn: 'Settings', emoji: '⚙️', startStep: 26, endStep: 29 },
+  { id: 'dinacharya', nameHi: 'दिनचर्या', nameEn: 'Daily', emoji: '🌅', startStep: 0, endStep: 10 },
+  { id: 'dayplanner', nameHi: 'दिन योजना', nameEn: 'Planner', emoji: '🎯', startStep: 11, endStep: 16 },
+  { id: 'muhurta', nameHi: 'मुहूर्त', nameEn: 'Muhurta', emoji: '✨', startStep: 17, endStep: 19 },
+  { id: 'festivals', nameHi: 'पर्व-व्रत', nameEn: 'Festivals', emoji: '🪔', startStep: 20, endStep: 21 },
+  { id: 'prayers', nameHi: 'स्तोत्र-जप', nameEn: 'Prayers', emoji: '📿', startStep: 22, endStep: 25 },
+  { id: 'more', nameHi: 'तीर्थ', nameEn: 'Pilgrimage', emoji: '🛕', startStep: 26, endStep: 28 },
+  { id: 'settings', nameHi: 'सेटिंग्स', nameEn: 'Settings', emoji: '⚙️', startStep: 29, endStep: 32 },
+  { id: 'community', nameHi: 'प्रोजेक्ट', nameEn: 'Project', emoji: '🤝', startStep: 33, endStep: 34, addedInVersion: 2 },
 ];
 
 /**
- * Master Tour Steps configuration covering all 6 tabs and interactive elements:
+ * Master Tour Steps configuration covering all 7 tabs and interactive elements:
  * 1. दिनचर्या (Dinacharya - Header, Date strip, View modes, Live Compass, Sadhana, Sankalpa, Rashi)
  * 2. दिन योजना विशेष विवरण (Deep Dive: Day Planner, 3 sub-tabs, Muhurta cards, suggested tasks, custom tasks, inauspicious triad)
  * 3. मुहूर्त (Muhurta - 12+ categories, Shastric references, 30/60/90 days horizon, suitability filters, date details)
@@ -22,8 +23,9 @@ export const TOUR_SECTIONS: TourSection[] = [
  * 5. स्तोत्र-जाप (Prayers - Stotras, 108-bead Japa Mala counter, presets, Temple Bell & Shankha Naad)
  * 6. तीर्थ (More - Jyotirlinga & Char Dham circuits, Devi-Devatas, Vrat Kathas & Puja Vidhi)
  * 7. सेटिंग्स (Settings - Sacred Profile/Gotra, Language, Location/Meridian, Smart Notifications, Replay Tour)
+ * 8. प्रोजेक्ट (Community - Release notes, contributors, feature suggestions, issue reporting)
  */
-export const TOUR_STEPS: TourStep[] = [
+const RAW_TOUR_STEPS: TourStep[] = [
   // ==========================================
   // TAB 1: दिनचर्या (DINACHARYA / HOME)
   // ==========================================
@@ -67,6 +69,7 @@ export const TOUR_STEPS: TourStep[] = [
     howToUseHi: 'बटन पर टैप करें: भाषा बदलें',
     howToUseEn: 'Tap this button: switch language',
     targetTestID: 'header-lang-btn',
+    shape: 'circle',
     viewMode: 'daily',
   },
   {
@@ -88,6 +91,7 @@ export const TOUR_STEPS: TourStep[] = [
     howToUseHi: 'घंटी आइकॉन पर टैप करें: ध्वनि सुनें',
     howToUseEn: 'Tap the bell icon: play chime',
     targetTestID: 'header-bell-btn',
+    shape: 'circle',
     viewMode: 'daily',
   },
   {
@@ -109,6 +113,7 @@ export const TOUR_STEPS: TourStep[] = [
     howToUseHi: 'शेयर बटन पर टैप करें: कार्ड बनाएं व भेजें',
     howToUseEn: 'Tap the share button: preview & send card',
     targetTestID: 'header-share-btn',
+    shape: 'circle',
     viewMode: 'daily',
   },
   {
@@ -237,6 +242,27 @@ export const TOUR_STEPS: TourStep[] = [
     targetTestID: 'daily-rashi-card',
     viewMode: 'daily',
   },
+  {
+    id: 'step-monthly-calendar',
+    tab: '/(tabs)',
+    tabNameHi: 'दिनचर्या',
+    tabNameEn: 'Dinacharya',
+    badgeHi: 'मासिक पञ्चाङ्ग ग्रिड',
+    badgeEn: 'Monthly Panchang Grid',
+    emoji: '📆',
+    titleHi: 'मासिक कैलेंडर ग्रिड (तिथि व एकादशी दर्शन)',
+    titleEn: 'Interactive Monthly Panchang Grid',
+    subtitleHi: 'पूरे महीने की एकादशी, प्रदोष, पूर्णिमा व पर्व चिह्न',
+    subtitleEn: 'Spot Ekadashi, Purnima, Pradosh & festivals at a glance',
+    descriptionHi:
+      'मासिक मोड पूरे महीने की हर तारीख पर उसकी तिथि, एकादशी, पूर्णिमा, अमावस्या, प्रदोष और पर्व चिह्न दिखाता है। किसी भी तारीख पर टैप करके तुरंत उस दिन का पञ्चाङ्ग खोलें।',
+    descriptionEn:
+      'Monthly view highlights every day with Tithi, Ekadashi, Purnima, Amavasya, Pradosh, and festival badges. Tap any date tile to inspect that day’s full Panchang.',
+    howToUseHi: 'किसी तारीख पर टैप करें या माह बदलें',
+    howToUseEn: 'Tap any calendar date or browse months',
+    targetTestID: 'monthly-calendar-grid',
+    viewMode: 'monthly',
+  },
 
   // ==========================================
   // SECTION 2: दिन योजना विशेष विवरण (DAY PLANNER DEEP-DIVE)
@@ -334,19 +360,19 @@ export const TOUR_STEPS: TourStep[] = [
     tab: '/(tabs)',
     tabNameHi: 'दिनचर्या',
     tabNameEn: 'Dinacharya',
-    badgeHi: 'निजी कार्य जोड़ना व चेकलिस्ट',
-    badgeEn: 'Custom Tasks & Checkbox',
+    badgeHi: 'नियोजित कार्य फ़िल्टर',
+    badgeEn: 'Scheduled Tasks Queue',
     emoji: '📝',
-    titleHi: 'अपना कार्य जोड़ें व कार्य पूरा होने पर टिक करें',
-    titleEn: 'Add Custom Tasks & Mark Completed',
-    subtitleHi: 'आप इस मुहूर्त में अपना कोई भी काम जोड़ सकते हैं',
-    subtitleEn: 'Schedule any custom task and track completion',
+    titleHi: 'अपने कार्य जोड़ें व "नियोजित" सूची में देखें',
+    titleEn: 'Review & Track Your Planned Tasks',
+    subtitleHi: 'हर मुहूर्त कार्ड में कार्य जोड़ें, फिर यहाँ केवल तय कार्य देखें',
+    subtitleEn: 'Filter the schedule to only the slots with tasks',
     descriptionHi:
-      'आप इस मुहूर्त में अपना कोई भी काम जोड़ सकते हैं — जैसे ध्यान, पूजा, वॉक, अध्ययन या मीटिंग। इनपुट बॉक्स में लिखें और '+' दबाएं। कार्य पूरा होने पर चेकबॉक्स को टिक करें।',
+      'किसी भी मुहूर्त कार्ड में सुझाव चिप या "+ कार्य लिखें" बॉक्स से काम जोड़ने के बाद, "नियोजित" टैब आपको सिर्फ़ वे समय-खण्ड दिखाता है जहाँ आपके काम तय हैं। पूर्ण होने पर टिक करें।',
     descriptionEn:
-      'You can add your own custom task for this Muhurta — such as prayer, study, walking, or meetings. Type your task and tap add. Check off the box when done.',
-    howToUseHi: 'कार्य टाइप करें व जोड़ें: सम्पन्न होने पर चेकबॉक्स टिक करें',
-    howToUseEn: 'Type custom task & tap add: tick box when done',
+      'After adding suggestions or custom tasks inside any Muhurta card, switch to the "Planned" sub-tab to focus exclusively on the time slots holding your active agenda.',
+    howToUseHi: 'कार्यों की जांच करें या मुख्य/२४h टैब में नया कार्य जोड़ें',
+    howToUseEn: 'Inspect your scheduled slots or switch tabs to add more',
     targetTestID: 'planner-tab-planned',
     viewMode: 'planner',
     plannerSubTab: 'planned',
@@ -401,20 +427,21 @@ export const TOUR_STEPS: TourStep[] = [
     tab: '/(tabs)/muhurta',
     tabNameHi: 'मुहूर्त',
     tabNameEn: 'Muhurta',
-    badgeHi: 'शास्त्र सन्दर्भ व वर्जित समय',
-    badgeEn: 'Shastric Rules & Inauspicious Hours',
+    badgeHi: 'आज के त्याज्य काल',
+    badgeEn: 'Daily Avoidable Periods',
     emoji: '📜',
-    titleHi: 'मुहूर्त चिन्तामणि ग्रन्थ व त्याज्य काल',
-    titleEn: 'Classical Treatises & Today’s Avoidable Hours',
-    subtitleHi: 'शास्त्रसम्मत नियम व आज के वर्जित समय',
-    subtitleEn: 'Authentic rules from Muhurta Chintamani',
+    titleHi: 'राहु काल, यमगण्ड व गुलिक पट्टी',
+    titleEn: 'Today’s Avoid Windows (Expandable)',
+    subtitleHi: 'शुभ शुरुआत से पहले त्याज्य समय जांचें',
+    subtitleEn: 'Tap "All 3" to inspect today’s restricted windows',
     descriptionHi:
-      'यह खण्ड उस श्रेणी के शास्त्रीय सन्दर्भ (जैसे मुहूर्तचिन्तामणि, निर्णयसिन्धु) तथा भद्रा-दोष के नियम बताता है। साथ ही आज के राहु काल, यमगण्ड व गुलिक काल स्पष्ट दिखाता है।',
+      'यह कॉम्पैक्ट पट्टी आज का राहु काल दिखाती है और टैप करने पर यमगण्ड व गुलिक काल भी खोलती है। ऊपर स्थित श्रेणी पट्टिका मुहूर्तचिन्तामणि जैसे प्रामाणिक शास्त्रीय सन्दर्भ दिखाती है।',
     descriptionEn:
-      'Displays the classical treatise citations (Muhurta Chintamani, Nirnaya Sindhu) and Bhadra rules, alongside today’s active Rahu Kaal and Yamaganda timings.',
-    howToUseHi: 'कार्ड पढ़ें: शास्त्रसम्मत नियम व त्याज्य समय जानें',
-    howToUseEn: 'Review card: understand Shastric rules and restrictions',
+      'Shows today’s Rahu Kalam upfront and expands on tap to reveal Yamagandam and Gulika Kalam, pairing with classical Muhurta Chintamani guidelines shown above.',
+    howToUseHi: 'पट्टी पर टैप करें: सभी ३ त्याज्य काल विस्तार से देखें',
+    howToUseEn: 'Tap card: expand or collapse all 3 inauspicious periods',
     targetTestID: 'muhurta-inauspicious-card',
+    muhurtaExpandAvoid: true,
   },
   {
     id: 'step-muhurta-filters',
@@ -459,6 +486,7 @@ export const TOUR_STEPS: TourStep[] = [
     howToUseHi: 'सूची स्क्रॉल करें: आगामी त्योहार व व्रत देखें',
     howToUseEn: 'Scroll list: explore upcoming sacred celebrations',
     targetTestID: 'festival-search-input',
+    shape: 'rect',
   },
   {
     id: 'step-festivals-search',
@@ -497,9 +525,9 @@ export const TOUR_STEPS: TourStep[] = [
     subtitleHi: 'संस्कृत श्लोक व सरल हिन्दी अर्थ सहित',
     subtitleEn: 'Sanskrit shlokas with clear meaning and audio',
     descriptionHi:
-      'हनुमान चालीसा, महामृत्युंजय मन्त्र, गायत्री मन्त्र, शिव तांडव, विष्णु सहस्रनाम, कनकधारा आदि का प्रामाणिक पाठ। ऊपर दिए चिप्स से मनपसंद स्तोत्र चुनें।',
+      'श्री हनुमान चालीसा, शिव ताण्डव स्तोत्रम्, ऋग्वैदिक श्री सूक्तम्, संकट मोचन अष्टक, आदित्य हृदय स्तोत्रम् व श्री गणेश चालीसा का संस्कृत श्लोक व सरल अर्थ सहित पाठ।',
     descriptionEn:
-      'Explore Hanuman Chalisa, Mahamrityunjaya, Gayatri Mantra, Shiva Tandava, Vishnu Sahasranama, and more with Sanskrit verses and accurate translations.',
+      'Read Hanuman Chalisa, Shiv Tandav Stotram, Rigvedic Shri Suktam, Aditya Hridaya Stotram, Ganesh Chalisa, and Pratahsmarana verses with translations and adjustable font size.',
     howToUseHi: 'स्तोत्र चिप पर टैप करें: श्लोक व अर्थ पढ़ें',
     howToUseEn: 'Tap a prayer chip: read verses with meaning',
     targetTestID: 'prayer-pill-hanuman-chalisa',
@@ -534,14 +562,34 @@ export const TOUR_STEPS: TourStep[] = [
     emoji: '📿',
     titleHi: '१०८ मनकों की डिजिटल जप माला',
     titleEn: '108-Bead Digital Japa Mala Counter',
-    subtitleHi: '१, ३, ११ या १०८ फेरों का लक्ष्य व हैप्टिक स्पर्श',
-    subtitleEn: 'Set rounds target with authentic haptic feel',
+    subtitleHi: 'हर मनके पर स्पर्श कम्पन व २७/५४/८१/१०८ पड़ाव',
+    subtitleEn: 'Count Mantra beads with haptics & milestone alerts',
     descriptionHi:
-      'माला के मनकों अथवा जाप बटन पर टैप करके मन्त्र जप गिनें। हर मनके पर सूक्ष्म कम्पन (Haptic) का अनुभव होता है। १, ३, ११ या १०८ माला का लक्ष्य सेट कर सकते हैं।',
+      'इस मनके घेरे पर टैप करके अपने मन्त्र जप की गिनती करें। २७, ५४, ८१ व १०८ मनकों पर विशेष उत्साहवर्धक संकेत मिलता है और आप कई मालाओं का लक्ष्य सेट कर सकते हैं।',
     descriptionEn:
-      'Tap the beads or chant button to count mantra repetitions with gentle haptic vibration feedback. Select 1x, 3x, 11x, or 108x target rounds.',
-    howToUseHi: 'जाप बटन दबाएं: मनका आगे बढ़ेगा और जप गिना जाएगा',
-    howToUseEn: 'Tap chant button: advances bead and counts japa',
+      'Tap the interactive bead ring to count mantra repetitions with gentle haptic feedback, multi-mala targets, and celebratory chimes at every 27-bead milestone.',
+    howToUseHi: 'जप घेरे पर टैप करें: प्रत्येक जप की गिनती बढ़ेगी',
+    howToUseEn: 'Tap the bead counter circle to track your japa beads',
+    targetTestID: 'prayers-japa-mala',
+  },
+  {
+    id: 'step-prayers-chant-loop',
+    tab: '/(tabs)/prayers',
+    tabNameHi: 'स्तोत्र-जप',
+    tabNameEn: 'Prayers',
+    badgeHi: 'स्वचालित पाठ आवर्तन',
+    badgeEn: 'Guided Auto-Chant Loops',
+    emoji: '🔁',
+    titleHi: '१x से १०८x आवर्तन सहित स्तोत्र पाठ प्लेयर',
+    titleEn: 'Guided Chanting & Loop Counter (1x–108x)',
+    subtitleHi: 'हर श्लोक क्रमशः हाईलाइट व घंटी नाद',
+    subtitleEn: 'Follow highlighted verses for multi-round recitations',
+    descriptionHi:
+      'पाठ आरम्भ बटन दबाने पर स्तोत्र का प्रत्येक पद क्रमानुसार हाईलाइट होता है और हर आवर्तन पूर्ण होने पर घंटी बजती है। आप १, ७, ११, २१ या १०८ पाठ चुन सकते हैं।',
+    descriptionEn:
+      'Press Play Chant to step cleanly through each verse with visual highlighting and completion bell chimes across 1x, 7x, 11x, 21x, or 108x chosen rounds.',
+    howToUseHi: 'आवर्तन संख्या चुनें और पाठ प्रारंभ बटन दबाएं',
+    howToUseEn: 'Pick target loops and tap Start Chanting to begin',
     targetTestID: 'chant-play-toggle-btn',
   },
 
@@ -556,37 +604,60 @@ export const TOUR_STEPS: TourStep[] = [
     badgeHi: 'पवित्र तीर्थ व मन्दिर दर्शन',
     badgeEn: 'Sacred Temples & Pilgrimages',
     emoji: '🛕',
-    titleHi: 'द्वादश ज्योतिर्लिंग, चार धाम व शक्तिपीठ',
-    titleEn: 'Jyotirlinga, Char Dham & Shakti Peethas',
+    titleHi: 'द्वादश ज्योतिर्लिंग, चार धाम व पंचभूत तीर्थ',
+    titleEn: '12 Jyotirlingas, Char Dham & Pancha Bhoota',
     subtitleHi: 'दर्शन समय, प्रधान आराध्य, पवित्र नदी व महात्म्य',
-    subtitleEn: 'Darshan timings, primary deities, rivers & lore',
+    subtitleEn: 'Darshan timings, deities, rivers & sacred significance',
     descriptionHi:
-      'भारत के प्रमुख तीर्थों व मन्दिरों का विस्तृत विवरण। ऊपर दिए सर्किट फ़िल्टर (चार धाम, ज्योतिर्लिंग, शक्तिपीठ) से तीर्थ चुनें। दर्शन समय व प्रधान आराध्य की जानकारी देखें।',
+      'भारत के प्रमुख तीर्थों का प्रामाणिक गाइड। १२ ज्योतिर्लिंग, चार धाम व पंचभूत स्थल फ़िल्टर से मन्दिर चुनें तथा दर्शन समय, स्थान व विशेषता जानें।',
     descriptionEn:
-      'Detailed guides to India’s sacred shrines. Use the circuit filters (Char Dham, Jyotirlinga, Shakti Peethas) to discover darshan timings, rivers, and traditions.',
+      'Explore sacred Indian pilgrimage circuits: filter between 12 Jyotirlingas, Char Dham, and Pancha Bhoota Sthalams to read darshan hours and significance.',
     howToUseHi: 'सर्किट फ़िल्टर चुनें: मन्दिर कार्ड्स का विवरण देखें',
     howToUseEn: 'Select circuit filter: explore temple cards & timings',
     targetTestID: 'more-tab-temples',
+    moreSection: 'temples',
   },
   {
     id: 'step-more-devatas-vrat',
     tab: '/(tabs)/more',
     tabNameHi: 'तीर्थ',
     tabNameEn: 'More',
-    badgeHi: 'देवी-देवता व व्रत कथाएं',
-    badgeEn: 'Deities & Vrat Kathas',
+    badgeHi: 'देवी-देवता दर्शन',
+    badgeEn: 'Sacred Deities & Mantras',
     emoji: '🔱',
-    titleHi: 'सनातन देवी-देवता दर्शन व व्रत कथा विधि',
-    titleEn: 'Sacred Hindu Deities & Authentic Vrat Kathas',
-    subtitleHi: 'महामन्त्र, आयुध, वाहन तथा सम्पूर्ण पूजा विधि',
-    subtitleEn: 'Iconography, seed mantras & step-by-step puja vidhi',
+    titleHi: 'सनातन देवी-देवता दर्शन व महामन्त्र',
+    titleEn: 'Hindu Deities, Iconography & Mantras',
+    subtitleHi: 'आराध्य स्वरूप, वाहन, आयुध व मूल मन्त्र',
+    subtitleEn: 'Explore traditions, attributes, vehicles & seed mantras',
     descriptionHi:
-      '• देवी-देवता टैब: शिव, विष्णु, दुर्गा, गणेश आदि के महामन्त्र व आयुध\n• व्रत कथा टैब: एकादशी, प्रदोष, सत्यनारायण व्रत की पावन कथाएं व प्रामाणिक पूजा विधि के चरण।',
+      'विभिन्न सनातन परम्पराओं के प्रमुख देवी-देवताओं पर टैप कर उनके स्वरूप, वाहन, आयुध, धाम तथा जपने योग्य मूल मन्त्र विस्तार से जानें।',
     descriptionEn:
-      '• Deities Tab: Iconography, vahanas, and mantras of Lord Shiva, Vishnu, Durga, Ganesha\n• Vrat Katha Tab: Authentic sacred lore and step-by-step puja vidhi procedures.',
-    howToUseHi: 'देवता या व्रत कथा टैब पर टैप करें: विस्तार से पढ़ें',
-    howToUseEn: 'Tap Deities or Vrat Katha tab: read stories & vidhi',
+      'Browse deities across traditions and tap any card to open complete iconography, celestial vahanas, sacred abodes, and seed mantras.',
+    howToUseHi: 'किसी देवता कार्ड पर टैप करें: विस्तृत पैनल खुलेगा',
+    howToUseEn: 'Tap Deities tab and select any deity card for details',
     targetTestID: 'more-tab-devatas',
+    moreSection: 'devatas',
+  },
+  {
+    id: 'step-more-vrat-katha',
+    tab: '/(tabs)/more',
+    tabNameHi: 'तीर्थ',
+    tabNameEn: 'More',
+    badgeHi: 'पावन व्रत कथा व विधि',
+    badgeEn: 'Vrat Katha & Puja Vidhi',
+    emoji: '📜',
+    titleHi: 'प्रामाणिक व्रत कथाएं, फलाहार नियम व पारण',
+    titleEn: 'Authentic Vrat Kathas & Fasting Guidelines',
+    subtitleHi: 'कथा, पूजा विधि चरण, वर्जित/ग्राह्य आहार व आरती',
+    subtitleEn: 'Full stories, step-by-step puja steps & parana rules',
+    descriptionHi:
+      'प्रमुख व्रतों की चरणबद्ध पूजा विधि, फलाहार में क्या लें/क्या त्यागें, पारण नियम, सम्पूर्ण कथा एवं आरती एक ही स्थान पर पढ़ें।',
+    descriptionEn:
+      'Read traditional Vrat Kathas with clear permitted vs prohibited foods, step-by-step puja instructions, Parana guidance, and Aarti.',
+    howToUseHi: 'व्रत कथा चुनें और चरणबद्ध नियम पढ़ें',
+    howToUseEn: 'Select any Vrat to read its Katha and puja steps',
+    targetTestID: 'more-tab-vrat_katha',
+    moreSection: 'vrat_katha',
   },
 
   // ==========================================
@@ -672,7 +743,79 @@ export const TOUR_STEPS: TourStep[] = [
     howToUseEn: 'Remember this button: replay the tour anytime',
     targetTestID: 'settings-replay-tour-btn',
   },
+  // ==========================================
+  // TAB 8 (SECTION 8): प्रोजेक्ट हब (COMMUNITY / PROJECT)
+  // ==========================================
+  {
+    id: 'step-community-hub',
+    tab: '/(tabs)/community',
+    tabNameHi: 'प्रोजेक्ट',
+    tabNameEn: 'Project',
+    badgeHi: 'प्रोजेक्ट व समुदाय',
+    badgeEn: 'Project Hub & Community',
+    emoji: '🤝',
+    titleHi: 'प्रोजेक्ट हब, अपडेट्स व योगदानकर्ता',
+    titleEn: 'Project Hub, Releases & Contributors',
+    subtitleHi: 'नए फ़ीचर्स, वर्ज़न इतिहास व समुदाय सहयोग देखें',
+    subtitleEn: 'View release notes, community contributors & live status',
+    descriptionHi:
+      'यह स्क्रीन आपको ऍप के नए अपडेट्स (Changelog), प्रमुख योगदानकर्ताओं और सामुदायिक प्रगति की जानकारी देती है। इसमें इंटरनेट आवश्यक होता है—ऑफ़लाइन होने पर भी आप कभी भी रीफ्रेश कर सकते हैं।',
+    descriptionEn:
+      'Explore every Sanatan release changelog, recognize project contributors, and track community progress. This hub fetches live updates when online.',
+    howToUseHi: 'नए बदलाव देखने के लिए "अपडेट्स" और सदस्यों के लिए "योगदान" टैप करें',
+    howToUseEn: 'Switch between Releases, Contributors, Feedback, and Issues tabs',
+    targetTestID: 'community-hero-card',
+    sectionId: 'community',
+    communitySegment: 'changelog',
+    conditionType: 'network_required',
+    addedInVersion: 2,
+  },
+  {
+    id: 'step-community-feedback',
+    tab: '/(tabs)/community',
+    tabNameHi: 'प्रोजेक्ट',
+    tabNameEn: 'Project',
+    badgeHi: 'सुझाव व समस्या रिपोर्ट',
+    badgeEn: 'Feedback & Issue Tracker',
+    emoji: '💬',
+    titleHi: 'सीधा सुझाव या त्रुटि रिपोर्ट भेजें',
+    titleEn: 'Share Feedback or Report a Bug',
+    subtitleHi: 'रेटिंग दें, नए फ़ीचर सुझाएं या बग रिपोर्ट सीधे टीम को भेजें',
+    subtitleEn: 'Rate the app, suggest improvements, or report bugs directly',
+    descriptionHi:
+      '"सुझाव" टैब में ५-सितारा रेटिंग व अपना विचार भेजें और "बग" टैब से किसी समस्या की रिपोर्ट सीधे डेवलपर टीम तक पहुंचाएं।',
+    descriptionEn:
+      'Use Feedback to share star ratings and feature requests, or open the Issues tab to submit step-by-step bug reports directly to our engineering team.',
+    howToUseHi: 'फ़ॉर्म भरें या "बग" टैब चुनकर त्रुटि रिपोर्ट भेजें',
+    howToUseEn: 'Fill out the form below or switch to Issues to report a bug',
+    targetTestID: 'community-segment-feedback',
+    sectionId: 'community',
+    communitySegment: 'feedback',
+    conditionType: 'network_required',
+    addedInVersion: 2,
+  },
 ];
+
+const STEP_CONDITION_BY_ID: Partial<Record<string, TourStepConditionType>> = {
+  'step-bell': 'notification_permission',
+  'step-live-compass': 'abhijit_status',
+  'step-sadhana-checklist': 'sadhana_empty',
+  'step-planner-custom-tasks': 'planner_empty',
+  'step-settings-location-cal': 'location_permission',
+  'step-settings-notif': 'notification_permission',
+  'step-community-hub': 'network_required',
+  'step-community-feedback': 'network_required',
+};
+
+export function getSectionForStepIndex(stepIndex: number): TourSection | undefined {
+  return TOUR_SECTIONS.find((section) => stepIndex >= section.startStep && stepIndex <= section.endStep);
+}
+
+export const TOUR_STEPS: TourStep[] = RAW_TOUR_STEPS.map((step, index) => ({
+  ...step,
+  sectionId: step.sectionId ?? getSectionForStepIndex(index)?.id,
+  conditionType: step.conditionType ?? STEP_CONDITION_BY_ID[step.id],
+}));
 
 /**
  * Contextual Help Guides for individual screens (Requirement 9)
@@ -726,6 +869,13 @@ export const CONTEXTUAL_HELP_TOPICS: Record<string, ContextualHelpTopic> = {
         labelEn: 'Daily Rashi & Remedies',
         descriptionHi: 'अपनी राशि चुनें और चन्द्र गोचर फल, शुभ रंग, शुभ अंक, इष्ट देव व सात्विक उपाय जानें।',
         descriptionEn: 'Select your zodiac sign to discover transit guidance, lucky attributes, and satvik remedies.',
+      },
+      {
+        emoji: '📆',
+        labelHi: 'मासिक पञ्चाङ्ग ग्रिड',
+        labelEn: 'Monthly Calendar Grid',
+        descriptionHi: 'ऊपर दिए "मासिक" मोड से पूरे महीने की एकादशी, पूर्णिमा व पर्व चिह्न एक साथ देखें।',
+        descriptionEn: 'Switch to Monthly mode to spot Ekadashi, Purnima, Pradosh, and festivals across the entire month.',
       },
     ],
   },
@@ -888,8 +1038,8 @@ export const CONTEXTUAL_HELP_TOPICS: Record<string, ContextualHelpTopic> = {
         emoji: '🛕',
         labelHi: 'पवित्र तीर्थ व मन्दिर',
         labelEn: 'Sacred Shrines & Circuits',
-        descriptionHi: 'द्वादश ज्योतिर्लिंग, चार धाम व शक्तिपीठों के दर्शन समय, प्रधान आराध्य व नदी विवरण।',
-        descriptionEn: 'Explore 12 Jyotirlingas, Char Dham, and Shakti Peethas with darshan hours and rivers.',
+        descriptionHi: 'द्वादश ज्योतिर्लिंग, चार धाम व पंचभूत तीर्थों के दर्शन समय, प्रधान आराध्य व नदी विवरण।',
+        descriptionEn: 'Explore 12 Jyotirlingas, Char Dham, and Pancha Bhoota Sthalams with darshan hours and rivers.',
       },
       {
         emoji: '🔱',
@@ -941,6 +1091,36 @@ export const CONTEXTUAL_HELP_TOPICS: Record<string, ContextualHelpTopic> = {
         labelEn: 'Replay App Walkthrough',
         descriptionHi: 'इस बटन पर टैप करके आप पूरी ऍप का यह मार्गदर्शित टूर कभी भी दोबारा देख सकते हैं।',
         descriptionEn: 'Tap this button anytime to restart this complete guided tour from the beginning.',
+      },
+    ],
+  },
+  community: {
+    id: 'community',
+    titleHi: 'प्रोजेक्ट हब व समुदाय गाइड',
+    titleEn: 'Project Hub & Community Guide',
+    subtitleHi: 'नए अपडेट्स, योगदानकर्ता, सुझाव व समस्या रिपोर्ट',
+    subtitleEn: 'Changelog, contributors, feature ideas & bug reports',
+    items: [
+      {
+        emoji: '🚀',
+        labelHi: 'वर्ज़न अपडेट्स (Releases)',
+        labelEn: 'Release Changelog',
+        descriptionHi: 'ऍप के हर नए संस्करण में जुड़े फ़ीचर्स व सुधार देखें।',
+        descriptionEn: 'Browse every app update, newly added modules, and refinements.',
+      },
+      {
+        emoji: '💬',
+        labelHi: '५-सितारा प्रतिक्रिया व सुझाव',
+        labelEn: '5-Star Feedback & Ideas',
+        descriptionHi: 'ऍप रेटिंग दें, नए स्तोत्र, व्रत या सुविधा सुझाएं और सीधे टीम तक संदेश पहुंचाएं।',
+        descriptionEn: 'Submit 5-star ratings and ideas for new features or prayers directly to maintainers.',
+      },
+      {
+        emoji: '🌐',
+        labelHi: 'इंटरनेट व समस्या रिपोर्ट',
+        labelEn: 'Online Sync & Issue Reports',
+        descriptionHi: 'बाकी ऍप ऑफलाइन चलती है, पर प्रोजेक्ट हब के लिए इंटरनेट आवश्यक है। बग रिपोर्ट सीधे टीम तक जाती है।',
+        descriptionEn: 'Core Panchang works offline, while Project Hub uses the internet to sync live feedback and issues.',
       },
     ],
   },

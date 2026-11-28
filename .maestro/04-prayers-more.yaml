@@ -1,0 +1,38 @@
+appId: cc.sanatan.app
+---
+# End-to-End Flow 04: Sacred Prayers, Japa Mala Counter & Temples / Deities / Kathas
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: tour-skip-btn
+    commands:
+      - tapOn:
+          id: tour-skip-btn
+- tapOn: "स्तोत्र-जप|Prayers"
+- assertVisible:
+    id: prayer-pill-hanuman-chalisa
+- tapOn:
+    id: prayers-bell-btn
+- tapOn:
+    id: chant-play-toggle-btn
+- tapOn:
+    id: loop-btn-108
+- tapOn:
+    id: font-size-increase
+- tapOn: "तीर्थ|More"
+- assertVisible:
+    id: more-tab-temples
+- tapOn:
+    id: more-tab-deities
+- tapOn:
+    id: tradition-pill-all
+- tapOn:
+    id: more-tab-vrat_katha
+- assertVisible:
+    id: vrat-pill-ekadashi
+- tapOn:
+    id: more-about-btn
+- assertVisible:
+    id: about-modal-scroll
+- back
