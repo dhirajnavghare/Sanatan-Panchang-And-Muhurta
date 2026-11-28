@@ -75,13 +75,25 @@ jest.mock('expo-router', () => ({
     back: jest.fn(),
     navigate: jest.fn(),
   }),
-  useFocusEffect: (callback) => callback(),
+  useFocusEffect: (callback) => {
+    const React = require('react');
+    React.useEffect(() => callback(), [callback]);
+  },
   useLocalSearchParams: () => ({}),
   Link: ({ children }) => children,
+  Stack: Object.assign(({ children }) => children, {
+    Screen: () => null,
+  }),
 }));
 
 // Mock expo-location
 jest.mock('expo-location', () => ({
+  PermissionStatus: {
+    GRANTED: 'granted',
+    DENIED: 'denied',
+    UNDETERMINED: 'undetermined',
+  },
+  getForegroundPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
   requestForegroundPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
   getCurrentPositionAsync: jest.fn().mockResolvedValue({
     coords: {
@@ -93,11 +105,19 @@ jest.mock('expo-location', () => ({
 
 // Mock react-native-safe-area-context
 jest.mock('react-native-safe-area-context', () => {
+  const React = require('react');
+  const { View } = require('react-native');
   const inset = { top: 44, right: 0, bottom: 34, left: 0 };
+  const frame = { x: 0, y: 0, width: 390, height: 844 };
   return {
     SafeAreaProvider: ({ children }) => children,
     SafeAreaConsumer: ({ children }) => children(inset),
+    SafeAreaView: ({ children, ...props }) => React.createElement(View, props, children),
+    SafeAreaInsetsContext: React.createContext(inset),
+    SafeAreaFrameContext: React.createContext(frame),
+    initialWindowMetrics: { insets: inset, frame },
     useSafeAreaInsets: () => inset,
+    useSafeAreaFrame: () => frame,
   };
 });
 

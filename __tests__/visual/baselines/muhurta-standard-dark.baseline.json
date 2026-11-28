@@ -1,0 +1,4341 @@
+{
+  "type": "RCTScrollView",
+  "style": {
+    "backgroundColor": "#0e0e12"
+  },
+  "children": [
+    {
+      "type": "View",
+      "children": [
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "RCTScrollView",
+                      "children": [
+                        {
+                          "type": "View",
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row"
+                              },
+                              "children": [
+                                {
+                                  "type": "View",
+                                  "children": [
+                                    {
+                                      "type": "View",
+                                      "testID": "category-pill-griha_pravesh",
+                                      "role": "button",
+                                      "style": {
+                                        "backgroundColor": "#f59e0b",
+                                        "borderColor": "#f59e0b",
+                                        "borderRadius": 22,
+                                        "borderWidth": 1,
+                                        "flexDirection": "row",
+                                        "gap": 8,
+                                        "minHeight": 44,
+                                        "opacity": 1,
+                                        "paddingHorizontal": 14,
+                                        "paddingVertical": 10
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "Text",
+                                          "style": {
+                                            "fontSize": 18
+                                          },
+                                          "children": [
+                                            "🏠"
+                                          ]
+                                        },
+                                        {
+                                          "type": "Text",
+                                          "style": {
+                                            "color": "#ffffff",
+                                            "fontSize": 14.5,
+                                            "fontWeight": "700"
+                                          },
+                                          "children": [
+                                            "गृह प्रवेश"
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row"
+                              },
+                              "children": [
+                                {
+                                  "type": "View",
+                                  "testID": "category-pill-vivaha",
+                                  "role": "button",
+                                  "style": {
+                                    "backgroundColor": "#1a1a24",
+                                    "borderColor": "#27272a",
+                                    "borderRadius": 22,
+                                    "borderWidth": 1,
+                                    "flexDirection": "row",
+                                    "gap": 8,
+                                    "minHeight": 44,
+                                    "opacity": 1,
+                                    "paddingHorizontal": 14,
+                                    "paddingVertical": 10
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "fontSize": 18
+                                      },
+                                      "children": [
+                                        "💍"
+                                      ]
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "color": "#d4d4d8",
+                                        "fontSize": 14.5,
+                                        "fontWeight": "700"
+                                      },
+                                      "children": [
+                                        "विवाह संस्कार"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row"
+                              },
+                              "children": [
+                                {
+                                  "type": "View",
+                                  "testID": "category-pill-vehicle_purchase",
+                                  "role": "button",
+                                  "style": {
+                                    "backgroundColor": "#1a1a24",
+                                    "borderColor": "#27272a",
+                                    "borderRadius": 22,
+                                    "borderWidth": 1,
+                                    "flexDirection": "row",
+                                    "gap": 8,
+                                    "minHeight": 44,
+                                    "opacity": 1,
+                                    "paddingHorizontal": 14,
+                                    "paddingVertical": 10
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "fontSize": 18
+                                      },
+                                      "children": [
+                                        "🚗"
+                                      ]
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "color": "#d4d4d8",
+                                        "fontSize": 14.5,
+                                        "fontWeight": "700"
+                                      },
+                                      "children": [
+                                        "वाहन क्रय"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row"
+                              },
+                              "children": [
+                                {
+                                  "type": "View",
+                                  "testID": "category-pill-business_start",
+                                  "role": "button",
+                                  "style": {
+                                    "backgroundColor": "#1a1a24",
+                                    "borderColor": "#27272a",
+                                    "borderRadius": 22,
+                                    "borderWidth": 1,
+                                    "flexDirection": "row",
+                                    "gap": 8,
+                                    "minHeight": 44,
+                                    "opacity": 1,
+                                    "paddingHorizontal": 14,
+                                    "paddingVertical": 10
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "fontSize": 18
+                                      },
+                                      "children": [
+                                        "🏢"
+                                      ]
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "color": "#d4d4d8",
+                                        "fontSize": 14.5,
+                                        "fontWeight": "700"
+                                      },
+                                      "children": [
+                                        "व्यापार एवं प्रतिष्ठान आरम्भ"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row"
+                              },
+                              "children": [
+                                {
+                                  "type": "View",
+                                  "testID": "category-pill-property_purchase",
+                                  "role": "button",
+                                  "style": {
+                                    "backgroundColor": "#1a1a24",
+                                    "borderColor": "#27272a",
+                                    "borderRadius": 22,
+                                    "borderWidth": 1,
+                                    "flexDirection": "row",
+                                    "gap": 8,
+                                    "minHeight": 44,
+                                    "opacity": 1,
+                                    "paddingHorizontal": 14,
+                                    "paddingVertical": 10
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "fontSize": 18
+                                      },
+                                      "children": [
+                                        "📜"
+                                      ]
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "color": "#d4d4d8",
+                                        "fontSize": 14.5,
+                                        "fontWeight": "700"
+                                      },
+                                      "children": [
+                                        "भूमि एवं सम्पत्ति रजिस्ट्री"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row"
+                              },
+                              "children": [
+                                {
+                                  "type": "View",
+                                  "testID": "category-pill-gold_purchase",
+                                  "role": "button",
+                                  "style": {
+                                    "backgroundColor": "#1a1a24",
+                                    "borderColor": "#27272a",
+                                    "borderRadius": 22,
+                                    "borderWidth": 1,
+                                    "flexDirection": "row",
+                                    "gap": 8,
+                                    "minHeight": 44,
+                                    "opacity": 1,
+                                    "paddingHorizontal": 14,
+                                    "paddingVertical": 10
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "fontSize": 18
+                                      },
+                                      "children": [
+                                        "🪙"
+                                      ]
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "color": "#d4d4d8",
+                                        "fontSize": 14.5,
+                                        "fontWeight": "700"
+                                      },
+                                      "children": [
+                                        "स्वर्ण एवं आभूषण क्रय"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row"
+                              },
+                              "children": [
+                                {
+                                  "type": "View",
+                                  "testID": "category-pill-namakarana",
+                                  "role": "button",
+                                  "style": {
+                                    "backgroundColor": "#1a1a24",
+                                    "borderColor": "#27272a",
+                                    "borderRadius": 22,
+                                    "borderWidth": 1,
+                                    "flexDirection": "row",
+                                    "gap": 8,
+                                    "minHeight": 44,
+                                    "opacity": 1,
+                                    "paddingHorizontal": 14,
+                                    "paddingVertical": 10
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "fontSize": 18
+                                      },
+                                      "children": [
+                                        "👶"
+                                      ]
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "color": "#d4d4d8",
+                                        "fontSize": 14.5,
+                                        "fontWeight": "700"
+                                      },
+                                      "children": [
+                                        "नामकरण संस्कार"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row"
+                              },
+                              "children": [
+                                {
+                                  "type": "View",
+                                  "testID": "category-pill-sarvartha_siddhi",
+                                  "role": "button",
+                                  "style": {
+                                    "backgroundColor": "#1a1a24",
+                                    "borderColor": "#27272a",
+                                    "borderRadius": 22,
+                                    "borderWidth": 1,
+                                    "flexDirection": "row",
+                                    "gap": 8,
+                                    "minHeight": 44,
+                                    "opacity": 1,
+                                    "paddingHorizontal": 14,
+                                    "paddingVertical": 10
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "fontSize": 18
+                                      },
+                                      "children": [
+                                        "✨"
+                                      ]
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "style": {
+                                        "color": "#d4d4d8",
+                                        "fontSize": 14.5,
+                                        "fontWeight": "700"
+                                      },
+                                      "children": [
+                                        "सर्वार्थ सिद्धि / अमृत सिद्धि"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#251d0e",
+                    "borderColor": "rgba(245, 158, 11, 0.35)",
+                    "borderRadius": 22,
+                    "borderWidth": 1,
+                    "padding": 16
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 8
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 18,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "गृह प्रवेश"
+                          ]
+                        },
+                        {
+                          "type": "View",
+                          "style": {
+                            "flexDirection": "row",
+                            "gap": 8
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#1a1a24",
+                                "borderColor": "rgba(245, 158, 11, 0.35)",
+                                "borderRadius": 10,
+                                "borderWidth": 1,
+                                "flexDirection": "row",
+                                "gap": 4,
+                                "paddingHorizontal": 10,
+                                "paddingVertical": 5
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#f59e0b",
+                                    "fontSize": 13,
+                                    "fontWeight": "normal"
+                                  },
+                                  "children": [
+                                    ""
+                                  ]
+                                },
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#f59e0b",
+                                    "fontSize": 13,
+                                    "fontWeight": "600"
+                                  },
+                                  "children": [
+                                    "Ujjain, India (Standard Meridian)"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "muhurta-help-btn",
+                              "role": "button",
+                              "style": {
+                                "backgroundColor": "#27272a",
+                                "borderColor": "#27272a",
+                                "borderRadius": 22,
+                                "borderWidth": 1,
+                                "minHeight": 44,
+                                "opacity": 1
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#d4d4d8",
+                                    "fontSize": 22,
+                                    "fontWeight": "normal"
+                                  },
+                                  "children": [
+                                    ""
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 14,
+                        "fontWeight": "500"
+                      },
+                      "children": [
+                        "Auspicious entry into a newly constructed, purchased, or renovated home."
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "#1a1a24",
+                        "borderRadius": 10,
+                        "paddingHorizontal": 10,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 12.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "📜 ",
+                            "Muhurta Chintamani, Griha Pravesh Prakarana"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "View",
+                      "testID": "muhurta-inauspicious-card",
+                      "role": "button",
+                      "style": {
+                        "backgroundColor": "#271710",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "opacity": 1,
+                        "padding": 14
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "flexDirection": "row",
+                            "minHeight": 36
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row",
+                                "flexWrap": "wrap",
+                                "gap": 6
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "fontSize": 16
+                                  },
+                                  "children": [
+                                    "⚠️"
+                                  ]
+                                },
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#fdba74",
+                                    "fontSize": 14.5,
+                                    "fontWeight": "800"
+                                  },
+                                  "children": [
+                                    "आज के त्याज्य काल"
+                                  ]
+                                },
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#fca5a5",
+                                    "fontSize": 13.5,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "• ",
+                                    "राहु",
+                                    " ",
+                                    "09:31 AM",
+                                    " -",
+                                    " ",
+                                    "10:53 AM"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "style": {
+                                "flexDirection": "row",
+                                "gap": 4
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#fb923c",
+                                    "fontSize": 12.5,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "सभी ३ काल"
+                                  ]
+                                },
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#fb923c",
+                                    "fontSize": 16,
+                                    "fontWeight": "normal"
+                                  },
+                                  "children": [
+                                    ""
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "column",
+                        "gap": 8
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "#27272a",
+                            "borderRadius": 14,
+                            "flexDirection": "row",
+                            "padding": 4
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "testID": "days-pill-30",
+                              "role": "button",
+                              "style": {
+                                "borderRadius": 10,
+                                "minHeight": 44,
+                                "opacity": 1,
+                                "paddingHorizontal": 4,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#a1a1aa",
+                                    "fontSize": 13,
+                                    "fontWeight": "600"
+                                  },
+                                  "children": [
+                                    "30",
+                                    " ",
+                                    "दिन"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "days-pill-60",
+                              "role": "button",
+                              "style": {
+                                "backgroundColor": "#1a1a24",
+                                "borderRadius": 10,
+                                "minHeight": 44,
+                                "opacity": 1,
+                                "paddingHorizontal": 4,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#fafafa",
+                                    "fontSize": 13,
+                                    "fontWeight": "800"
+                                  },
+                                  "children": [
+                                    "60",
+                                    " ",
+                                    "दिन"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "days-pill-90",
+                              "role": "button",
+                              "style": {
+                                "borderRadius": 10,
+                                "minHeight": 44,
+                                "opacity": 1,
+                                "paddingHorizontal": 4,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#a1a1aa",
+                                    "fontSize": 13,
+                                    "fontWeight": "600"
+                                  },
+                                  "children": [
+                                    "90",
+                                    " ",
+                                    "दिन"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "#27272a",
+                            "borderRadius": 14,
+                            "flexDirection": "row",
+                            "padding": 4
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "testID": "suitability-pill-Good",
+                              "role": "button",
+                              "style": {
+                                "backgroundColor": "#1a1a24",
+                                "borderRadius": 10,
+                                "minHeight": 44,
+                                "opacity": 1,
+                                "paddingHorizontal": 4,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#fafafa",
+                                    "fontSize": 13,
+                                    "fontWeight": "800"
+                                  },
+                                  "children": [
+                                    "✨ उत्तम"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "suitability-pill-Optimal",
+                              "role": "button",
+                              "style": {
+                                "borderRadius": 10,
+                                "minHeight": 44,
+                                "opacity": 1,
+                                "paddingHorizontal": 4,
+                                "paddingVertical": 8
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#a1a1aa",
+                                    "fontSize": 13,
+                                    "fontWeight": "600"
+                                  },
+                                  "children": [
+                                    "🌟 श्रेष्ठ"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fafafa",
+                        "fontSize": 15,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "कुल 35 अनुकूल मुहूर्त उपलब्ध (60 दिनों में)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "शनिवार, 28 नवम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "पञ्चमी • पुनर्वसु"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(245, 158, 11, 0.14)",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "✨ उत्तम",
+                            " ",
+                            "65",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "शुभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "08:10 AM",
+                            " - ",
+                            "09:31 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अभिजित मुहूर्त"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "11:52 AM",
+                            " - ",
+                            "12:36 PM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-11-28",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "सोमवार, 30 नवम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "सप्तमी • आश्लेषा"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(245, 158, 11, 0.14)",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "✨ उत्तम",
+                            " ",
+                            "75",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अमृत चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "06:50 AM",
+                            " - ",
+                            "08:11 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "शुभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "09:32 AM",
+                            " - ",
+                            "10:54 AM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-11-30",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "गुरुवार, 3 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "दशमी • उत्तरा फाल्गुनी"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                        "borderColor": "rgba(16, 185, 129, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌟 अति उत्तम",
+                            " ",
+                            "100",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "शुभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "06:52 AM",
+                            " - ",
+                            "08:13 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अभिजित मुहूर्त"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "11:54 AM",
+                            " - ",
+                            "12:38 PM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-03",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "शुक्रवार, 4 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "एकादशी • हस्त"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(245, 158, 11, 0.14)",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "✨ उत्तम",
+                            " ",
+                            "75",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "लाभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "08:14 AM",
+                            " - ",
+                            "09:35 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अमृत चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "09:35 AM",
+                            " - ",
+                            "10:55 AM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-04",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "शनिवार, 5 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "द्वादशी • चित्रा"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                        "borderColor": "rgba(16, 185, 129, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌟 अति उत्तम",
+                            " ",
+                            "100",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(245, 158, 11, 0.14)",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 10,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 10,
+                        "paddingVertical": 4
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "✨ ",
+                            "द्विपुष्कर योग"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "शुभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "08:14 AM",
+                            " - ",
+                            "09:35 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अभिजित मुहूर्त"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "11:55 AM",
+                            " - ",
+                            "12:38 PM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-05",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "बुधवार, 9 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "प्रतिपदा • ज्येष्ठा"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(245, 158, 11, 0.14)",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "✨ उत्तम",
+                            " ",
+                            "65",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "लाभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "06:56 AM",
+                            " - ",
+                            "08:17 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अमृत चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "08:17 AM",
+                            " - ",
+                            "09:37 AM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-09",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "गुरुवार, 10 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "प्रतिपदा • मूल"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(245, 158, 11, 0.14)",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "✨ उत्तम",
+                            " ",
+                            "65",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "शुभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "06:57 AM",
+                            " - ",
+                            "08:17 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अभिजित मुहूर्त"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "11:58 AM",
+                            " - ",
+                            "12:40 PM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-10",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "शुक्रवार, 11 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "द्वितीया • पूर्वाषाढा"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                        "borderColor": "rgba(16, 185, 129, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌟 अति उत्तम",
+                            " ",
+                            "80",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "लाभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "08:18 AM",
+                            " - ",
+                            "09:38 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अमृत चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "09:38 AM",
+                            " - ",
+                            "10:59 AM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-11",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "शनिवार, 12 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "तृतीया • उत्तराषाढा"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                        "borderColor": "rgba(16, 185, 129, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌟 अति उत्तम",
+                            " ",
+                            "100",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "शुभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "08:18 AM",
+                            " - ",
+                            "09:39 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अभिजित मुहूर्त"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "11:58 AM",
+                            " - ",
+                            "12:41 PM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-12",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "सोमवार, 14 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "पञ्चमी • श्रवण"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                        "borderColor": "rgba(16, 185, 129, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌟 अति उत्तम",
+                            " ",
+                            "100",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(245, 158, 11, 0.14)",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 10,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 10,
+                        "paddingVertical": 4
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "✨ ",
+                            "सर्वार्थ सिद्धि योग"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अमृत चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "06:59 AM",
+                            " - ",
+                            "08:20 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "शुभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "09:40 AM",
+                            " - ",
+                            "11:00 AM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-14",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "बुधवार, 16 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "सप्तमी • शतभिषा"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                        "borderColor": "rgba(16, 185, 129, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌟 अति उत्तम",
+                            " ",
+                            "80",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "लाभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "07:00 AM",
+                            " - ",
+                            "08:21 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अमृत चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "08:21 AM",
+                            " - ",
+                            "09:41 AM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-16",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#1a1a24",
+                "borderColor": "#27272a",
+                "borderRadius": 22,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 17,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "शुक्रवार, 18 दिसम्बर 2026"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 14,
+                            "fontWeight": "500"
+                          },
+                          "children": [
+                            "नवमी • उत्तराभाद्रपदा"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(245, 158, 11, 0.14)",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 14,
+                        "borderWidth": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 5
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "✨ उत्तम",
+                            " ",
+                            "75",
+                            "%"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "gap": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "सर्वोत्तम समय खिड़की:"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "लाभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "08:22 AM",
+                            " - ",
+                            "09:42 AM"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent",
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 6,
+                        "paddingVertical": 3
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 14,
+                            "fontWeight": "600"
+                          },
+                          "children": [
+                            "अमृत चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#6ee7b7",
+                            "fontSize": 14,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "09:42 AM",
+                            " - ",
+                            "11:02 AM"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "rgba(239, 68, 68, 0.14)",
+                    "borderColor": "rgba(239, 68, 68, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 6,
+                    "padding": 10
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fca5a5",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "त्याज्य काल:"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13
+                      },
+                      "children": [
+                        "राहु काल, यमगण्ड"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "expand-toggle-2026-12-18",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "opacity": 1
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 13.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "विस्तृत शास्त्रीय विश्लेषण देखें"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 14,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View"
+        }
+      ]
+    }
+  ]
+}

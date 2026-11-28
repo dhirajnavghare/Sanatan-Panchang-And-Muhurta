@@ -20,7 +20,7 @@ import {
   getOfflineCapabilityReport,
 } from '../src/services/sacredNotifications';
 import * as Notifications from 'expo-notifications';
-import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { createAudioPlayer } from 'expo-audio';
 import { calculatePanchang, PRESET_CITIES } from '../src/core/panchang';
 
 describe('User Profile, Sacred Audio & Notifications Tests', () => {

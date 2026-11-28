@@ -1,0 +1,575 @@
+{
+  "type": "View",
+  "children": [
+    {
+      "type": "RCTScrollView",
+      "style": {
+        "backgroundColor": "#f8f8fa"
+      },
+      "children": [
+        {
+          "type": "RCTRefreshControl"
+        },
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "community-hero-card",
+                  "style": {
+                    "backgroundColor": "#ffffff",
+                    "borderColor": "#e4e4e7",
+                    "borderRadius": 22,
+                    "borderWidth": 1,
+                    "padding": 16
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row",
+                        "flexWrap": "wrap",
+                        "gap": 8
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "#ecfdf5",
+                            "borderRadius": 9999,
+                            "flexDirection": "row",
+                            "gap": 6,
+                            "paddingHorizontal": 10,
+                            "paddingVertical": 5
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#10b981",
+                                "borderRadius": 4,
+                                "width": 7
+                              }
+                            },
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#047857",
+                                "fontSize": 12,
+                                "fontWeight": "700"
+                              },
+                              "children": [
+                                "सार्वजनिक प्रोजेक्ट हब"
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "View",
+                          "style": {
+                            "flexDirection": "row",
+                            "gap": 8
+                          },
+                          "children": [
+                            {
+                              "type": "View",
+                              "style": {
+                                "backgroundColor": "#eff6ff",
+                                "borderRadius": 9999,
+                                "paddingHorizontal": 10,
+                                "paddingVertical": 5
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#1d4ed8",
+                                    "fontSize": 12,
+                                    "fontWeight": "700"
+                                  },
+                                  "children": [
+                                    "१००% निःशुल्क"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "View",
+                              "testID": "community-help-btn",
+                              "role": "button",
+                              "style": {
+                                "backgroundColor": "#f4f4f5",
+                                "borderColor": "#e4e4e7",
+                                "borderRadius": 9999,
+                                "borderWidth": 1,
+                                "minHeight": 44,
+                                "opacity": 1
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "style": {
+                                    "color": "#52525b",
+                                    "fontSize": 22,
+                                    "fontWeight": "normal"
+                                  },
+                                  "children": [
+                                    ""
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 21,
+                        "fontWeight": "800"
+                      },
+                      "children": [
+                        "सनातन पञ्चाङ्ग एवं मुहूर्त ऍप"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#71717a",
+                        "fontSize": 14
+                      },
+                      "children": [
+                        "१००% गणितीय शुद्धता, सार्वजनिक विकास, योगदानकर्ता एवं प्रत्यक्ष समर्थन"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "RCTScrollView",
+              "children": [
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "View",
+                      "testID": "community-segment-changelog",
+                      "role": "tab",
+                      "style": {
+                        "backgroundColor": "#d97706",
+                        "borderColor": "#d97706",
+                        "borderRadius": 9999,
+                        "borderWidth": 1,
+                        "flexDirection": "row",
+                        "gap": 6,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 10
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#ffffff",
+                            "fontSize": 17,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#ffffff",
+                            "fontSize": 13.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "अपडेट्स"
+                          ]
+                        },
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "rgba(255,255,255,0.25)",
+                            "borderRadius": 9999,
+                            "paddingHorizontal": 8,
+                            "paddingVertical": 3
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#ffffff",
+                                "fontSize": 12,
+                                "fontWeight": "700"
+                              },
+                              "children": [
+                                "1"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "testID": "community-segment-contributors",
+                      "role": "tab",
+                      "style": {
+                        "backgroundColor": "#ffffff",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 9999,
+                        "borderWidth": 1,
+                        "flexDirection": "row",
+                        "gap": 6,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 10
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 17,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#3f3f46",
+                            "fontSize": 13.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "टीम"
+                          ]
+                        },
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "#f4f4f5",
+                            "borderRadius": 9999,
+                            "paddingHorizontal": 8,
+                            "paddingVertical": 3
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#3f3f46",
+                                "fontSize": 12,
+                                "fontWeight": "700"
+                              },
+                              "children": [
+                                "1"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "children": [
+                        {
+                          "type": "View",
+                          "testID": "community-segment-feedback",
+                          "role": "tab",
+                          "style": {
+                            "backgroundColor": "#ffffff",
+                            "borderColor": "#e4e4e7",
+                            "borderRadius": 9999,
+                            "borderWidth": 1,
+                            "flexDirection": "row",
+                            "gap": 6,
+                            "minHeight": 44,
+                            "opacity": 1,
+                            "paddingHorizontal": 14,
+                            "paddingVertical": 10
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#52525b",
+                                "fontSize": 17,
+                                "fontWeight": "normal"
+                              },
+                              "children": [
+                                ""
+                              ]
+                            },
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#3f3f46",
+                                "fontSize": 13.5,
+                                "fontWeight": "700"
+                              },
+                              "children": [
+                                "प्रतिक्रिया"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "testID": "community-segment-issues",
+                      "role": "tab",
+                      "style": {
+                        "backgroundColor": "#ffffff",
+                        "borderColor": "#e4e4e7",
+                        "borderRadius": 9999,
+                        "borderWidth": 1,
+                        "flexDirection": "row",
+                        "gap": 6,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 10
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#52525b",
+                            "fontSize": 17,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#3f3f46",
+                            "fontSize": 13.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "समस्या"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "gap": 12
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "flexDirection": "row",
+                    "flexWrap": "wrap",
+                    "gap": 10
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#18181b",
+                            "fontSize": 18,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "सार्वजनिक रिलीज़ व अपडेट्स"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#71717a",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "कुल 1 पूर्ण संस्करण उपलब्ध"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "testID": "changelog-refresh-btn",
+                      "role": "button",
+                      "style": {
+                        "backgroundColor": "#fffbeb",
+                        "borderColor": "#fde68a",
+                        "borderRadius": 9999,
+                        "borderWidth": 1,
+                        "flexDirection": "row",
+                        "gap": 6,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 8
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d97706",
+                            "fontSize": 17,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d97706",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "रीफ्रेश"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#ffffff",
+                    "borderColor": "#e4e4e7",
+                    "borderRadius": 18,
+                    "borderWidth": 1,
+                    "gap": 6,
+                    "padding": 16
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "flexDirection": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "View",
+                          "style": {
+                            "backgroundColor": "#d97706",
+                            "borderRadius": 10,
+                            "flexDirection": "row",
+                            "gap": 5,
+                            "paddingHorizontal": 10,
+                            "paddingVertical": 4
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#ffffff",
+                                "fontSize": 12,
+                                "fontWeight": "normal"
+                              },
+                              "children": [
+                                ""
+                              ]
+                            },
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#ffffff",
+                                "fontSize": 12.5,
+                                "fontWeight": "700"
+                              },
+                              "children": [
+                                "#",
+                                "1"
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "View",
+                          "style": {
+                            "flexDirection": "row",
+                            "gap": 5
+                          },
+                          "children": [
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#71717a",
+                                "fontSize": 12,
+                                "fontWeight": "normal"
+                              },
+                              "children": [
+                                ""
+                              ]
+                            },
+                            {
+                              "type": "Text",
+                              "style": {
+                                "color": "#71717a",
+                                "fontSize": 12.5
+                              },
+                              "children": [
+                                "28 नव॰ 2026"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 16,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "v2.0 Visual Baseline Release"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#71717a",
+                        "fontSize": 14
+                      },
+                      "children": [
+                        "Consistent typography, contrast & responsive layouts"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

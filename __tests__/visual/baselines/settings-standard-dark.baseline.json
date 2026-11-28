@@ -1,0 +1,1779 @@
+{
+  "type": "RCTScrollView",
+  "style": {
+    "backgroundColor": "#0e0e12"
+  },
+  "children": [
+    {
+      "type": "View",
+      "children": [
+        {
+          "type": "View",
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#251d0e",
+                "borderColor": "rgba(245, 158, 11, 0.35)",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "flexDirection": "row",
+                "flexWrap": "wrap",
+                "gap": 12,
+                "padding": 12
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#1a1a24",
+                    "borderColor": "#fde68a",
+                    "borderRadius": 24,
+                    "borderWidth": 1,
+                    "width": 48
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "fontSize": 24
+                      },
+                      "children": [
+                        "🕉️"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fafafa",
+                        "fontSize": 17,
+                        "fontWeight": "800"
+                      },
+                      "children": [
+                        "श्री",
+                        " ",
+                        "साधक",
+                        " ",
+                        "जी"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13.5,
+                        "fontWeight": "600"
+                      },
+                      "children": [
+                        "गोत्र: कश्यप",
+                        " • ",
+                        "Lord Shiva / Mahadeva"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "flexDirection": "row",
+                    "gap": 8
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "testID": "settings-edit-profile-btn",
+                      "role": "button",
+                      "style": {
+                        "backgroundColor": "#1a1a24",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 16,
+                        "borderWidth": 1,
+                        "flexDirection": "row",
+                        "gap": 5,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 8
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 17,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "बदलें"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "testID": "settings-help-btn",
+                      "role": "button",
+                      "style": {
+                        "backgroundColor": "#1a1a24",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 9999,
+                        "borderWidth": 1,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "padding": 6
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 22,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "style": {
+            "backgroundColor": "#1a1a24",
+            "borderColor": "#27272a",
+            "borderRadius": 18,
+            "borderWidth": 1,
+            "padding": 12
+          },
+          "children": [
+            {
+              "type": "Text",
+              "style": {
+                "color": "#fafafa",
+                "fontSize": 16,
+                "fontWeight": "800"
+              },
+              "children": [
+                "⚙️ ऍप सेटिंग्स एवं प्राथमिकताएं"
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "gap": 10,
+                "minHeight": 54,
+                "paddingVertical": 12
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fafafa",
+                        "fontSize": 15,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "भाषा"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13.5
+                      },
+                      "children": [
+                        "सम्पूर्ण ऍप की भाषा"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#27272a",
+                    "borderRadius": 14,
+                    "flexDirection": "row",
+                    "gap": 2,
+                    "padding": 3
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "testID": "lang-toggle-hi",
+                      "role": "button",
+                      "style": {
+                        "backgroundColor": "#f59e0b",
+                        "borderRadius": 10,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 8
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#ffffff",
+                            "fontSize": 13.5,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "हिन्दी"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "testID": "lang-toggle-en",
+                      "role": "button",
+                      "style": {
+                        "borderRadius": 10,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 8
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d4d4d8",
+                            "fontSize": 13.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "EN"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "gap": 10,
+                "minHeight": 54,
+                "paddingVertical": 12
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fafafa",
+                        "fontSize": 15,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "चान्द्र मास पद्धति"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#d4d4d8",
+                        "fontSize": 13.5
+                      },
+                      "children": [
+                        "पूर्णिमान्त (उत्तर भारत) या अमान्त (दक्षिण व पश्चिम भारत)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#27272a",
+                    "borderRadius": 14,
+                    "flexDirection": "row",
+                    "gap": 2,
+                    "padding": 3
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "testID": "cal-toggle-purnimanta",
+                      "role": "button",
+                      "style": {
+                        "backgroundColor": "#f59e0b",
+                        "borderRadius": 10,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 8
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#ffffff",
+                            "fontSize": 13.5,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "पूर्णिमान्त"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "testID": "cal-toggle-amanta",
+                      "role": "button",
+                      "style": {
+                        "borderRadius": 10,
+                        "minHeight": 44,
+                        "opacity": 1,
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 8
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d4d4d8",
+                            "fontSize": 13.5,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "अमान्त"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "settings-meridian-btn",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 44,
+                    "opacity": 1,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "प्रधान देशान्तर एवं नगर (Location)"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d4d4d8",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "📍 ",
+                            "Ujjain, India (Standard Meridian)",
+                            " (",
+                            "23.18",
+                            "°, ",
+                            "75.79",
+                            "°)"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "rgba(245, 158, 11, 0.14)",
+                        "borderColor": "rgba(245, 158, 11, 0.35)",
+                        "borderRadius": 16,
+                        "borderWidth": 1,
+                        "flexDirection": "row",
+                        "gap": 5,
+                        "paddingHorizontal": 12,
+                        "paddingVertical": 7
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 16,
+                            "fontWeight": "normal"
+                          },
+                          "children": [
+                            ""
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#f59e0b",
+                            "fontSize": 13,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "बदलें"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "settings-replay-tour-btn",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 44,
+                    "opacity": 1,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🧭 ऐप का परिचय / पुनः टूर देखें"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "सनातन दिनचर्या, मुहूर्त प्लानर व सभी सुविधाओं का संक्षिप्त गाइड"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 18,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "style": {
+            "backgroundColor": "#1a1a24",
+            "borderColor": "#27272a",
+            "borderRadius": 18,
+            "borderWidth": 1,
+            "padding": 12
+          },
+          "children": [
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row"
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 16,
+                            "fontWeight": "800"
+                          },
+                          "children": [
+                            "🔔 सूचनाएं एवं मुहूर्त अलर्ट"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "मुहूर्त परिवर्तन, शुभ चौघड़िया एवं दिनचर्या कार्यों की सूचना"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-master-switch",
+                      "role": "switch"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#f59e0b",
+                    "fontSize": 13,
+                    "fontWeight": "800"
+                  },
+                  "children": [
+                    "दैनिक समय एवं दिनचर्या अलर्ट"
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 54,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌟 अभिजित मुहूर्त अलर्ट"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d4d4d8",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "महाशुभ विजय काल आरम्भ होने पर एवं उस समय के कार्यों की सूचना"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-toggle-abhijit",
+                      "role": "switch"
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 54,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "📝 दिनचर्या कार्य (To-Do) अलर्ट"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d4d4d8",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "प्रत्येक मुहूर्त स्लॉट के प्रारम्भ में आपके जोड़े गए कार्यों की सूचना"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-toggle-todo",
+                      "role": "switch"
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 54,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌅 ब्रह्म मुहूर्त जागरण"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d4d4d8",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "अमृत वेला (प्रातः ४:३०) ध्यान व साधना सूचना"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-toggle-brahma",
+                      "role": "switch"
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 54,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "⚠️ राहु काल पूर्व-चेतावनी"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d4d4d8",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "राहु काल आरम्भ होने से १० मिनट पूर्व सावधानी अलर्ट"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-toggle-rahu",
+                      "role": "switch"
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 54,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "✨ अमृत व शुभ चौघड़िया"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d4d4d8",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "दिन के सर्वोत्तम चौघड़िया काल की समयबद्ध सूचना"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-toggle-choghadiya",
+                      "role": "switch"
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 54,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🪔 सायं गोधूलि दीप प्रज्वलन"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#d4d4d8",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "सूर्यास्त वेला में दीप व हनुमान चालीसा स्मरण"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-toggle-deepam",
+                      "role": "switch"
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#f59e0b",
+                    "fontSize": 13,
+                    "fontWeight": "800"
+                  },
+                  "children": [
+                    "व्रत, तिथि एवं चन्द्र दर्शन अलर्ट"
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 54,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌾 एकादशी व प्रमुख व्रत स्मरण"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "एकादशी व्रत की पूर्व संध्या सूचना"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-toggle-ekadashi",
+                      "role": "switch"
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 54,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🙏 प्रदोष व त्रयोदशी व्रत अलर्ट"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "प्रदोष शाम शिव पूजन हेतु स्मरण"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-toggle-pradosh",
+                      "role": "switch"
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "minHeight": 54,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "View",
+                      "style": {
+                        "backgroundColor": "transparent"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#fafafa",
+                            "fontSize": 15,
+                            "fontWeight": "700"
+                          },
+                          "children": [
+                            "🌕 चन्द्रोदय व पूर्णिमा अर्घ्य अलर्ट"
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "style": {
+                            "color": "#a1a1aa",
+                            "fontSize": 13.5
+                          },
+                          "children": [
+                            "संकष्टी चतुर्थी व पूर्णिमा चन्द्र अर्घ्य सूचना"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "RCTSwitch",
+                      "testID": "notif-toggle-chandrodaya",
+                      "role": "switch"
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "testID": "notif-send-test-btn",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "rgba(16, 185, 129, 0.14)",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "minHeight": 48,
+                    "opacity": 1,
+                    "paddingHorizontal": 16,
+                    "paddingVertical": 12
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 14.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "📲 टेस्ट नोटिफिकेशन भेजें (अभिजित व To-Do)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "style": {
+            "backgroundColor": "#1a1a24",
+            "borderColor": "#27272a",
+            "borderRadius": 18,
+            "borderWidth": 1,
+            "padding": 12
+          },
+          "children": [
+            {
+              "type": "Text",
+              "style": {
+                "color": "#fafafa",
+                "fontSize": 16,
+                "fontWeight": "800"
+              },
+              "children": [
+                "🔔 ध्वनि एवं स्पर्श (Audio & Haptics)"
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "gap": 10,
+                "minHeight": 54,
+                "paddingVertical": 12
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fafafa",
+                        "fontSize": 15,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "मन्दिर घंटी एवं शंख ध्वनि"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#a1a1aa",
+                        "fontSize": 13.5
+                      },
+                      "children": [
+                        "प्रामाणिक पीतल घंटी की ध्वनि तरंगे"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "RCTSwitch",
+                  "testID": "settings-toggle-audio",
+                  "role": "switch"
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "gap": 10,
+                "minHeight": 54,
+                "paddingVertical": 12
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fafafa",
+                        "fontSize": 15,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "जप माला स्पर्श कम्पन (Haptics)"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#a1a1aa",
+                        "fontSize": 13.5
+                      },
+                      "children": [
+                        "१०८ मनके व गुरु मनके पर सूक्ष्म कम्पन"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "RCTSwitch",
+                  "testID": "settings-toggle-haptics",
+                  "role": "switch"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "testID": "settings-offline-card",
+          "style": {
+            "backgroundColor": "rgba(16, 185, 129, 0.14)",
+            "borderColor": "rgba(16, 185, 129, 0.35)",
+            "borderRadius": 18,
+            "borderWidth": 1,
+            "padding": 12
+          },
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "flexWrap": "wrap",
+                "gap": 8
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#15803d",
+                    "borderRadius": 6,
+                    "paddingHorizontal": 10,
+                    "paddingVertical": 4
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#ffffff",
+                        "fontSize": 12,
+                        "fontWeight": "800"
+                      },
+                      "children": [
+                        "⚡ 100% OFFLINE"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#fafafa",
+                    "fontSize": 15.5,
+                    "fontWeight": "800"
+                  },
+                  "children": [
+                    "पूर्णतः ऑफ़लाइन कार्य प्रणाली"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Text",
+              "style": {
+                "color": "#d4d4d8",
+                "fontSize": 14
+              },
+              "children": [
+                "यह सम्पूर्ण ऍप एवं इसकी सभी सूचनाएं बिना इंटरनेट के १००% ऑफ़लाइन कार्य करती हैं। नासा एवं वैदिक सिद्धान्तों पर आधारित खगोलीय पञ्चाङ्ग आपके फोन में ही गणितीय रूप से संगणित होता है।"
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "flexWrap": "wrap",
+                "gap": 8
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#1a1a24",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "एयरप्लेन मोड में सक्रिय"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#1a1a24",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "७ दिन की पूर्व-सूचनाएं"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#1a1a24",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "शून्य डेटा / गोपनीयता"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#1a1a24",
+                    "borderColor": "rgba(16, 185, 129, 0.35)",
+                    "borderRadius": 10,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 6,
+                    "minHeight": 44,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 8
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 16,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 13,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "हार्डवेयर अलार्म क्लॉक"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "style": {
+            "backgroundColor": "#1a1a24",
+            "borderColor": "#27272a",
+            "borderRadius": 18,
+            "borderWidth": 1,
+            "padding": 12
+          },
+          "children": [
+            {
+              "type": "Text",
+              "style": {
+                "color": "#fafafa",
+                "fontSize": 16,
+                "fontWeight": "800"
+              },
+              "children": [
+                "सनातन दिनचर्या एवं पञ्चाङ्ग"
+              ]
+            },
+            {
+              "type": "Text",
+              "style": {
+                "color": "#a1a1aa",
+                "fontSize": 14
+              },
+              "children": [
+                "शुद्ध गणितीय खगोलशास्त्र, नासा जेपीएल एफिमेरिस एवं महर्षि वराहमिहिर के सिद्धान्तों पर आधारित पूर्णतः नि:शुल्क एवं विज्ञापन-मुक्त सनातनी सेवा।"
+              ]
+            },
+            {
+              "type": "Text",
+              "style": {
+                "color": "#71717a",
+                "fontSize": 13,
+                "fontWeight": "600"
+              },
+              "children": [
+                "Version 1.0.0 • 100% Free Dharma"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "testID": "settings-feedback-card",
+          "style": {
+            "backgroundColor": "#1a1a24",
+            "borderColor": "rgba(245, 158, 11, 0.35)",
+            "borderRadius": 18,
+            "borderWidth": 1,
+            "padding": 12
+          },
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "transparent",
+                "flexDirection": "row",
+                "gap": 8
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#f59e0b",
+                    "fontSize": 18,
+                    "fontWeight": "normal"
+                  },
+                  "children": [
+                    ""
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#fafafa",
+                    "fontSize": 16,
+                    "fontWeight": "800"
+                  },
+                  "children": [
+                    "प्रतिक्रिया एवं सुझाव (Feedback & Contact)"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Text",
+              "style": {
+                "color": "#d4d4d8",
+                "fontSize": 14
+              },
+              "children": [
+                "सनातन दिनचर्या को और उत्तम बनाने हेतु आपके विचार, त्रुटि निवारण अथवा सुझाव सादर आमंत्रित हैं:"
+              ]
+            },
+            {
+              "type": "View",
+              "testID": "feedback-link-sanatan",
+              "role": "link",
+              "style": {
+                "backgroundColor": "#16161c",
+                "borderColor": "#27272a",
+                "borderRadius": 14,
+                "borderWidth": 1,
+                "flexDirection": "row",
+                "gap": 12,
+                "minHeight": 44,
+                "opacity": 1,
+                "padding": 12
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#27272a",
+                    "borderColor": "#fde68a",
+                    "borderRadius": 19,
+                    "borderWidth": 1,
+                    "width": 38
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 18,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fafafa",
+                        "fontSize": 14.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "सनातन सम्पर्क एवं सुझाव"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#b45309",
+                        "fontSize": 12.5
+                      },
+                      "children": [
+                        "https://sanatan.cc/contact"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#a1a1aa",
+                    "fontSize": 16,
+                    "fontWeight": "normal"
+                  },
+                  "children": [
+                    ""
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "testID": "feedback-link-developer",
+              "role": "link",
+              "style": {
+                "backgroundColor": "#16161c",
+                "borderColor": "#27272a",
+                "borderRadius": 14,
+                "borderWidth": 1,
+                "flexDirection": "row",
+                "gap": 12,
+                "minHeight": 44,
+                "opacity": 1,
+                "padding": 12
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#27272a",
+                    "borderColor": "#fde68a",
+                    "borderRadius": 19,
+                    "borderWidth": 1,
+                    "width": 38
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#f59e0b",
+                        "fontSize": 18,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fafafa",
+                        "fontSize": 14.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "डेवलपर सम्पर्क (Dhiraj Navghare)"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#b45309",
+                        "fontSize": 12.5
+                      },
+                      "children": [
+                        "https://dhirajnavghare.com/contact"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#a1a1aa",
+                    "fontSize": 16,
+                    "fontWeight": "normal"
+                  },
+                  "children": [
+                    ""
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "testID": "feedback-link-privacy",
+              "role": "link",
+              "style": {
+                "backgroundColor": "#16161c",
+                "borderColor": "#27272a",
+                "borderRadius": 14,
+                "borderWidth": 1,
+                "flexDirection": "row",
+                "gap": 12,
+                "minHeight": 44,
+                "opacity": 1,
+                "padding": 12
+              },
+              "children": [
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "#27272a",
+                    "borderColor": "#fde68a",
+                    "borderRadius": 19,
+                    "borderWidth": 1,
+                    "width": 38
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#6ee7b7",
+                        "fontSize": 18,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "View",
+                  "style": {
+                    "backgroundColor": "transparent"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#fafafa",
+                        "fontSize": 14.5,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "गोपनीयता नीति (Privacy Policy)"
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#b45309",
+                        "fontSize": 12.5
+                      },
+                      "children": [
+                        "https://sanatan.cc/privacy"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#a1a1aa",
+                    "fontSize": 16,
+                    "fontWeight": "normal"
+                  },
+                  "children": [
+                    ""
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

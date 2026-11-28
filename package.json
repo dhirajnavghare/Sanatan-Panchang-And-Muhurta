@@ -46,10 +46,19 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest --watchAll=false",
-    "test:coverage": "jest --watchAll=false --coverage",
+    "test": "TZ=Asia/Kolkata jest --watchAll=false",
+    "test:coverage": "TZ=Asia/Kolkata jest --watchAll=false --coverage",
+    "test:ci": "TZ=Asia/Kolkata jest --watchAll=false --coverage --ci",
+    "test:e2e:router": "TZ=Asia/Kolkata jest __tests__/e2e/appWorkflows.e2e.test.tsx --watchAll=false",
+    "test:visual": "TZ=Asia/Kolkata jest __tests__/visual/visualRegression.test.tsx --watchAll=false",
+    "test:visual:update": "TZ=Asia/Kolkata UPDATE_VISUAL_BASELINES=1 jest __tests__/visual/visualRegression.test.tsx --watchAll=false",
+    "test:visual:png": "node scripts/visual-diff-png.js",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "lint:strict": "eslint . --max-warnings=0",
+    "check:quality": "node scripts/check-project-quality.js",
+    "build:validate": "rm -rf .tmp-export && npx expo config --type public --json > /dev/null && npx expo export --platform android --output-dir .tmp-export && rm -rf .tmp-export",
+    "quality": "npm run typecheck && npm run lint:strict && npm run check:quality && npm run test:ci && npm run build:validate"
   },
   "private": true
 }

@@ -6,9 +6,13 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VratGuidance } from '../services/vratGuidelines';
+import { getAppTheme, MIN_TOUCH_TARGET, Typography } from '../utils/theme';
+import { AppButton } from './ui/AppButton';
 
 interface VratDetailModalProps {
   visible: boolean;
@@ -23,6 +27,10 @@ export const VratDetailModal: React.FC<VratDetailModalProps> = ({
   vrat,
   isHi,
 }) => {
+  const isDark = useColorScheme() === 'dark';
+  const theme = getAppTheme(isDark);
+  const insets = useSafeAreaInsets();
+
   if (!vrat) return null;
 
   return (
@@ -33,78 +41,93 @@ export const VratDetailModal: React.FC<VratDetailModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+        <View
+          style={[
+            styles.modalContent,
+            isDark && { backgroundColor: theme.surface, borderColor: theme.border, borderTopWidth: 1 },
+            { paddingBottom: Math.max(24, insets.bottom + 12) },
+          ]}
+        >
           {/* Header Bar */}
-          <View style={styles.modalHeader}>
-            <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+          <View style={[styles.modalHeader, isDark && { borderBottomColor: theme.border }]}>
+            <View style={{ flex: 1, backgroundColor: 'transparent', paddingRight: 8 }}>
               <View style={styles.badgeRow}>
-                <View style={styles.badgePill}>
-                  <Text style={styles.badgeText}>{isHi ? vrat.badgeHi : vrat.badgeEn}</Text>
+                <View style={[styles.badgePill, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }]}>
+                  <Text style={[styles.badgeText, isDark && { color: theme.primary }]}>
+                    {isHi ? vrat.badgeHi : vrat.badgeEn}
+                  </Text>
                 </View>
               </View>
-              <Text style={styles.headerTitle}>{isHi ? vrat.titleHi : vrat.titleEn}</Text>
-              <Text style={styles.deitySubtitle}>
+              <Text style={[styles.headerTitle, isDark && { color: theme.text }]}>
+                {isHi ? vrat.titleHi : vrat.titleEn}
+              </Text>
+              <Text style={[styles.deitySubtitle, isDark && { color: theme.textSecondary }]}>
                 {isHi ? `आराध्य: ${vrat.deityHi}` : `Deity: ${vrat.deityEn}`}
               </Text>
             </View>
 
             <TouchableOpacity
               testID="vrat-modal-close-btn"
-              style={styles.closeBtn}
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? 'व्रत विवरण बंद करें' : 'Close Vrat details'}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              style={[styles.closeBtn, isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border }]}
               onPress={onClose}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
             >
-              <Ionicons name="close" size={20} color="#78350f" />
+              <Ionicons name="close" size={22} color={isDark ? theme.textSecondary : '#78350f'} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
             {/* Significance Card */}
-            <View style={styles.significanceBox}>
-              <Text style={styles.significanceTitle}>
-                {isHi ? '📜 शास्त्रीय माहात्म्य' : '📜 Shastric Significance'}
+            <View style={[styles.significanceBox, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.significanceTitle, isDark && { color: theme.primary }]}>
+                {isHi ? '📜 शास्त्रीय माहात्म्य' : '📜 Why This Fast Matters'}
               </Text>
-              <Text style={styles.significanceText}>
+              <Text style={[styles.significanceText, isDark && { color: theme.textSecondary }]}>
                 {isHi ? vrat.significanceHi : vrat.significanceEn}
               </Text>
             </View>
 
             {/* Special Moonrise Card for Sankashti */}
             {vrat.moonriseTime && (
-              <View style={styles.moonriseCard}>
+              <View style={[styles.moonriseCard, isDark && { backgroundColor: theme.card, borderColor: theme.primary }]}>
                 <View style={styles.moonriseTopRow}>
                   <View style={styles.moonriseIconGroup}>
                     <Text style={styles.moonEmoji}>🌕</Text>
-                    <View style={{ backgroundColor: 'transparent' }}>
-                      <Text style={styles.moonriseLabel}>
+                    <View style={{ backgroundColor: 'transparent', flex: 1 }}>
+                      <Text style={[styles.moonriseLabel, isDark && { color: theme.primary }]}>
                         {isHi ? 'आज का चन्द्रोदय समय' : "Today's Moonrise"}
                       </Text>
-                      <Text style={styles.moonriseTimeVal}>{vrat.moonriseTime}</Text>
+                      <Text style={[styles.moonriseTimeVal, isDark && { color: theme.text }]}>{vrat.moonriseTime}</Text>
                     </View>
                   </View>
 
                   <View
                     style={[
                       styles.moonStatusPill,
-                      vrat.hasMoonRisen && styles.moonStatusPillDone,
+                      isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+                      vrat.hasMoonRisen && [styles.moonStatusPillDone, isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder }],
                     ]}
                   >
                     <Text
                       style={[
                         styles.moonStatusText,
-                        vrat.hasMoonRisen && styles.moonStatusTextDone,
+                        isDark && { color: theme.primary },
+                        vrat.hasMoonRisen && [styles.moonStatusTextDone, isDark && { color: theme.successText }],
                       ]}
                     >
                       {vrat.hasMoonRisen
                         ? (isHi ? '✓ उदित' : '✓ Risen')
-                        : (isHi ? 'प्रतीक्षित' : 'Awaiting')}
+                        : (isHi ? '⏳ प्रतीक्षित' : '⏳ Awaiting')}
                     </Text>
                   </View>
                 </View>
 
                 {vrat.moonriseCountdown && (
-                  <View style={styles.countdownRow}>
-                    <Text style={styles.countdownText}>
+                  <View style={[styles.countdownRow, isDark && { borderTopColor: theme.border }]}>
+                    <Text style={[styles.countdownText, isDark && { color: theme.primary }]}>
                       ⏳ {vrat.moonriseCountdown}
                     </Text>
                   </View>
@@ -114,17 +137,17 @@ export const VratDetailModal: React.FC<VratDetailModalProps> = ({
 
             {/* Ekadashi Parana Card */}
             {vrat.ekadashiParana && (
-              <View style={styles.paranaCard}>
+              <View style={[styles.paranaCard, isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder }]}>
                 <View style={styles.paranaHeaderRow}>
                   <Text style={styles.paranaIcon}>🟢</Text>
-                  <Text style={styles.paranaTitle}>
-                    {isHi ? 'द्वादशी पारणा समय (व्रत तोड़ने की अवधि)' : 'Dwadashi Parana Fast-Breaking Window'}
+                  <Text style={[styles.paranaTitle, isDark && { color: theme.successText }]}>
+                    {isHi ? 'द्वादशी पारणा समय (व्रत खोलने की अवधि)' : 'Fast-Breaking Window (Parana)'}
                   </Text>
                 </View>
-                <Text style={styles.paranaTimeWindow}>
+                <Text style={[styles.paranaTimeWindow, isDark && { color: theme.text }]}>
                   {vrat.ekadashiParana.startTimeFormatted} — {vrat.ekadashiParana.endTimeFormatted}
                 </Text>
-                <Text style={styles.paranaGuidance}>
+                <Text style={[styles.paranaGuidance, isDark && { color: theme.textSecondary }]}>
                   {isHi ? vrat.ekadashiParana.guidanceHi : vrat.ekadashiParana.guidanceEn}
                 </Text>
               </View>
@@ -132,56 +155,58 @@ export const VratDetailModal: React.FC<VratDetailModalProps> = ({
 
             {/* Arghya Mantra */}
             {vrat.arghyaMantraSanskrit && (
-              <View style={styles.mantraBox}>
+              <View style={[styles.mantraBox, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }]}>
                 <View style={styles.mantraHeaderRow}>
-                  <Text style={styles.mantraSectionTitle}>
-                    {isHi ? '🕉️ पवित्र अर्घ्य मन्त्र' : '🕉️ Sacred Arghya Mantra'}
+                  <Text style={[styles.mantraSectionTitle, isDark && { color: theme.primary }]}>
+                    {isHi ? '🕉️ पवित्र अर्घ्य मन्त्र' : '🕉️ Sacred Prayer Mantra'}
                   </Text>
                 </View>
-                <Text style={styles.sanskritMantraText}>
+                <Text style={[styles.sanskritMantraText, isDark && { color: theme.text }]}>
                   {vrat.arghyaMantraSanskrit}
                 </Text>
-                <Text style={styles.mantraMeaning}>
-                  {isHi ? vrat.arghyaMantraMeaningHi : vrat.arghyaMantraMeaningEn}
-                </Text>
+                {(vrat.arghyaMantraMeaningHi || vrat.arghyaMantraMeaningEn) ? (
+                  <Text style={[styles.mantraMeaning, isDark && { color: theme.textSecondary }]}>
+                    {isHi ? vrat.arghyaMantraMeaningHi : vrat.arghyaMantraMeaningEn}
+                  </Text>
+                ) : null}
               </View>
             )}
 
             {/* Step-by-Step Vidhi */}
             {vrat.arghyaVidhiHi && vrat.arghyaVidhiHi.length > 0 && (
-              <View style={styles.sectionCard}>
-                <Text style={styles.sectionTitle}>
-                  {isHi ? '🪔 पूजन एवं अर्घ्य विधि' : '🪔 Step-by-Step Puja & Arghya'}
+              <View style={[styles.sectionCard, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+                <Text style={[styles.sectionTitle, isDark && { color: theme.text }]}>
+                  {isHi ? '🪔 पूजन एवं अर्घ्य विधि' : '🪔 Step-by-Step Puja Guide'}
                 </Text>
                 {(isHi ? vrat.arghyaVidhiHi : vrat.arghyaVidhiEn || []).map((step, idx) => (
                   <View key={idx} style={styles.stepRow}>
-                    <View style={styles.stepNumberBadge}>
-                      <Text style={styles.stepNumberText}>{idx + 1}</Text>
+                    <View style={[styles.stepNumberBadge, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }]}>
+                      <Text style={[styles.stepNumberText, isDark && { color: theme.primary }]}>{idx + 1}</Text>
                     </View>
-                    <Text style={styles.stepDesc}>{step}</Text>
+                    <Text style={[styles.stepDesc, isDark && { color: theme.textSecondary }]}>{step}</Text>
                   </View>
                 ))}
               </View>
             )}
 
-            {/* Dietary Rules (ग्राह्य फलाहार vs वर्जित अन्न) */}
-            <View style={styles.dietaryCard}>
-              <Text style={styles.sectionTitle}>
-                {isHi ? '🥗 व्रत आहार नियम (फलाहार विधान)' : '🥗 Fasting Dietary Discipline'}
+            {/* Dietary Rules */}
+            <View style={[styles.dietaryCard, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.sectionTitle, isDark && { color: theme.text }]}>
+                {isHi ? '🥗 व्रत आहार नियम (क्या खाएं / क्या न खाएं)' : '🥗 Fasting Food Guide'}
               </Text>
 
               {/* Permissible Foods */}
               <View style={styles.permissibleGroup}>
                 <View style={styles.dietaryHeaderRow}>
-                  <Text style={styles.dietaryIconGood}>✓</Text>
-                  <Text style={styles.dietaryGroupTitleGood}>
-                    {isHi ? 'ग्राह्य फलाहार (खा सकते हैं)' : 'Permissible Foods (Allowed)'}
+                  <Text style={[styles.dietaryIconGood, isDark && { color: theme.successText }]}>✓</Text>
+                  <Text style={[styles.dietaryGroupTitleGood, isDark && { color: theme.successText }]}>
+                    {isHi ? 'ग्राह्य फलाहार (खा सकते हैं)' : 'Allowed Foods (You Can Eat)'}
                   </Text>
                 </View>
                 <View style={styles.chipsContainer}>
                   {(isHi ? vrat.permissibleFoodsHi : vrat.permissibleFoodsEn).map((item, idx) => (
-                    <View key={idx} style={styles.chipGood}>
-                      <Text style={styles.chipGoodText}>{item}</Text>
+                    <View key={idx} style={[styles.chipGood, isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder }]}>
+                      <Text style={[styles.chipGoodText, isDark && { color: theme.text }]}>{item}</Text>
                     </View>
                   ))}
                 </View>
@@ -190,15 +215,15 @@ export const VratDetailModal: React.FC<VratDetailModalProps> = ({
               {/* Prohibited Foods */}
               <View style={styles.prohibitedGroup}>
                 <View style={styles.dietaryHeaderRow}>
-                  <Text style={styles.dietaryIconBad}>✕</Text>
-                  <Text style={styles.dietaryGroupTitleBad}>
-                    {isHi ? 'वर्जित अन्न (सर्वथा त्याज्य)' : 'Strictly Prohibited (Avoid)'}
+                  <Text style={[styles.dietaryIconBad, isDark && { color: theme.dangerText }]}>✕</Text>
+                  <Text style={[styles.dietaryGroupTitleBad, isDark && { color: theme.dangerText }]}>
+                    {isHi ? 'वर्जित अन्न (कृपया न खाएं)' : 'Foods to Avoid'}
                   </Text>
                 </View>
                 <View style={styles.chipsContainer}>
                   {(isHi ? vrat.prohibitedFoodsHi : vrat.prohibitedFoodsEn).map((item, idx) => (
-                    <View key={idx} style={styles.chipBad}>
-                      <Text style={styles.chipBadText}>{item}</Text>
+                    <View key={idx} style={[styles.chipBad, isDark && { backgroundColor: theme.dangerBg, borderColor: theme.dangerBorder }]}>
+                      <Text style={[styles.chipBadText, isDark && { color: theme.text }]}>{item}</Text>
                     </View>
                   ))}
                 </View>
@@ -206,20 +231,29 @@ export const VratDetailModal: React.FC<VratDetailModalProps> = ({
             </View>
 
             {/* Fasting Rules */}
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>
-                {isHi ? '🚩 व्रत के प्रमुख नियम' : '🚩 Core Fasting Rules'}
+            <View style={[styles.sectionCard, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.sectionTitle, isDark && { color: theme.text }]}>
+                {isHi ? '🚩 व्रत के प्रमुख नियम' : '🚩 Simple Fasting Rules'}
               </Text>
               {(isHi ? vrat.fastingRulesHi : vrat.fastingRulesEn).map((rule, idx) => (
                 <View key={idx} style={styles.ruleBulletRow}>
-                  <Text style={styles.bulletDot}>•</Text>
-                  <Text style={styles.ruleText}>{rule}</Text>
+                  <Text style={[styles.bulletDot, isDark && { color: theme.primary }]}>•</Text>
+                  <Text style={[styles.ruleText, isDark && { color: theme.textSecondary }]}>{rule}</Text>
                 </View>
               ))}
             </View>
 
-            <View style={{ height: 28 }} />
+            <View style={{ height: 12 }} />
           </ScrollView>
+
+          <View style={styles.footerWrap}>
+            <AppButton
+              testID="vrat-modal-done-btn"
+              variant="primary"
+              label={isHi ? 'बन्द करें' : 'Close'}
+              onPress={onClose}
+            />
+          </View>
         </View>
       </View>
     </Modal>
@@ -229,16 +263,16 @@ export const VratDetailModal: React.FC<VratDetailModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: 'rgba(0, 0, 0, 0.58)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fffbeb', // Warm Kesariya Ivory
+    backgroundColor: '#fffbeb',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    maxHeight: '88%',
-    paddingTop: 16,
-    paddingHorizontal: 16,
+    maxHeight: '90%',
+    paddingTop: 18,
+    paddingHorizontal: 18,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -251,107 +285,104 @@ const styles = StyleSheet.create({
   },
   badgeRow: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: 6,
     backgroundColor: 'transparent',
   },
   badgePill: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#b45309',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    ...Typography.screenTitle,
     color: '#78350f',
   },
   deitySubtitle: {
-    fontSize: 12.5,
+    ...Typography.bodyMuted,
     fontWeight: '600',
     color: '#92400e',
-    marginTop: 2,
+    marginTop: 3,
   },
   closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: MIN_TOUCH_TARGET / 2,
     backgroundColor: '#fef3c7',
+    borderWidth: 1,
+    borderColor: '#fde68a',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
   },
   scrollBody: {
-    paddingTop: 12,
+    paddingTop: 14,
   },
   significanceBox: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   significanceTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    ...Typography.cardTitle,
     color: '#92400e',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   significanceText: {
-    fontSize: 12.5,
+    ...Typography.body,
     color: '#451a03',
-    lineHeight: 18,
   },
   moonriseCard: {
     backgroundColor: '#ffffff',
     borderRadius: 18,
-    padding: 14,
+    padding: 16,
     marginBottom: 12,
     borderWidth: 1.5,
     borderColor: '#f59e0b',
-    shadowColor: '#f59e0b',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 2,
   },
   moonriseTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
     backgroundColor: 'transparent',
   },
   moonriseIconGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
     backgroundColor: 'transparent',
   },
   moonEmoji: {
-    fontSize: 28,
+    fontSize: 30,
   },
   moonriseLabel: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#92400e',
     textTransform: 'uppercase',
   },
   moonriseTimeVal: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '900',
     color: '#78350f',
   },
   moonStatusPill: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#fde68a',
@@ -361,7 +392,7 @@ const styles = StyleSheet.create({
     borderColor: '#86efac',
   },
   moonStatusText: {
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: '800',
     color: '#b45309',
   },
@@ -369,21 +400,21 @@ const styles = StyleSheet.create({
     color: '#15803d',
   },
   countdownRow: {
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#fef3c7',
     backgroundColor: 'transparent',
   },
   countdownText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: '#b45309',
   },
   paranaCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     marginBottom: 12,
     borderWidth: 1.5,
     borderColor: '#10b981',
@@ -391,33 +422,32 @@ const styles = StyleSheet.create({
   paranaHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    gap: 8,
+    marginBottom: 6,
     backgroundColor: 'transparent',
   },
   paranaIcon: {
-    fontSize: 14,
+    fontSize: 16,
   },
   paranaTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    ...Typography.cardTitle,
     color: '#065f46',
+    flex: 1,
   },
   paranaTimeWindow: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '900',
     color: '#047857',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   paranaGuidance: {
-    fontSize: 11.5,
+    ...Typography.bodyMuted,
     color: '#065f46',
-    lineHeight: 16,
   },
   mantraBox: {
     backgroundColor: '#fff7ed',
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#fed7aa',
@@ -429,35 +459,33 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   mantraSectionTitle: {
-    fontSize: 12.5,
-    fontWeight: '800',
+    ...Typography.label,
+    fontSize: 14,
     color: '#c2410c',
   },
   sanskritMantraText: {
-    fontSize: 14.5,
+    fontSize: 16,
     fontWeight: '800',
     color: '#7c2d12',
-    lineHeight: 22,
+    lineHeight: 24,
     fontFamily: 'serif',
     marginBottom: 6,
   },
   mantraMeaning: {
-    fontSize: 11.5,
+    ...Typography.bodyMuted,
     color: '#9a3412',
-    lineHeight: 16,
     fontStyle: 'italic',
   },
   sectionCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   sectionTitle: {
-    fontSize: 13.5,
-    fontWeight: '800',
+    ...Typography.cardTitle,
     color: '#78350f',
     marginBottom: 10,
   },
@@ -465,13 +493,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    marginBottom: 8,
+    marginBottom: 10,
     backgroundColor: 'transparent',
   },
   stepNumberBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: '#fef3c7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -479,26 +507,25 @@ const styles = StyleSheet.create({
     borderColor: '#fde68a',
   },
   stepNumberText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
     color: '#b45309',
   },
   stepDesc: {
     flex: 1,
-    fontSize: 12,
+    ...Typography.bodyMuted,
     color: '#451a03',
-    lineHeight: 17,
   },
   dietaryCard: {
     backgroundColor: '#ffffff',
     borderRadius: 18,
-    padding: 14,
+    padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   permissibleGroup: {
-    marginBottom: 12,
+    marginBottom: 14,
     backgroundColor: 'transparent',
   },
   prohibitedGroup: {
@@ -508,58 +535,58 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 8,
     backgroundColor: 'transparent',
   },
   dietaryIconGood: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '900',
     color: '#16a34a',
   },
   dietaryGroupTitleGood: {
-    fontSize: 12.5,
-    fontWeight: '800',
+    ...Typography.label,
+    fontSize: 14,
     color: '#15803d',
   },
   dietaryIconBad: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '900',
     color: '#dc2626',
   },
   dietaryGroupTitleBad: {
-    fontSize: 12.5,
-    fontWeight: '800',
+    ...Typography.label,
+    fontSize: 14,
     color: '#b91c1c',
   },
   chipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
     backgroundColor: 'transparent',
   },
   chipGood: {
     backgroundColor: '#f0fdf4',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#bbf7d0',
   },
   chipGoodText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#166534',
   },
   chipBad: {
     backgroundColor: '#fef2f2',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#fecaca',
   },
   chipBadText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#991b1b',
   },
@@ -567,18 +594,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    marginBottom: 6,
+    marginBottom: 8,
     backgroundColor: 'transparent',
   },
   bulletDot: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '900',
     color: '#b45309',
   },
   ruleText: {
     flex: 1,
-    fontSize: 12,
+    ...Typography.bodyMuted,
     color: '#451a03',
-    lineHeight: 17,
+  },
+  footerWrap: {
+    paddingTop: 10,
   },
 });

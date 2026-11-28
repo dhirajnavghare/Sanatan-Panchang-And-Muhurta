@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { VratGuidance } from '../services/vratGuidelines';
 import { VratDetailModal } from './VratDetailModal';
 import { triggerHaptic } from '../services/sacredAudio';
+import { getAppTheme } from '../utils/theme';
 
 interface VratHeroCardProps {
   vrat: VratGuidance | null;
@@ -16,6 +17,8 @@ export const VratHeroCard: React.FC<VratHeroCardProps> = ({
   isHi,
   hapticsEnabled = true,
 }) => {
+  const isDark = useColorScheme() === 'dark';
+  const theme = getAppTheme(isDark);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!vrat) return null;
@@ -29,32 +32,41 @@ export const VratHeroCard: React.FC<VratHeroCardProps> = ({
     <>
       <TouchableOpacity
         testID="vrat-hero-card"
-        style={styles.cardContainer}
+        accessibilityRole="button"
+        accessibilityLabel={`${isHi ? vrat.titleHi : vrat.titleEn}. ${isHi ? 'विधि व नियम खोलें' : 'Open rules and Puja Vidhi'}`}
+        style={[
+          styles.cardContainer,
+          isDark && { backgroundColor: '#251d0e', borderColor: theme.primaryBorder },
+        ]}
         onPress={handleOpen}
         activeOpacity={0.88}
       >
         <View style={styles.topRow}>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgeText}>{isHi ? vrat.badgeHi : vrat.badgeEn}</Text>
+          <View style={[styles.badgePill, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }]}>
+            <Text style={[styles.badgeText, isDark && { color: theme.primary }]}>
+              {isHi ? vrat.badgeHi : vrat.badgeEn}
+            </Text>
           </View>
-          <View style={styles.guideActionPill}>
-            <Text style={styles.guideActionText}>
-              {isHi ? 'विधि व आहार नियम →' : 'Vidhi & Diet →'}
+          <View style={[styles.guideActionPill, isDark && { backgroundColor: theme.cardMuted, borderColor: theme.primaryBorder }]}>
+            <Text style={[styles.guideActionText, isDark && { color: theme.primary }]}>
+              {isHi ? 'विधि व नियम देखें →' : 'View Rules & Diet →'}
             </Text>
           </View>
         </View>
 
-        <Text style={styles.titleText}>{isHi ? vrat.titleHi : vrat.titleEn}</Text>
+        <Text style={[styles.titleText, isDark && { color: theme.text }]}>
+          {isHi ? vrat.titleHi : vrat.titleEn}
+        </Text>
 
         {/* Dynamic Metric: Moonrise or Parana */}
         {vrat.moonriseTime && (
-          <View style={styles.metricRow}>
+          <View style={[styles.metricRow, isDark && { backgroundColor: theme.card }]}>
             <Text style={styles.metricEmoji}>🌕</Text>
             <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-              <Text style={styles.metricLabel}>
+              <Text style={[styles.metricLabel, isDark && { color: theme.textMuted }]}>
                 {isHi ? 'आज का चन्द्रोदय (चन्द्र अर्घ्य)' : "Today's Moonrise (Chandra Arghya)"}
               </Text>
-              <Text style={styles.metricValue}>
+              <Text style={[styles.metricValue, isDark && { color: theme.text }]}>
                 {vrat.moonriseTime}{' '}
                 {vrat.moonriseCountdown ? `• ${vrat.moonriseCountdown}` : ''}
               </Text>
@@ -63,13 +75,18 @@ export const VratHeroCard: React.FC<VratHeroCardProps> = ({
         )}
 
         {vrat.ekadashiParana && !vrat.moonriseTime && (
-          <View style={styles.metricRowGreen}>
+          <View
+            style={[
+              styles.metricRowGreen,
+              isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder },
+            ]}
+          >
             <Text style={styles.metricEmoji}>🟢</Text>
             <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-              <Text style={styles.metricLabelGreen}>
+              <Text style={[styles.metricLabelGreen, isDark && { color: theme.successText }]}>
                 {isHi ? 'द्वादशी पारणा समय' : 'Dwadashi Parana Window'}
               </Text>
-              <Text style={styles.metricValueGreen}>
+              <Text style={[styles.metricValueGreen, isDark && { color: theme.text }]}>
                 {vrat.ekadashiParana.startTimeFormatted} — {vrat.ekadashiParana.endTimeFormatted}
               </Text>
             </View>
@@ -78,9 +95,9 @@ export const VratHeroCard: React.FC<VratHeroCardProps> = ({
 
         {/* Permissible Food Quick Hint */}
         <View style={styles.foodHintRow}>
-          <Ionicons name="restaurant-outline" size={13} color="#92400e" />
-          <Text style={styles.foodHintText} numberOfLines={1}>
-            {isHi ? 'ग्राह्य फलाहार: साबूदाना, फल, कुट्टू, दूध, सेंधा नमक' : 'Allowed: Fruits, Sabudana, Kuttu, Milk, Sendha Salt'}
+          <Ionicons name="restaurant-outline" size={16} color={isDark ? theme.primary : '#92400e'} />
+          <Text style={[styles.foodHintText, isDark && { color: theme.textSecondary }]}>
+            {isHi ? 'ग्राह्य फलाहार: साबूदाना, फल, कुट्टू, दूध, सेंधा नमक' : 'Allowed foods: Fruits, Sabudana, Kuttu, Milk, Sendha Salt'}
           </Text>
         </View>
       </TouchableOpacity>
@@ -113,101 +130,107 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
     backgroundColor: 'transparent',
   },
   badgePill: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#b45309',
   },
   guideActionPill: {
     backgroundColor: '#ffffff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   guideActionText: {
-    fontSize: 10.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#92400e',
   },
   titleText: {
-    fontSize: 15.5,
+    fontSize: 17,
+    lineHeight: 23,
     fontWeight: '800',
     color: '#78350f',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   metricRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     backgroundColor: '#ffffff',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#fed7aa',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   metricRowGreen: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     backgroundColor: '#f0fdf4',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#bbf7d0',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   metricEmoji: {
-    fontSize: 20,
+    fontSize: 22,
   },
   metricLabel: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '700',
     color: '#9a3412',
     textTransform: 'uppercase',
   },
   metricValue: {
-    fontSize: 13,
+    fontSize: 15,
+    lineHeight: 21,
     fontWeight: '800',
     color: '#7c2d12',
   },
   metricLabelGreen: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '700',
     color: '#166534',
     textTransform: 'uppercase',
   },
   metricValueGreen: {
-    fontSize: 13,
+    fontSize: 15,
+    lineHeight: 21,
     fontWeight: '800',
     color: '#14532d',
   },
   foodHintRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    alignItems: 'flex-start',
+    gap: 8,
     backgroundColor: 'transparent',
     paddingTop: 2,
   },
   foodHintText: {
     flex: 1,
-    fontSize: 11.5,
+    fontSize: 13.5,
+    lineHeight: 19,
     color: '#92400e',
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });

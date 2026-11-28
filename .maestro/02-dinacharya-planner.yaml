@@ -1,0 +1,41 @@
+appId: cc.sanatan.app
+---
+# End-to-End Flow 02: Dinacharya Home, Live Cosmic Status, Sadhana, Shloka & Day Planner
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: tour-skip-btn
+    commands:
+      - tapOn:
+          id: tour-skip-btn
+- assertVisible:
+    id: header-bar
+- assertVisible:
+    id: live-cosmic-banner
+- tapOn:
+    id: header-bell-btn
+- tapOn:
+    id: view-mode-planner-btn
+- assertVisible:
+    id: planner-view-mode-container
+- tapOn:
+    id: planner-custom-task-input
+    index: 0
+- inputText: "Morning Gayatri Japa"
+- pressKey: Enter
+- assertVisible: "Morning Gayatri Japa"
+- tapOn:
+    id: view-mode-monthly-btn
+- tapOn:
+    id: view-mode-daily-btn
+- assertVisible:
+    id: daily-shloka-card
+- tapOn:
+    id: daily-shloka-card
+- assertVisible:
+    id: verse-next-btn
+- tapOn:
+    id: verse-next-btn
+- tapOn:
+    id: verse-done-btn

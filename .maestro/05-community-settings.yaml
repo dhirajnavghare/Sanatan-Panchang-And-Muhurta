@@ -1,0 +1,46 @@
+appId: cc.sanatan.app
+---
+# End-to-End Flow 05: Community Project Hub, Form Validation, Settings & Tour Replay
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: tour-skip-btn
+    commands:
+      - tapOn:
+          id: tour-skip-btn
+- tapOn: "प्रोजेक्ट|Project"
+- assertVisible:
+    id: community-hero-card
+- tapOn:
+    id: community-segment-feedback
+- tapOn:
+    id: feedback-submit-btn
+- assertVisible:
+    id: feedback-validation-error
+- tapOn:
+    id: community-segment-issues
+- tapOn:
+    id: issue-submit-btn
+- assertVisible:
+    id: issue-validation-error
+- tapOn: "सेटिंग्स|Settings"
+- assertVisible:
+    id: lang-toggle-en
+- tapOn:
+    id: lang-toggle-en
+- assertVisible: "App Settings"
+- tapOn:
+    id: settings-meridian-btn
+- assertVisible:
+    id: settings-gps-detect-btn
+- tapOn:
+    id: city-modal-close-btn
+- tapOn:
+    id: notif-toggle-pradosh
+- tapOn:
+    id: notif-toggle-chandrodaya
+- tapOn:
+    id: settings-replay-tour-btn
+- assertVisible:
+    id: interactive-tour-overlay

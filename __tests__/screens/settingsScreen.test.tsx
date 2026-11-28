@@ -1,4 +1,5 @@
 import React from 'react';
+import { Linking } from 'react-native';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react-native';
 import SettingsScreen from '@/app/(tabs)/settings';
 import { LanguageProvider } from '@/src/core/i18n/LanguageContext';
@@ -169,8 +170,7 @@ describe('Settings Screen - Preferences, Notifications & Profile Tests', () => {
   });
 
   it('should trigger feedback links to open URLs', async () => {
-    const { Linking } = require('react-native');
-    const openURLSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const openURLSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
 
     await renderScreen();
 

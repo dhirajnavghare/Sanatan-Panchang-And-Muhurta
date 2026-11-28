@@ -10,14 +10,17 @@ import {
   Platform,
   ActivityIndicator,
   NativeModules,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { PanchangData } from '@/src/core/panchang/types';
 import { DailyDevataInfo, ShastricVerse } from '@/src/services/dinacharya';
-import { Palette, Radius, Spacing } from '@/constants/Colors';
 import { triggerHaptic } from '@/src/services/sacredAudio';
+import { COMFORT_TOUCH_TARGET, getAppTheme, MIN_TOUCH_TARGET, Typography } from '@/src/utils/theme';
+import { AppButton } from './ui/AppButton';
 
 interface DailyPanchangCardModalProps {
   visible: boolean;
@@ -27,6 +30,7 @@ interface DailyPanchangCardModalProps {
   devataInfo: DailyDevataInfo;
   verse: ShastricVerse;
   userName?: string;
+  timezone?: string;
 }
 
 export function DailyPanchangCardModal({
@@ -37,13 +41,26 @@ export function DailyPanchangCardModal({
   devataInfo,
   verse,
   userName,
+  timezone = 'Asia/Kolkata',
 }: DailyPanchangCardModalProps) {
   const cardRef = useRef<any>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const isDark = useColorScheme() === 'dark';
+  const theme = getAppTheme(isDark);
+  const insets = useSafeAreaInsets();
 
   const formatTime = (d: Date | string) => {
     const date = typeof d === 'string' ? new Date(d) : d;
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      return new Intl.DateTimeFormat('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: timezone,
+      }).format(date);
+    } catch {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
   };
 
   const handleShareCard = async () => {
@@ -118,28 +135,43 @@ export function DailyPanchangCardModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheetContainer}>
+        <View
+          style={[
+            styles.sheetContainer,
+            isDark && { backgroundColor: theme.surface, borderColor: theme.border, borderTopWidth: 1 },
+            { paddingBottom: Math.max(20, insets.bottom + 12) },
+          ]}
+        >
           {/* Header Bar */}
-          <View style={styles.modalHeader}>
-            <View>
-              <Text style={styles.modalTitle}>दैनिक पञ्चाङ्ग शेयर कार्ड</Text>
-              <Text style={styles.modalSubtitle}>WhatsApp स्टेटस व परिवार ग्रुप्स के लिए</Text>
+          <View style={[styles.modalHeader, isDark && { borderBottomColor: theme.border }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.modalTitle, isDark && { color: theme.text }]}>
+                दैनिक पञ्चाङ्ग शेयर कार्ड
+              </Text>
+              <Text style={[styles.modalSubtitle, isDark && { color: theme.textMuted }]}>
+                WhatsApp स्टेटस व परिवार ग्रुप्स के लिए
+              </Text>
             </View>
             <TouchableOpacity
               testID="share-card-close-btn"
+              accessibilityRole="button"
+              accessibilityLabel="बंद करें"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               onPress={onClose}
-              style={styles.closeBtn}
+              style={[styles.closeBtn, isDark && { backgroundColor: theme.cardMuted }]}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={22} color="#71717a" />
+              <Ionicons name="close" size={22} color={isDark ? theme.textSecondary : '#71717a'} />
             </TouchableOpacity>
           </View>
 
           {/* Action Button: Fixed at the TOP right below header */}
-          <View style={styles.topActionContainer}>
+          <View style={[styles.topActionContainer, isDark && { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity
               testID="share-card-btn"
-              style={styles.shareBtnPrimary}
+              accessibilityRole="button"
+              accessibilityLabel="WhatsApp पर कार्ड शेयर करें"
+              style={[styles.shareBtnPrimary, { minHeight: COMFORT_TOUCH_TARGET }]}
               onPress={handleShareCard}
               activeOpacity={0.8}
               disabled={isSharing}
@@ -259,6 +291,15 @@ export function DailyPanchangCardModal({
               </View>
             </View>
           </ScrollView>
+
+          <View style={[styles.bottomCloseRow, isDark && { borderTopColor: theme.border }]}>
+            <AppButton
+              testID="share-card-done-btn"
+              variant="outline"
+              label="बन्द करें"
+              onPress={onClose}
+            />
+          </View>
         </View>
       </View>
     </Modal>
@@ -289,19 +330,18 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f4f4f5',
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '800',
+    ...Typography.sectionHeading,
     color: '#18181b',
   },
   modalSubtitle: {
-    fontSize: 12,
+    ...Typography.bodyMuted,
     color: '#71717a',
     marginTop: 2,
   },
   closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: MIN_TOUCH_TARGET / 2,
     backgroundColor: '#f4f4f5',
     alignItems: 'center',
     justifyContent: 'center',
@@ -346,7 +386,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cardCityText: {
-    fontSize: 11,
+    fontSize: 12.5,
     color: '#92400e',
     fontWeight: '600',
     marginTop: 3,
@@ -366,20 +406,20 @@ const styles = StyleSheet.create({
     fontSize: 26,
   },
   deityBannerTitle: {
-    fontSize: 10,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#b45309',
     textTransform: 'uppercase',
   },
   deityBannerName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
     color: '#18181b',
     marginTop: 1,
   },
   deityMantra: {
-    fontSize: 11,
-    color: '#d97706',
+    fontSize: 12.5,
+    color: '#b45309',
     fontWeight: '700',
     marginTop: 2,
   },
@@ -394,23 +434,24 @@ const styles = StyleSheet.create({
     minWidth: '45%',
     backgroundColor: '#ffffff',
     borderRadius: 10,
-    padding: 9,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#fef3c7',
   },
   gridLabel: {
-    fontSize: 10,
-    color: '#71717a',
-    fontWeight: '600',
+    fontSize: 11.5,
+    color: '#52525b',
+    fontWeight: '700',
   },
   gridValue: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#18181b',
     marginTop: 2,
   },
   muhurtaBar: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 12,
   },
@@ -418,9 +459,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    gap: 6,
     backgroundColor: '#ffffff',
     borderRadius: 10,
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     marginTop: 8,
     borderWidth: 1,
@@ -437,10 +480,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fde68a',
   },
   celestialEmoji: {
-    fontSize: 12,
+    fontSize: 14,
   },
   celestialText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#44403c',
   },
@@ -448,51 +491,53 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: '#fef3c7',
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
     marginTop: 8,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   senderPillText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#b45309',
   },
   muhurtaBadgeShubh: {
     flex: 1,
+    minWidth: 130,
     backgroundColor: '#ecfdf5',
     borderRadius: 10,
-    padding: 9,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#a7f3d0',
   },
   muhurtaBadgeLabel: {
-    fontSize: 10,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#065f46',
   },
   muhurtaBadgeTime: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     color: '#047857',
     marginTop: 2,
   },
   muhurtaBadgeAshubh: {
     flex: 1,
+    minWidth: 130,
     backgroundColor: '#fef2f2',
     borderRadius: 10,
-    padding: 9,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#fecaca',
   },
   muhurtaBadgeLabelAshubh: {
-    fontSize: 10,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#991b1b',
   },
   muhurtaBadgeTimeAshubh: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     color: '#b91c1c',
     marginTop: 2,
@@ -506,24 +551,24 @@ const styles = StyleSheet.create({
     borderColor: '#e7e5e4',
   },
   shlokaTitle: {
-    fontSize: 10,
+    fontSize: 11.5,
     fontWeight: '800',
     color: '#57534e',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   shlokaText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 13.5,
+    lineHeight: 20,
     fontWeight: '700',
     color: '#1c1917',
     marginTop: 6,
     fontFamily: Platform.OS === 'ios' ? 'Kohinoor Devanagari' : undefined,
   },
   shlokaMeaning: {
-    fontSize: 10,
-    lineHeight: 14,
-    color: '#78716c',
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#57534e',
     marginTop: 4,
   },
   cardFooter: {
@@ -534,28 +579,34 @@ const styles = StyleSheet.create({
     borderTopColor: '#fef3c7',
   },
   footerBrand: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#b45309',
   },
   footerTagline: {
-    fontSize: 9,
-    color: '#a1a1aa',
-    marginTop: 1,
+    fontSize: 11,
+    color: '#71717a',
+    marginTop: 2,
   },
   footerAppBadge: {
     backgroundColor: '#fffbeb',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderWidth: 1,
     borderColor: '#fde68a',
-    marginTop: 4,
+    marginTop: 6,
   },
   footerAppBadgeText: {
-    fontSize: 8.5,
+    fontSize: 11,
     fontWeight: '700',
     color: '#92400e',
+  },
+  bottomCloseRow: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f4f4f5',
   },
   topActionContainer: {
     paddingHorizontal: 20,

@@ -3,7 +3,6 @@ import {
   getLiveCosmicStatus,
   saveSlotPlan,
   toggleSlotCompletion,
-  getDayPlans,
   addTodoToSlot,
   toggleTodoItem,
   deleteTodoItem,

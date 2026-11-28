@@ -66,7 +66,11 @@ describe('MonthlyCalendarGrid Component', () => {
 
     await act(async () => {
       fireEvent.press(screen.getByTestId('month-nav-next'));
+    });
+    await act(async () => {
       fireEvent.press(screen.getByTestId('month-nav-prev'));
+    });
+    await act(async () => {
       fireEvent.press(screen.getByTestId('month-nav-today'));
     });
 

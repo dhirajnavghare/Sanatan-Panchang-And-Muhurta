@@ -1,0 +1,36 @@
+appId: cc.sanatan.app
+---
+# End-to-End Flow 03: Shubh Muhurta Finder & Annual Festival Calendar
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: tour-skip-btn
+    commands:
+      - tapOn:
+          id: tour-skip-btn
+- tapOn: "मुहूर्त|Muhurta"
+- assertVisible:
+    id: category-pill-griha_pravesh
+- tapOn:
+    id: category-pill-vivaha
+- tapOn:
+    id: days-pill-30
+- tapOn:
+    id: suitability-pill-Optimal
+- tapOn:
+    id: muhurta-help-btn
+- assertVisible:
+    id: contextual-help-modal
+- tapOn:
+    id: contextual-help-close-btn
+- tapOn: "पर्व-व्रत|Festivals"
+- assertVisible:
+    id: festival-search-input
+- tapOn:
+    id: festival-search-input
+- inputText: "Ekadashi"
+- tapOn:
+    id: clear-search-icon
+- tapOn:
+    id: category-chip-ekadashi

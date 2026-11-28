@@ -4,11 +4,13 @@ import {
   View,
   Text,
   TouchableOpacity,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { calculatePanchang, GeoLocation } from '@/src/core/panchang';
 import { triggerHaptic } from '@/src/services/sacredAudio';
 import { Radius, Spacing } from '@/constants/Colors';
+import { getAppTheme, MIN_TOUCH_TARGET } from '@/src/utils/theme';
 
 interface MonthlyCalendarGridProps {
   currentDate: Date;
@@ -39,6 +41,8 @@ export function MonthlyCalendarGrid({
   location,
   isHi,
 }: MonthlyCalendarGridProps) {
+  const isDark = useColorScheme() === 'dark';
+  const theme = getAppTheme(isDark);
   // Viewing month state (year & month index 0-11)
   const [viewYear, setViewYear] = useState(() => currentDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(() => currentDate.getMonth());
@@ -207,16 +211,22 @@ export function MonthlyCalendarGrid({
   }, [viewYear, viewMonth, location, isHi]);
 
   return (
-    <View style={styles.container} testID="monthly-calendar-grid">
+    <View
+      style={[
+        styles.container,
+        isDark && { backgroundColor: theme.card, borderColor: theme.border },
+      ]}
+      testID="monthly-calendar-grid"
+    >
       {/* Month Navigation & Samvat Bar */}
-      <View style={styles.monthHeaderRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.samvatSubtitle}>
+      <View style={[styles.monthHeaderRow, isDark && { borderBottomColor: theme.border }]}>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={[styles.samvatSubtitle, isDark && { color: theme.primary }]}>
             {isHi
               ? `विक्रम संवत् ${monthHeaderInfo.samvat} • ${monthHeaderInfo.masa} मास`
               : `Vikram Samvat ${monthHeaderInfo.samvat} • ${monthHeaderInfo.masa}`}
           </Text>
-          <Text style={styles.gregorianTitle}>
+          <Text style={[styles.gregorianTitle, isDark && { color: theme.text }]}>
             {isHi ? monthNamesHi[viewMonth] : monthNamesEn[viewMonth]} {viewYear}
           </Text>
         </View>
@@ -224,41 +234,65 @@ export function MonthlyCalendarGrid({
         <View style={styles.navControlsGroup}>
           <TouchableOpacity
             testID="month-nav-prev"
-            style={styles.navBtn}
+            accessibilityRole="button"
+            accessibilityLabel={isHi ? 'पिछला महीना' : 'Previous month'}
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            style={[
+              styles.navBtn,
+              { minWidth: MIN_TOUCH_TARGET, minHeight: MIN_TOUCH_TARGET },
+              isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+            ]}
             onPress={handlePrevMonth}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
           >
-            <Ionicons name="chevron-back" size={18} color="#18181b" />
+            <Ionicons name="chevron-back" size={20} color={theme.text} />
           </TouchableOpacity>
 
           <TouchableOpacity
             testID="month-nav-today"
-            style={styles.todayPill}
+            accessibilityRole="button"
+            accessibilityLabel={isHi ? 'आज की तारीख पर जाएं' : 'Jump to today'}
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            style={[
+              styles.todayPill,
+              { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' },
+              isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+            ]}
             onPress={handleJumpToday}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
           >
-            <Text style={styles.todayPillText}>{isHi ? 'आज' : 'Today'}</Text>
+            <Text style={[styles.todayPillText, isDark && { color: theme.primary }]}>
+              {isHi ? 'आज' : 'Today'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             testID="month-nav-next"
-            style={styles.navBtn}
+            accessibilityRole="button"
+            accessibilityLabel={isHi ? 'अगला महीना' : 'Next month'}
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            style={[
+              styles.navBtn,
+              { minWidth: MIN_TOUCH_TARGET, minHeight: MIN_TOUCH_TARGET },
+              isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+            ]}
             onPress={handleNextMonth}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
           >
-            <Ionicons name="chevron-forward" size={18} color="#18181b" />
+            <Ionicons name="chevron-forward" size={20} color={theme.text} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Weekday Header */}
-      <View style={styles.weekdayRow}>
+      <View style={[styles.weekdayRow, isDark && { borderBottomColor: theme.border }]}>
         {(isHi ? weekHeadersHi : weekHeadersEn).map((dayName, idx) => (
           <View key={idx} style={styles.weekdayCell}>
             <Text
               style={[
                 styles.weekdayText,
-                idx === 0 && { color: '#dc2626' }, // Sunday red accent
+                isDark && { color: theme.textSecondary },
+                idx === 0 && { color: isDark ? '#fca5a5' : '#dc2626' }, // Sunday red accent
               ]}
             >
               {dayName}
@@ -272,8 +306,13 @@ export function MonthlyCalendarGrid({
         {gridDays.map((cell, idx) => {
           if (!cell.isCurrentMonth) {
             return (
-              <View key={idx} style={styles.cellMuted}>
-                <Text style={styles.dayNumMuted}>{cell.dayNumber}</Text>
+              <View
+                key={idx}
+                style={[styles.cellMuted, isDark && { backgroundColor: theme.bg, borderColor: theme.borderSubtle }]}
+              >
+                <Text style={[styles.dayNumMuted, isDark && { color: theme.textSubtle }]}>
+                  {cell.dayNumber}
+                </Text>
               </View>
             );
           }
@@ -282,10 +321,14 @@ export function MonthlyCalendarGrid({
             <TouchableOpacity
               key={idx}
               testID={`calendar-cell-${cell.dayNumber}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${cell.dayNumber}, ${cell.tithiName}${cell.isToday ? (isHi ? ', आज' : ', Today') : ''}${cell.festivalName ? `, ${cell.festivalName}` : ''}`}
+              accessibilityState={{ selected: cell.isSelected }}
               style={[
                 styles.cell,
-                cell.isSelected && styles.cellSelected,
-                cell.isToday && !cell.isSelected && styles.cellToday,
+                isDark && { backgroundColor: theme.surface, borderColor: theme.border },
+                cell.isToday && !cell.isSelected && (isDark ? { backgroundColor: theme.successBg, borderColor: theme.successBorder, borderWidth: 1.5 } : styles.cellToday),
+                cell.isSelected && [styles.cellSelected, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primary }],
               ]}
               onPress={async () => {
                 await triggerHaptic('tap');
@@ -298,8 +341,9 @@ export function MonthlyCalendarGrid({
                 <Text
                   style={[
                     styles.dayNum,
-                    cell.isSelected && styles.dayNumSelected,
-                    cell.isToday && !cell.isSelected && styles.dayNumToday,
+                    isDark && { color: theme.text },
+                    cell.isToday && !cell.isSelected && [styles.dayNumToday, isDark && { color: theme.successText }],
+                    cell.isSelected && [styles.dayNumSelected, isDark && { color: theme.primary }],
                   ]}
                 >
                   {cell.dayNumber}
@@ -319,39 +363,44 @@ export function MonthlyCalendarGrid({
               <Text
                 style={[
                   styles.tithiText,
-                  cell.isSelected && styles.tithiTextSelected,
-                  (cell.isEkadashi || cell.isPurnima) && styles.tithiHighlight,
+                  isDark && { color: theme.textMuted },
+                  (cell.isEkadashi || cell.isPurnima) && [styles.tithiHighlight, isDark && { color: theme.primary }],
+                  cell.isSelected && [styles.tithiTextSelected, isDark && { color: theme.text }],
                 ]}
-                numberOfLines={1}
               >
                 {cell.tithiName}
               </Text>
+              {cell.isToday && (
+                <Text style={[styles.todayCellTag, { color: isDark ? theme.successText : '#15803d' }]}>
+                  {isHi ? 'आज' : 'Today'}
+                </Text>
+              )}
             </TouchableOpacity>
           );
         })}
       </View>
 
       {/* Sacred Calendar Legend */}
-      <View style={styles.legendRow}>
+      <View style={[styles.legendRow, isDark && { borderTopColor: theme.border }]}>
         <View style={styles.legendItem}>
           <Text style={styles.legendEmoji}>🟢</Text>
-          <Text style={styles.legendLabel}>{isHi ? 'एकादशी' : 'Ekadashi'}</Text>
+          <Text style={[styles.legendLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'एकादशी' : 'Ekadashi'}</Text>
         </View>
         <View style={styles.legendItem}>
           <Text style={styles.legendEmoji}>🌕</Text>
-          <Text style={styles.legendLabel}>{isHi ? 'पूर्णिमा' : 'Purnima'}</Text>
+          <Text style={[styles.legendLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'पूर्णिमा' : 'Purnima'}</Text>
         </View>
         <View style={styles.legendItem}>
           <Text style={styles.legendEmoji}>🌑</Text>
-          <Text style={styles.legendLabel}>{isHi ? 'अमावस्या' : 'Amavasya'}</Text>
+          <Text style={[styles.legendLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'अमावस्या' : 'Amavasya'}</Text>
         </View>
         <View style={styles.legendItem}>
           <Text style={styles.legendEmoji}>🔱</Text>
-          <Text style={styles.legendLabel}>{isHi ? 'प्रदोष' : 'Pradosh'}</Text>
+          <Text style={[styles.legendLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'प्रदोष' : 'Pradosh'}</Text>
         </View>
         <View style={styles.legendItem}>
           <Text style={styles.legendEmoji}>🚩</Text>
-          <Text style={styles.legendLabel}>{isHi ? 'पर्व/त्योहार' : 'Festival'}</Text>
+          <Text style={[styles.legendLabel, isDark && { color: theme.textSecondary }]}>{isHi ? 'पर्व/त्योहार' : 'Festival'}</Text>
         </View>
       </View>
     </View>
@@ -376,19 +425,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: Spacing.sm,
-    paddingBottom: Spacing.xs,
+    paddingBottom: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: '#f4f4f5',
   },
   samvatSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#d97706',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#b45309',
     letterSpacing: 0.2,
   },
   gregorianTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '800',
     color: '#18181b',
     marginTop: 2,
@@ -399,30 +450,32 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   navBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    minWidth: 44,
+    minHeight: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
     backgroundColor: '#f4f4f5',
     justifyContent: 'center',
     alignItems: 'center',
   },
   todayPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
     backgroundColor: '#fef3c7',
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   todayPillText: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#b45309',
   },
   weekdayRow: {
     flexDirection: 'row',
     marginBottom: 6,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#f4f4f5',
   },
@@ -431,18 +484,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   weekdayText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#52525b',
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
   cell: {
-    width: '14.28%', // 7 days in a week
-    aspectRatio: 1.05,
-    padding: 3,
+    width: '14.28%',
+    minHeight: 58,
+    padding: 4,
     borderRadius: 8,
     justifyContent: 'space-between',
     backgroundColor: '#fafafa',
@@ -451,19 +504,20 @@ const styles = StyleSheet.create({
   },
   cellMuted: {
     width: '14.28%',
-    aspectRatio: 1.05,
-    padding: 3,
+    minHeight: 58,
+    padding: 4,
     justifyContent: 'flex-start',
-    opacity: 0.25,
+    opacity: 0.3,
   },
   cellSelected: {
     backgroundColor: '#fffbeb',
-    borderColor: '#f59e0b',
-    borderWidth: 1.5,
+    borderColor: '#d97706',
+    borderWidth: 2,
   },
   cellToday: {
     backgroundColor: '#f0fdf4',
-    borderColor: '#86efac',
+    borderColor: '#16a34a',
+    borderWidth: 1.5,
   },
   cellHeader: {
     flexDirection: 'row',
@@ -471,12 +525,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dayNum: {
-    fontSize: 12,
+    fontSize: 14.5,
     fontWeight: '700',
     color: '#18181b',
   },
   dayNumMuted: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#a1a1aa',
   },
   dayNumSelected: {
@@ -488,12 +542,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   badgeEmoji: {
-    fontSize: 9,
+    fontSize: 10,
   },
   tithiText: {
-    fontSize: 8.5,
-    color: '#71717a',
-    marginTop: 1,
+    fontSize: 10.5,
+    lineHeight: 13,
+    color: '#52525b',
+    marginTop: 2,
   },
   tithiTextSelected: {
     color: '#92400e',
@@ -503,26 +558,31 @@ const styles = StyleSheet.create({
     color: '#b45309',
     fontWeight: '700',
   },
+  todayCellTag: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    marginTop: 1,
+  },
   legendRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     flexWrap: 'wrap',
-    marginTop: Spacing.sm,
-    paddingTop: Spacing.xs,
+    marginTop: Spacing.md,
+    paddingTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: '#f4f4f5',
-    gap: 8,
+    gap: 10,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 5,
   },
   legendEmoji: {
-    fontSize: 10,
+    fontSize: 12.5,
   },
   legendLabel: {
-    fontSize: 10,
+    fontSize: 12.5,
     color: '#52525b',
     fontWeight: '600',
   },

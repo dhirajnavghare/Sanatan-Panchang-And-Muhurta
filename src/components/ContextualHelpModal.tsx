@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   useColorScheme,
-  Dimensions,
+  useWindowDimensions,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,15 +15,22 @@ import { useTour } from '../services/appTourContext';
 import { useLanguage } from '../core/i18n/LanguageContext';
 import { CONTEXTUAL_HELP_TOPICS } from '../constants/tourSteps';
 import { Radius, Spacing } from '@/constants/Colors';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { COMFORT_TOUCH_TARGET, getAppTheme, MIN_TOUCH_TARGET } from '../utils/theme';
 
 export const ContextualHelpModal: React.FC = () => {
-  const { isHelpModalVisible, activeHelpTopicId, closeHelp, startTour } = useTour();
+  const {
+    isHelpModalVisible,
+    activeHelpTopicId,
+    closeHelp,
+    startTour,
+    startSectionTour,
+  } = useTour();
   const { language } = useLanguage();
   const isHi = language === 'hi';
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const theme = getAppTheme(isDark);
+  const { height: screenHeight } = useWindowDimensions();
 
   if (!isHelpModalVisible || !activeHelpTopicId) {
     return null;
@@ -38,6 +45,10 @@ export const ContextualHelpModal: React.FC = () => {
     startTour(0);
   };
 
+  const handleLaunchSectionTour = () => {
+    startSectionTour(activeHelpTopicId);
+  };
+
   return (
     <Modal
       visible={isHelpModalVisible}
@@ -49,16 +60,16 @@ export const ContextualHelpModal: React.FC = () => {
       <View style={styles.modalOverlay}>
         <View style={[styles.sheetContainer, isDark && styles.sheetContainerDark]}>
           {/* Header Row */}
-          <View style={styles.sheetHeader}>
+          <View style={[styles.sheetHeader, isDark && { borderBottomColor: theme.border }]}>
             <View style={styles.sheetHeaderTitleGroup}>
               <View style={styles.helpIconBox}>
-                <Ionicons name="help-buoy" size={18} color="#d97706" />
+                <Ionicons name="help-buoy" size={20} color="#d97706" />
               </View>
               <View style={{ flexShrink: 1 }}>
                 <Text style={[styles.sheetTitle, isDark && styles.textDark]}>
                   {isHi ? topic.titleHi : topic.titleEn}
                 </Text>
-                <Text style={styles.sheetSubtitle}>
+                <Text style={[styles.sheetSubtitle, isDark && styles.subTextDark]}>
                   {isHi ? topic.subtitleHi : topic.subtitleEn}
                 </Text>
               </View>
@@ -66,17 +77,20 @@ export const ContextualHelpModal: React.FC = () => {
 
             <TouchableOpacity
               testID="contextual-help-close-btn"
-              style={styles.closeBtn}
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? 'मदद विंडो बंद करें' : 'Close help modal'}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              style={[styles.closeBtn, isDark && { backgroundColor: theme.cardMuted }]}
               onPress={closeHelp}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={20} color={isDark ? '#e4e4e7' : '#52525b'} />
+              <Ionicons name="close" size={22} color={isDark ? '#e4e4e7' : '#52525b'} />
             </TouchableOpacity>
           </View>
 
           {/* Items List */}
           <ScrollView
-            style={styles.sheetScrollView}
+            style={[styles.sheetScrollView, { maxHeight: Math.max(200, screenHeight * 0.52) }]}
             contentContainerStyle={styles.sheetScrollContent}
             showsVerticalScrollIndicator={false}
           >
@@ -96,25 +110,50 @@ export const ContextualHelpModal: React.FC = () => {
               </View>
             ))}
 
+            {/* Focused Walkthrough of THIS Screen */}
+            <TouchableOpacity
+              testID="contextual-help-section-tour-btn"
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? 'इस स्क्रीन का लाइव टूर देखें' : 'Walkthrough this screen'}
+              style={[styles.fullTourPromptBtn, { marginBottom: 4 }, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }]}
+              onPress={handleLaunchSectionTour}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="locate-outline" size={20} color={isDark ? theme.primary : '#b45309'} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.fullTourPromptTitle, isDark && { color: theme.primary }]}>
+                  {isHi ? 'इस स्क्रीन का चरणबद्ध टूर देखें' : 'Walkthrough This Screen'}
+                </Text>
+                <Text style={[styles.fullTourPromptDesc, isDark && styles.subTextDark]}>
+                  {isHi
+                    ? 'केवल इसी टैब के मुख्य बटनों व सुविधाओं को लाइव समझें'
+                    : 'Spotlights only the interactive elements on this screen'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={isDark ? theme.primary : '#b45309'} />
+            </TouchableOpacity>
+
             {/* Link to Full Guided App Tour */}
             <TouchableOpacity
               testID="contextual-help-full-tour-btn"
-              style={styles.fullTourPromptBtn}
+              accessibilityRole="button"
+              accessibilityLabel={isHi ? 'संपूर्ण लाइव ऐप टूर देखें' : 'Take Complete Live Tour'}
+              style={[styles.fullTourPromptBtn, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder }]}
               onPress={handleLaunchFullTour}
               activeOpacity={0.8}
             >
-              <Ionicons name="compass-outline" size={18} color="#d97706" />
+              <Ionicons name="compass-outline" size={20} color={isDark ? theme.primary : '#d97706'} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.fullTourPromptTitle}>
+                <Text style={[styles.fullTourPromptTitle, isDark && { color: theme.primary }]}>
                   {isHi ? 'संपूर्ण लाइव ऐप टूर देखें' : 'Take Complete Live Tour'}
                 </Text>
-                <Text style={styles.fullTourPromptDesc}>
+                <Text style={[styles.fullTourPromptDesc, isDark && styles.subTextDark]}>
                   {isHi
-                    ? 'सभी ६ टैब्स, मुहूर्त प्लानर व बटन विस्तार से समझें'
-                    : 'Walk through all 6 tabs, Day Planner & features step-by-step'}
+                    ? 'सभी ७ टैब्स, मुहूर्त प्लानर व बटन विस्तार से समझें'
+                    : 'Walk through all 7 tabs, Day Planner & features step-by-step'}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color="#d97706" />
+              <Ionicons name="chevron-forward" size={18} color={isDark ? theme.primary : '#d97706'} />
             </TouchableOpacity>
           </ScrollView>
 
@@ -149,7 +188,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingHorizontal: Spacing.md,
     paddingBottom: Platform.OS === 'ios' ? 36 : 20,
-    maxHeight: SCREEN_HEIGHT * 0.75,
+    maxHeight: '80%',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
@@ -183,106 +222,109 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sheetTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '800',
     color: '#18181b',
   },
   sheetSubtitle: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 1,
+    fontSize: 13,
+    color: '#52525b',
+    marginTop: 2,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: MIN_TOUCH_TARGET,
+    height: MIN_TOUCH_TARGET,
+    borderRadius: 22,
     backgroundColor: '#f4f4f5',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
   },
   sheetScrollView: {
-    maxHeight: SCREEN_HEIGHT * 0.52,
+    maxHeight: '55%',
   },
   sheetScrollContent: {
-    paddingVertical: 6,
-    gap: 8,
+    paddingVertical: 8,
+    gap: 10,
   },
   itemCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: '#fbfbfb',
     borderRadius: Radius.lg,
-    padding: 10,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#f4f4f5',
-    gap: 10,
+    gap: 12,
   },
   itemCardDark: {
     backgroundColor: '#27272a',
     borderColor: '#3f3f46',
   },
   itemEmojiBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: 'rgba(217, 119, 6, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 2,
   },
   itemEmoji: {
-    fontSize: 16,
+    fontSize: 17,
   },
   itemTextCol: {
     flex: 1,
   },
   itemLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: '#18181b',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   itemDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#52525b',
-    lineHeight: 17,
+    lineHeight: 20,
   },
   fullTourPromptBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: COMFORT_TOUCH_TARGET,
     gap: 10,
     backgroundColor: 'rgba(217, 119, 6, 0.08)',
     borderRadius: Radius.lg,
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: 'rgba(217, 119, 6, 0.25)',
     marginTop: 6,
   },
   fullTourPromptTitle: {
-    fontSize: 12.5,
+    fontSize: 14,
     fontWeight: '700',
     color: '#b45309',
   },
   fullTourPromptDesc: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 1,
+    fontSize: 13,
+    color: '#52525b',
+    marginTop: 2,
+    lineHeight: 18,
   },
   footerRow: {
     marginTop: 10,
     paddingTop: 8,
   },
   footerCloseBtn: {
+    minHeight: COMFORT_TOUCH_TARGET,
     backgroundColor: '#d97706',
     borderRadius: Radius.lg,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   footerCloseBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
     color: '#ffffff',
   },
   textDark: {

@@ -792,3 +792,32 @@ export function cleanTempleSignificance(sig: string | undefined | null, isHi: bo
   return sig;
 }
 
+/**
+ * Formats an ISO YYYY-MM-DD date string into a warm, human-readable date
+ * (e.g., "Sat, 28 Nov 2026" or "शनिवार, २८ नवम्बर २०२६") without technical ISO formatting.
+ */
+export function formatHumanIsoDate(isoDate: string, isHi: boolean): string {
+  const parts = isoDate.split('-').map((p) => parseInt(p, 10));
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
+    return isoDate;
+  }
+  const [year, month, day] = parts;
+  const dateObj = new Date(year, month - 1, day, 12, 0, 0);
+  if (Number.isNaN(dateObj.getTime())) {
+    return isoDate;
+  }
+
+  if (isHi) {
+    const daysHi = ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+    const monthsHi = [
+      'जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून',
+      'जुलाई', 'अगस्त', 'सितम्बर', 'अक्टूबर', 'नवम्बर', 'दिसम्बर',
+    ];
+    return `${daysHi[dateObj.getDay()]}, ${day} ${monthsHi[month - 1]} ${year}`;
+  }
+
+  const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${daysEn[dateObj.getDay()]}, ${day} ${monthsEn[month - 1]} ${year}`;
+}
+

@@ -1,0 +1,419 @@
+{
+  "type": "RCTScrollView",
+  "testID": "about-modal-scroll",
+  "style": {
+    "backgroundColor": "#f8f8fa"
+  },
+  "children": [
+    {
+      "type": "View",
+      "children": [
+        {
+          "type": "View",
+          "style": {
+            "flexDirection": "row",
+            "flexWrap": "wrap",
+            "gap": 8
+          },
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#fffbeb",
+                "borderColor": "#fde68a",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 6
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#d97706",
+                    "fontSize": 12.5,
+                    "fontWeight": "700"
+                  },
+                  "children": [
+                    "ॐ sanatan.cc"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ecfdf5",
+                "borderColor": "#a7f3d0",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 6
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#047857",
+                    "fontSize": 12.5,
+                    "fontWeight": "700"
+                  },
+                  "children": [
+                    "१००% निःशुल्क • ऑफ़लाइन"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Text",
+          "style": {
+            "color": "#18181b",
+            "fontSize": 24,
+            "fontWeight": "800"
+          },
+          "children": [
+            "सरल भाषा और शुद्ध विज्ञान के साथ वैदिक पञ्चाङ्ग"
+          ]
+        },
+        {
+          "type": "Text",
+          "style": {
+            "color": "#52525b",
+            "fontSize": 15,
+            "fontWeight": "500"
+          },
+          "children": [
+            "sanatan.cc एक गैर-व्यावसायिक, निःशुल्क प्रकल्प है जो हर उम्र के उपयोगकर्ताओं को दैनिक पञ्चाङ्ग, शुभ मुहूर्त, पर्व-व्रत और स्तोत्र सहजता से उपलब्ध कराता है।"
+          ]
+        },
+        {
+          "type": "View",
+          "style": {
+            "gap": 14
+          },
+          "children": [
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "fontSize": 26
+                  },
+                  "children": [
+                    "🔭"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#18181b",
+                    "fontSize": 16,
+                    "fontWeight": "700"
+                  },
+                  "children": [
+                    "आपके शहर के अनुसार सटीक गणना"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 14,
+                    "fontWeight": "500"
+                  },
+                  "children": [
+                    "यह ऐप आपके चुने शहर या जीपीएस स्थान के अनुसार सूर्योदय, सूर्यास्त, तिथि और मुहूर्त की वास्तविक खगोलीय गणना (VSOP87 व लाहिरी अयनांश) तुरंत करता है।"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "fontSize": 26
+                  },
+                  "children": [
+                    "📜"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#18181b",
+                    "fontSize": 16,
+                    "fontWeight": "700"
+                  },
+                  "children": [
+                    "प्रामाणिक शास्त्रीय नियम"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 14,
+                    "fontWeight": "500"
+                  },
+                  "children": [
+                    "मुहूर्त-चिन्तामणि, निर्णयसिन्धु व धर्मसिन्धु जैसे प्रामाणिक ग्रन्थों के अनुसार भद्रा, पञ्चक, राहु काल और शुभ योगों की जाँच।"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "fontSize": 26
+                  },
+                  "children": [
+                    "🔒"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#18181b",
+                    "fontSize": 16,
+                    "fontWeight": "700"
+                  },
+                  "children": [
+                    "१००% ऑफलाइन व पूर्ण गोपनीयता"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 14,
+                    "fontWeight": "500"
+                  },
+                  "children": [
+                    "सारी गणना आपके फोन में ही होती है। न कोई लॉगिन, न कोई विज्ञापन, न ही आपकी व्यक्तिगत जानकारी बाहर भेजी जाती है।"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e4e4e7",
+                "borderRadius": 18,
+                "borderWidth": 1,
+                "padding": 16
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "fontSize": 26
+                  },
+                  "children": [
+                    "🌐"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#18181b",
+                    "fontSize": 16,
+                    "fontWeight": "700"
+                  },
+                  "children": [
+                    "सबके लिए १००% निःशुल्क"
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#52525b",
+                    "fontSize": 14,
+                    "fontWeight": "500"
+                  },
+                  "children": [
+                    "यह सेवा बिना किसी शुल्क, विज्ञापन या पे-वॉल के सभी भक्तों, विद्यार्थियों व परिवारों के लिए सदैव निःशुल्क है।"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "View",
+          "style": {
+            "gap": 12
+          },
+          "children": [
+            {
+              "type": "View",
+              "testID": "about-github-link",
+              "role": "link",
+              "style": {
+                "backgroundColor": "#d97706",
+                "borderRadius": 14,
+                "flexDirection": "row",
+                "gap": 8,
+                "minHeight": 48,
+                "opacity": 1,
+                "paddingHorizontal": 16,
+                "paddingVertical": 12
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#ffffff",
+                    "fontSize": 20,
+                    "fontWeight": "normal"
+                  },
+                  "children": [
+                    ""
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#ffffff",
+                    "fontSize": 15,
+                    "fontWeight": "700"
+                  },
+                  "children": [
+                    "GitHub सोर्स कोड देखें"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "testID": "about-website-link",
+              "role": "link",
+              "style": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#fde68a",
+                "borderRadius": 14,
+                "borderWidth": 1,
+                "flexDirection": "row",
+                "gap": 8,
+                "minHeight": 48,
+                "opacity": 1,
+                "paddingHorizontal": 16,
+                "paddingVertical": 12
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#d97706",
+                    "fontSize": 20,
+                    "fontWeight": "normal"
+                  },
+                  "children": [
+                    ""
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "style": {
+                    "color": "#d97706",
+                    "fontSize": 15,
+                    "fontWeight": "700"
+                  },
+                  "children": [
+                    "sanatan.cc वेबसाइट खोलें"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "View",
+              "children": [
+                {
+                  "type": "View",
+                  "testID": "about-close-btn",
+                  "role": "button",
+                  "style": {
+                    "backgroundColor": "#ffffff",
+                    "borderColor": "#e4e4e7",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "minHeight": 48,
+                    "opacity": 1,
+                    "paddingHorizontal": 16,
+                    "paddingVertical": 11
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 18,
+                        "fontWeight": "normal"
+                      },
+                      "children": [
+                        ""
+                      ]
+                    },
+                    {
+                      "type": "Text",
+                      "style": {
+                        "color": "#18181b",
+                        "fontSize": 15,
+                        "fontWeight": "700"
+                      },
+                      "children": [
+                        "वापस लौटें"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Text",
+          "style": {
+            "color": "#71717a",
+            "fontSize": 14,
+            "fontWeight": "500"
+          },
+          "children": [
+            "सर्वे भवन्तु सुखिनः सर्वे सन्तु निरामयाः । सर्वे भद्राणि पश्यन्तु मा कश्चिद्दुःखभाग्भवेत् ॥"
+          ]
+        }
+      ]
+    }
+  ]
+}

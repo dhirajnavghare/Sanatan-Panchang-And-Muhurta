@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -26,19 +26,62 @@ import {
   ContributorItem,
   FeedbackCategory,
   IssueSeverity,
+  ProjectApiError,
 } from '@/src/services/projectApi';
 import { loadUserProfile } from '@/src/services/userProfile';
 import { triggerHaptic } from '@/src/services/sacredAudio';
+import { useTour } from '@/src/services/appTourContext';
+import { TourTarget } from '@/src/components/TourTarget';
+import { useTourScroll, useTourHorizontalScroll } from '@/src/hooks/useTourScroll';
+import { COMFORT_TOUCH_TARGET, getAppTheme, MIN_TOUCH_TARGET } from '@/src/utils/theme';
+import { AppButton } from '@/src/components/ui/AppButton';
+import { FormField } from '@/src/components/ui/FormField';
+import { InlineFeedbackBanner, ScreenStateView } from '@/src/components/ui/ScreenStateView';
+
+const COMMUNITY_HORIZONTAL_TOUR_TARGETS = ['community-segment-feedback'] as const;
 
 type TabSegment = 'changelog' | 'contributors' | 'feedback' | 'issues';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function CommunityScreen() {
   const { language } = useLanguage();
   const isHi = language === 'hi';
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const theme = getAppTheme(isDark);
+  const { openHelp, isInteractiveTourActive, isTryModeActive, currentTourStep, updateTourRuntimeContext } = useTour();
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+  const segmentScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+  const feedbackEmailRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const feedbackMessageRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const issueDescRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const issueStepsRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const issueNameRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const issueEmailRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const {
+    onScroll: onTourScroll,
+    onMomentumScrollEnd: onTourMomentumScrollEnd,
+    onScrollEndDrag: onTourScrollEndDrag,
+  } = useTourScroll('/(tabs)/community', scrollRef);
+  const {
+    onHorizontalScroll,
+    onHorizontalMomentumScrollEnd,
+    onHorizontalScrollEndDrag,
+  } = useTourHorizontalScroll(
+    '/(tabs)/community',
+    segmentScrollRef,
+    COMMUNITY_HORIZONTAL_TOUR_TARGETS
+  );
 
   const [activeSegment, setActiveSegment] = useState<TabSegment>('changelog');
+  const [manualSegmentStepId, setManualSegmentStepId] = useState<string | null>(null);
+  const effectiveSegment: TabSegment =
+    isInteractiveTourActive &&
+    currentTourStep?.tab === '/(tabs)/community' &&
+    currentTourStep.communitySegment &&
+    manualSegmentStepId !== currentTourStep.id
+      ? currentTourStep.communitySegment
+      : activeSegment;
   const [refreshing, setRefreshing] = useState(false);
 
   // Changelog State
@@ -62,6 +105,7 @@ export default function CommunityScreen() {
   const [feedbackEmail, setFeedbackEmail] = useState('');
   const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false);
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
+  const [feedbackValidationError, setFeedbackValidationError] = useState<string | null>(null);
 
   // 2. Issue / Bug Form State
   const [issueTitle, setIssueTitle] = useState('');
@@ -72,18 +116,41 @@ export default function CommunityScreen() {
   const [issueEmail, setIssueEmail] = useState('');
   const [isIssueSubmitting, setIsIssueSubmitting] = useState(false);
   const [issueSuccess, setIssueSuccess] = useState<string | null>(null);
+  const [issueValidationError, setIssueValidationError] = useState<string | null>(null);
+
+  const formatApiError = useCallback(
+    (err: unknown, fallbackEn: string, fallbackHi: string) => {
+      if (err instanceof ProjectApiError && err.code === 'OFFLINE_OR_TIMEOUT') {
+        return isHi
+          ? 'इंटरनेट से सम्पर्क नहीं हो पाया या अनुरोध समय समाप्त हुआ। कृपया नेटवर्क जाँचकर पुनः प्रयास करें।'
+          : 'Unable to reach server or request timed out. Check your internet connection and tap Retry.';
+      }
+      if (err instanceof Error && err.message) {
+        return err.message;
+      }
+      return isHi ? fallbackHi : fallbackEn;
+    },
+    [isHi]
+  );
 
   // Load User Profile for auto-filling name
   useEffect(() => {
-    loadUserProfile().then((prof) => {
-      if (prof?.name && prof.name !== 'साधक' && prof.name !== 'Sadhaka') {
-        setFeedbackName(prof.name);
-        setIssueName(prof.name);
-      }
-    });
+    let mounted = true;
+    loadUserProfile()
+      .then((prof) => {
+        if (!mounted) return;
+        if (prof?.name && prof.name !== 'साधक' && prof.name !== 'Sadhak' && prof.name !== 'Sadhaka') {
+          setFeedbackName(prof.name);
+          setIssueName(prof.name);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Fetch Changelog
+  // Fetch Changelog (user-triggered refresh)
   const loadChangelog = useCallback(async () => {
     try {
       setIsChangelogLoading(true);
@@ -91,14 +158,18 @@ export default function CommunityScreen() {
       const res = await fetchPublicChangelog();
       setChangelog(res.changelog || []);
       setReleaseCount(res.releases_count || (res.changelog ? res.changelog.length : 0));
-    } catch (err: any) {
-      setChangelogError(err.message || 'Failed to load releases');
+      updateTourRuntimeContext({ hasNetworkErrorOnCommunity: false });
+    } catch (err: unknown) {
+      setChangelogError(
+        formatApiError(err, 'Failed to load releases', 'रिलीज़ इतिहास लोड नहीं हो सका।')
+      );
+      updateTourRuntimeContext({ hasNetworkErrorOnCommunity: true });
     } finally {
       setIsChangelogLoading(false);
     }
-  }, []);
+  }, [formatApiError, updateTourRuntimeContext]);
 
-  // Fetch Contributors
+  // Fetch Contributors (user-triggered refresh)
   const loadContributors = useCallback(async () => {
     try {
       setIsContributorsLoading(true);
@@ -106,17 +177,59 @@ export default function CommunityScreen() {
       const res = await fetchPublicContributors();
       setContributors(res.contributors || []);
       setTotalContributors(res.total_contributors || (res.contributors ? res.contributors.length : 0));
-    } catch (err: any) {
-      setContributorsError(err.message || 'Failed to load contributors');
+      updateTourRuntimeContext({ hasNetworkErrorOnCommunity: false });
+    } catch (err: unknown) {
+      setContributorsError(
+        formatApiError(err, 'Failed to load contributors', 'योगदानकर्ता विवरण लोड नहीं हो सका।')
+      );
+      updateTourRuntimeContext({ hasNetworkErrorOnCommunity: true });
     } finally {
       setIsContributorsLoading(false);
     }
-  }, []);
+  }, [formatApiError, updateTourRuntimeContext]);
 
   useEffect(() => {
-    loadChangelog();
-    loadContributors();
-  }, [loadChangelog, loadContributors]);
+    let mounted = true;
+    fetchPublicChangelog()
+      .then((res) => {
+        if (!mounted) return;
+        setChangelog(res.changelog || []);
+        setReleaseCount(res.releases_count || (res.changelog ? res.changelog.length : 0));
+        setChangelogError(null);
+        updateTourRuntimeContext({ hasNetworkErrorOnCommunity: false });
+      })
+      .catch((err: unknown) => {
+        if (!mounted) return;
+        setChangelogError(
+          formatApiError(err, 'Failed to load releases', 'रिलीज़ इतिहास लोड नहीं हो सका।')
+        );
+        updateTourRuntimeContext({ hasNetworkErrorOnCommunity: true });
+      })
+      .finally(() => {
+        if (mounted) setIsChangelogLoading(false);
+      });
+
+    fetchPublicContributors()
+      .then((res) => {
+        if (!mounted) return;
+        setContributors(res.contributors || []);
+        setTotalContributors(res.total_contributors || (res.contributors ? res.contributors.length : 0));
+        setContributorsError(null);
+      })
+      .catch((err: unknown) => {
+        if (!mounted) return;
+        setContributorsError(
+          formatApiError(err, 'Failed to load contributors', 'योगदानकर्ता विवरण लोड नहीं हो सका।')
+        );
+      })
+      .finally(() => {
+        if (mounted) setIsContributorsLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [formatApiError, updateTourRuntimeContext]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -124,19 +237,34 @@ export default function CommunityScreen() {
     setRefreshing(false);
   };
 
-  const handleTabChange = async (seg: TabSegment) => {
-    await triggerHaptic('tap', true).catch(() => {});
+  const handleTabChange = (seg: TabSegment) => {
+    triggerHaptic('tap', true).catch(() => {});
+    if (isInteractiveTourActive && currentTourStep?.id) {
+      setManualSegmentStepId(currentTourStep.id);
+    }
     setActiveSegment(seg);
   };
 
   // Submit Feedback Handler
   const handleSubmitFeedback = async () => {
+    if (isFeedbackSubmitting) return;
+    setFeedbackValidationError(null);
     if (!feedbackMessage.trim()) {
-      Alert.alert(isHi ? 'त्रुटि' : 'Missing Information', isHi ? 'कृपया अपना सन्देश दर्ज करें।' : 'Please enter your feedback message.');
+      const msg = isHi ? 'कृपया अपना सन्देश दर्ज करें।' : 'Please enter your feedback message.';
+      setFeedbackValidationError(msg);
+      Alert.alert(isHi ? 'त्रुटि' : 'Missing Information', msg);
       return;
     }
     if (!feedbackEmail.trim()) {
-      Alert.alert(isHi ? 'त्रुटि' : 'Missing Email', isHi ? 'कृपया अपना ईमेल पता दर्ज करें।' : 'Please enter your email address.');
+      const msg = isHi ? 'कृपया अपना ईमेल पता दर्ज करें।' : 'Please enter your email address.';
+      setFeedbackValidationError(msg);
+      Alert.alert(isHi ? 'त्रुटि' : 'Missing Email', msg);
+      return;
+    }
+    if (!EMAIL_REGEX.test(feedbackEmail.trim())) {
+      const msg = isHi ? 'कृपया वैध ईमेल पता दर्ज करें।' : 'Please enter a valid email address.';
+      setFeedbackValidationError(msg);
+      Alert.alert(isHi ? 'अवैध ईमेल' : 'Invalid Email', msg);
       return;
     }
 
@@ -162,8 +290,10 @@ export default function CommunityScreen() {
         isHi ? 'सफलता' : 'Thank You',
         isHi ? 'आपकी प्रतिक्रिया सफलतापूर्वक दर्ज कर ली गई है।' : 'Your feedback has been submitted successfully.'
       );
-    } catch (err: any) {
-      Alert.alert(isHi ? 'विफल' : 'Submission Failed', err.message || 'Failed to submit feedback.');
+    } catch (err: unknown) {
+      const msg = formatApiError(err, 'Failed to submit feedback.', 'प्रतिक्रिया भेजने में त्रुटि हुई।');
+      setFeedbackValidationError(msg);
+      Alert.alert(isHi ? 'विफल' : 'Submission Failed', msg);
     } finally {
       setIsFeedbackSubmitting(false);
     }
@@ -171,16 +301,30 @@ export default function CommunityScreen() {
 
   // Submit Issue Handler
   const handleSubmitIssue = async () => {
+    if (isIssueSubmitting) return;
+    setIssueValidationError(null);
     if (!issueTitle.trim()) {
-      Alert.alert(isHi ? 'त्रुटि' : 'Missing Title', isHi ? 'कृपया समस्या का शीर्षक दर्ज करें।' : 'Please enter an issue title.');
+      const msg = isHi ? 'कृपया समस्या का शीर्षक दर्ज करें।' : 'Please enter an issue title.';
+      setIssueValidationError(msg);
+      Alert.alert(isHi ? 'त्रुटि' : 'Missing Title', msg);
       return;
     }
     if (!issueDescription.trim()) {
-      Alert.alert(isHi ? 'त्रुटि' : 'Missing Description', isHi ? 'कृपया समस्या का विस्तृत विवरण दर्ज करें।' : 'Please describe the issue.');
+      const msg = isHi ? 'कृपया समस्या का विस्तृत विवरण दर्ज करें।' : 'Please describe the issue.';
+      setIssueValidationError(msg);
+      Alert.alert(isHi ? 'त्रुटि' : 'Missing Description', msg);
       return;
     }
     if (!issueEmail.trim()) {
-      Alert.alert(isHi ? 'त्रुटि' : 'Missing Email', isHi ? 'कृपया ईमेल दर्ज करें।' : 'Please provide your email for updates.');
+      const msg = isHi ? 'कृपया ईमेल दर्ज करें।' : 'Please provide your email for updates.';
+      setIssueValidationError(msg);
+      Alert.alert(isHi ? 'त्रुटि' : 'Missing Email', msg);
+      return;
+    }
+    if (!EMAIL_REGEX.test(issueEmail.trim())) {
+      const msg = isHi ? 'कृपया वैध ईमेल पता दर्ज करें।' : 'Please enter a valid email address.';
+      setIssueValidationError(msg);
+      Alert.alert(isHi ? 'अवैध ईमेल' : 'Invalid Email', msg);
       return;
     }
 
@@ -211,8 +355,10 @@ export default function CommunityScreen() {
           ? `समस्या आईडी #${res.issueId ?? ''} दर्ज कर ली गई है। हमारी टीम इसका शीघ्र समाधान करेगी।`
           : `Issue #${res.issueId ?? ''} logged. Our development team has been notified.`
       );
-    } catch (err: any) {
-      Alert.alert(isHi ? 'विफल' : 'Submission Failed', err.message || 'Failed to submit issue report.');
+    } catch (err: unknown) {
+      const msg = formatApiError(err, 'Failed to submit issue report.', 'समस्या रिपोर्ट दर्ज नहीं हो सकी।');
+      setIssueValidationError(msg);
+      Alert.alert(isHi ? 'विफल' : 'Submission Failed', msg);
     } finally {
       setIsIssueSubmitting(false);
     }
@@ -234,25 +380,25 @@ export default function CommunityScreen() {
 
   const dynamicStyles = {
     container: {
-      backgroundColor: isDark ? '#0e0e12' : '#f8f8fa',
+      backgroundColor: theme.bg,
     },
     card: {
-      backgroundColor: isDark ? '#16161c' : '#ffffff',
-      borderColor: isDark ? '#27272a' : '#e4e4e7',
+      backgroundColor: theme.card,
+      borderColor: theme.border,
     },
     subCard: {
-      backgroundColor: isDark ? '#1e1e26' : '#f4f4f5',
+      backgroundColor: theme.cardMuted,
     },
     textPrimary: {
-      color: isDark ? '#fafafa' : '#18181b',
+      color: theme.text,
     },
     textSecondary: {
-      color: isDark ? '#a1a1aa' : '#71717a',
+      color: theme.textMuted,
     },
     input: {
-      backgroundColor: isDark ? '#1a1a24' : '#f4f4f5',
-      borderColor: isDark ? '#2d2d38' : '#e4e4e7',
-      color: isDark ? '#ffffff' : '#18181b',
+      backgroundColor: theme.cardMuted,
+      borderColor: theme.border,
+      color: theme.text,
     },
   };
 
@@ -262,40 +408,73 @@ export default function CommunityScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
+        ref={scrollRef}
         style={[styles.container, dynamicStyles.container]}
         contentContainerStyle={styles.contentContainer}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Palette.primary} />}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        onScroll={onTourScroll}
+        onMomentumScrollEnd={onTourMomentumScrollEnd}
+        onScrollEndDrag={onTourScrollEndDrag}
+        scrollEventThrottle={16}
+        scrollEnabled={!isInteractiveTourActive || isTryModeActive}
       >
         {/* Header Hero Banner */}
-        <View style={[styles.heroCard, dynamicStyles.card]}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveBadgeText}>
-                {isHi ? 'सार्वजनिक प्रोजेक्ट हब' : 'Live Community & Project Hub'}
-              </Text>
+        <TourTarget targetId="community-hero-card" borderRadius={18}>
+          <View testID="community-hero-card" style={[styles.heroCard, dynamicStyles.card]}>
+            <View style={styles.heroTopRow}>
+              <View style={styles.liveBadge}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveBadgeText}>
+                  {isHi ? 'सार्वजनिक प्रोजेक्ट हब' : 'Live Community & Project Hub'}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={styles.freeBadgePill}>
+                  <Text style={styles.freeBadgeText}>{isHi ? '१००% निःशुल्क' : '100% Free'}</Text>
+                </View>
+                <TouchableOpacity
+                  testID="community-help-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'सहायता और मार्गदर्शन' : 'Help & Guide'}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  onPress={() => openHelp('community')}
+                  style={[
+                    styles.helpBtn,
+                    isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+                  ]}
+                >
+                  <Ionicons
+                    name="help-circle-outline"
+                    size={22}
+                    color={isDark ? '#d4d4d8' : Palette.textSecondaryLight}
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.freeBadgePill}>
-              <Text style={styles.freeBadgeText}>{isHi ? '१००% निःशुल्क' : '100% Free'}</Text>
-            </View>
-          </View>
 
-          <Text style={[styles.heroTitle, dynamicStyles.textPrimary]}>
-            {isHi ? 'सनातन पञ्चाङ्ग एवं मुहूर्त ऍप' : 'Sanatan Panchang & Muhurta'}
-          </Text>
-          <Text style={[styles.heroSubtitle, dynamicStyles.textSecondary]}>
-            {isHi
-              ? '१००% गणितीय शुद्धता, सार्वजनिक विकास, योगदानकर्ता एवं प्रत्यक्ष समर्थन'
-              : 'Mathematical Vedic ephemeris, public development, team contributors & active support'}
-          </Text>
-        </View>
+            <Text style={[styles.heroTitle, dynamicStyles.textPrimary]}>
+              {isHi ? 'सनातन पञ्चाङ्ग एवं मुहूर्त ऍप' : 'Sanatan Panchang & Muhurta'}
+            </Text>
+            <Text style={[styles.heroSubtitle, dynamicStyles.textSecondary]}>
+              {isHi
+                ? '१००% गणितीय शुद्धता, सार्वजनिक विकास, योगदानकर्ता एवं प्रत्यक्ष समर्थन'
+                : 'Mathematical Vedic ephemeris, public development, team contributors & active support'}
+            </Text>
+          </View>
+        </TourTarget>
 
         {/* Horizontal Navigation Segment Switcher */}
         <ScrollView
+          ref={segmentScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.segmentScroll}
+          onScroll={onHorizontalScroll}
+          onMomentumScrollEnd={onHorizontalMomentumScrollEnd}
+          onScrollEndDrag={onHorizontalScrollEndDrag}
+          scrollEventThrottle={16}
         >
           {[
             { id: 'changelog', icon: 'git-commit-outline', labelHi: 'अपडेट्स', labelEn: 'Changelog', badge: releaseCount },
@@ -303,12 +482,17 @@ export default function CommunityScreen() {
             { id: 'feedback', icon: 'chatbubbles-outline', labelHi: 'प्रतिक्रिया', labelEn: 'Feedback' },
             { id: 'issues', icon: 'bug-outline', labelHi: 'समस्या', labelEn: 'Report Bug' },
           ].map((tab) => {
-            const isActive = activeSegment === tab.id;
-            return (
+            const isActive = effectiveSegment === tab.id;
+            const chipNode = (
               <TouchableOpacity
                 key={tab.id}
+                testID={`community-segment-${tab.id}`}
+                accessibilityRole="tab"
+                accessibilityLabel={isHi ? tab.labelHi : tab.labelEn}
+                accessibilityState={{ selected: isActive }}
                 style={[
                   styles.segmentChip,
+                  { minHeight: MIN_TOUCH_TARGET },
                   isDark ? styles.segmentChipDark : styles.segmentChipLight,
                   isActive && styles.segmentChipActive,
                 ]}
@@ -316,20 +500,34 @@ export default function CommunityScreen() {
               >
                 <Ionicons
                   name={tab.icon as any}
-                  size={15}
-                  color={isActive ? '#ffffff' : (isDark ? '#a1a1aa' : '#71717a')}
+                  size={17}
+                  color={isActive ? '#ffffff' : (isDark ? theme.textSecondary : '#52525b')}
                 />
-                <Text style={[styles.segmentChipText, isActive && styles.segmentChipTextActive]}>
+                <Text
+                  style={[
+                    styles.segmentChipText,
+                    isDark && { color: theme.textSecondary },
+                    isActive && styles.segmentChipTextActive,
+                  ]}
+                >
                   {isHi ? tab.labelHi : tab.labelEn}
                 </Text>
                 {tab.badge !== undefined && tab.badge > 0 && (
-                  <View style={[styles.badgeCount, isActive && styles.badgeCountActive]}>
-                    <Text style={[styles.badgeCountText, isActive && styles.badgeCountTextActive]}>
+                  <View style={[styles.badgeCount, isDark && !isActive && { backgroundColor: theme.cardMuted }, isActive && styles.badgeCountActive]}>
+                    <Text style={[styles.badgeCountText, isDark && !isActive && { color: theme.text }, isActive && styles.badgeCountTextActive]}>
                       {tab.badge}
                     </Text>
                   </View>
                 )}
               </TouchableOpacity>
+            );
+
+            return tab.id === 'feedback' ? (
+              <TourTarget key={tab.id} targetId="community-segment-feedback" borderRadius={20}>
+                {chipNode}
+              </TourTarget>
+            ) : (
+              chipNode
             );
           })}
         </ScrollView>
@@ -337,10 +535,10 @@ export default function CommunityScreen() {
         {/* =========================================================================
             SEGMENT 1: CHANGELOG (GET /api/v1/public/changelog)
            ========================================================================= */}
-        {activeSegment === 'changelog' && (
+        {effectiveSegment === 'changelog' && (
           <View style={styles.sectionWrap}>
             <View style={styles.sectionHeaderRow}>
-              <View>
+              <View style={{ flex: 1, minWidth: 180 }}>
                 <Text style={[styles.sectionHeading, dynamicStyles.textPrimary]}>
                   {isHi ? 'सार्वजनिक रिलीज़ व अपडेट्स' : 'Releases & Public Changelog'}
                 </Text>
@@ -348,8 +546,21 @@ export default function CommunityScreen() {
                   {isHi ? `कुल ${releaseCount} पूर्ण संस्करण उपलब्ध` : `${releaseCount} recorded milestones & releases`}
                 </Text>
               </View>
-              <TouchableOpacity onPress={loadChangelog} style={styles.iconRefreshBtn}>
-                <Ionicons name="refresh" size={16} color={Palette.primary} />
+              <TouchableOpacity
+                testID="changelog-refresh-btn"
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'रिलीज़ इतिहास रीफ्रेश करें' : 'Refresh releases'}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                onPress={loadChangelog}
+                style={[
+                  styles.iconRefreshBtn,
+                  isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+                ]}
+              >
+                <Ionicons name="refresh" size={17} color={theme.primary} />
+                <Text style={[styles.refreshBtnText, { color: theme.primary }]}>
+                  {isHi ? 'रीफ्रेश' : 'Refresh'}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -361,19 +572,23 @@ export default function CommunityScreen() {
                 </Text>
               </View>
             ) : changelogError ? (
-              <View style={[styles.errorCard, dynamicStyles.card]}>
-                <Ionicons name="alert-circle" size={24} color={Palette.danger} />
-                <Text style={styles.errorCardText}>{changelogError}</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={loadChangelog}>
-                  <Text style={styles.retryBtnText}>{isHi ? 'पुनः प्रयास करें' : 'Retry'}</Text>
-                </TouchableOpacity>
-              </View>
+              <ScreenStateView
+                testID="changelog-error-card"
+                tone="error"
+                iconName="cloud-offline-outline"
+                title={isHi ? 'रिलीज़ इतिहास लोड नहीं हो सका' : 'Unable to Load Release History'}
+                description={changelogError}
+                actionLabel={isHi ? 'पुनः प्रयास करें' : 'Retry'}
+                actionTestID="changelog-retry-btn"
+                onAction={loadChangelog}
+              />
             ) : changelog.length === 0 ? (
-              <View style={[styles.emptyCard, dynamicStyles.card]}>
-                <Text style={styles.emptyCardText}>
-                  {isHi ? 'कोई रिलीज़ विवरण उपलब्ध नहीं है।' : 'No changelog records found.'}
-                </Text>
-              </View>
+              <ScreenStateView
+                tone="empty"
+                iconName="cube-outline"
+                title={isHi ? 'कोई रिलीज़ विवरण उपलब्ध नहीं' : 'No Release History Yet'}
+                description={isHi ? 'कोई रिलीज़ विवरण उपलब्ध नहीं है।' : 'No changelog records found.'}
+              />
             ) : (
               changelog.map((item, idx) => (
                 <View key={item.id} style={[styles.releaseCard, dynamicStyles.card]}>
@@ -407,10 +622,10 @@ export default function CommunityScreen() {
         {/* =========================================================================
             SEGMENT 2: CONTRIBUTORS (GET /api/v1/public/contributors)
            ========================================================================= */}
-        {activeSegment === 'contributors' && (
+        {effectiveSegment === 'contributors' && (
           <View style={styles.sectionWrap}>
             <View style={styles.sectionHeaderRow}>
-              <View>
+              <View style={{ flex: 1, minWidth: 180 }}>
                 <Text style={[styles.sectionHeading, dynamicStyles.textPrimary]}>
                   {isHi ? 'प्रोजेक्ट टीम एवं योगदानकर्ता' : 'Contributors & Development Team'}
                 </Text>
@@ -420,8 +635,21 @@ export default function CommunityScreen() {
                     : `${totalContributors} core members, testers & engineers`}
                 </Text>
               </View>
-              <TouchableOpacity onPress={loadContributors} style={styles.iconRefreshBtn}>
-                <Ionicons name="refresh" size={16} color={Palette.primary} />
+              <TouchableOpacity
+                testID="contributors-refresh-btn"
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'योगदानकर्ता रीफ्रेश करें' : 'Refresh contributors'}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                onPress={loadContributors}
+                style={[
+                  styles.iconRefreshBtn,
+                  isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border },
+                ]}
+              >
+                <Ionicons name="refresh" size={17} color={theme.primary} />
+                <Text style={[styles.refreshBtnText, { color: theme.primary }]}>
+                  {isHi ? 'रीफ्रेश' : 'Refresh'}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -433,13 +661,16 @@ export default function CommunityScreen() {
                 </Text>
               </View>
             ) : contributorsError ? (
-              <View style={[styles.errorCard, dynamicStyles.card]}>
-                <Ionicons name="alert-circle" size={24} color={Palette.danger} />
-                <Text style={styles.errorCardText}>{contributorsError}</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={loadContributors}>
-                  <Text style={styles.retryBtnText}>{isHi ? 'पुनः प्रयास करें' : 'Retry'}</Text>
-                </TouchableOpacity>
-              </View>
+              <ScreenStateView
+                testID="contributors-error-card"
+                tone="error"
+                iconName="people-outline"
+                title={isHi ? 'योगदानकर्ता सूची लोड नहीं हो सकी' : 'Unable to Load Contributors'}
+                description={contributorsError}
+                actionLabel={isHi ? 'पुनः प्रयास करें' : 'Retry'}
+                actionTestID="contributors-retry-btn"
+                onAction={loadContributors}
+              />
             ) : (
               contributors.map((c) => {
                 const roleLower = (c.role_in_project || 'contributor').toLowerCase();
@@ -475,7 +706,7 @@ export default function CommunityScreen() {
 
                       <View style={{ flex: 1, marginLeft: 12 }}>
                         <View style={styles.contributorNameRow}>
-                          <Text style={[styles.contributorName, dynamicStyles.textPrimary]} numberOfLines={1}>
+                          <Text style={[styles.contributorName, dynamicStyles.textPrimary]}>
                             {c.name}
                           </Text>
                           <View style={[styles.roleBadge, roleBadgeStyle]}>
@@ -535,7 +766,7 @@ export default function CommunityScreen() {
         {/* =========================================================================
             SEGMENT 3: SUBMIT USER FEEDBACK (POST /api/v1/public/feedback)
            ========================================================================= */}
-        {activeSegment === 'feedback' && (
+        {effectiveSegment === 'feedback' && (
           <View style={styles.sectionWrap}>
             <View style={[styles.formCard, dynamicStyles.card]}>
               <View style={styles.formHeaderRow}>
@@ -550,12 +781,9 @@ export default function CommunityScreen() {
                   : 'Your ratings and suggestions directly shape future releases. Let us know how we can improve.'}
               </Text>
 
-              {feedbackSuccess && (
-                <View style={styles.successBanner}>
-                  <Ionicons name="checkmark-circle" size={18} color="#047857" />
-                  <Text style={styles.successBannerText}>{feedbackSuccess}</Text>
-                </View>
-              )}
+              {feedbackSuccess ? (
+                <InlineFeedbackBanner tone="success" message={feedbackSuccess} />
+              ) : null}
 
               {/* 5-Star Rating Selector */}
               <View style={styles.fieldBlock}>
@@ -566,6 +794,10 @@ export default function CommunityScreen() {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <TouchableOpacity
                       key={star}
+                      testID={`feedback-star-${star}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${star} star rating`}
+                      accessibilityState={{ selected: feedbackRating >= star }}
                       style={styles.starTouch}
                       onPress={() => {
                         triggerHaptic('tap', true).catch(() => {});
@@ -610,6 +842,10 @@ export default function CommunityScreen() {
                     return (
                       <TouchableOpacity
                         key={c.id}
+                        testID={`feedback-category-${c.id}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={isHi ? c.labelHi : c.labelEn}
+                        accessibilityState={{ selected: isSelected }}
                         style={[
                           styles.chipOption,
                           dynamicStyles.subCard,
@@ -617,7 +853,13 @@ export default function CommunityScreen() {
                         ]}
                         onPress={() => setFeedbackCategory(c.id as FeedbackCategory)}
                       >
-                        <Text style={[styles.chipOptionText, isSelected && styles.chipOptionTextActive]}>
+                        <Text
+                          style={[
+                            styles.chipOptionText,
+                            isDark && !isSelected && { color: theme.textSecondary },
+                            isSelected && styles.chipOptionTextActive,
+                          ]}
+                        >
                           {isHi ? c.labelHi : c.labelEn}
                         </Text>
                       </TouchableOpacity>
@@ -627,71 +869,90 @@ export default function CommunityScreen() {
               </View>
 
               {/* Name & Email */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '३. आपका नाम' : '3. Your Name'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, dynamicStyles.input]}
-                  value={feedbackName}
-                  onChangeText={setFeedbackName}
-                  placeholder={isHi ? 'उदा. राहुल शर्मा' : 'e.g. John Doe'}
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                />
-              </View>
+              <FormField
+                testID="feedback-name-input"
+                label={isHi ? '३. आपका नाम' : '3. Your Name'}
+                optionalLabel={isHi ? 'वैकल्पिक' : 'Optional'}
+                accessibilityLabel={isHi ? 'आपका नाम' : 'Your Name'}
+                value={feedbackName}
+                onChangeText={setFeedbackName}
+                maxLength={80}
+                returnKeyType="next"
+                onSubmitEditing={() => feedbackEmailRef.current?.focus()}
+                placeholder={isHi ? 'उदा. राहुल शर्मा' : 'e.g. John Doe'}
+              />
 
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '४. आपका ईमेल पता' : '4. Your Email Address'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, dynamicStyles.input]}
-                  value={feedbackEmail}
-                  onChangeText={setFeedbackEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder="your.email@example.com"
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                />
-              </View>
+              <FormField
+                inputRef={feedbackEmailRef}
+                testID="feedback-email-input"
+                label={isHi ? '४. आपका ईमेल पता' : '4. Your Email Address'}
+                optionalLabel={isHi ? 'वैकल्पिक' : 'Optional'}
+                helperText={
+                  isHi
+                    ? 'केवल तभी लिखें यदि आप हमारी टीम से उत्तर चाहते हैं।'
+                    : 'Only needed if you would like a reply from our team.'
+                }
+                accessibilityLabel={isHi ? 'आपका ईमेल पता' : 'Your Email Address'}
+                value={feedbackEmail}
+                onChangeText={(text) => {
+                  setFeedbackEmail(text);
+                  if (feedbackValidationError) setFeedbackValidationError(null);
+                }}
+                maxLength={120}
+                returnKeyType="next"
+                onSubmitEditing={() => feedbackMessageRef.current?.focus()}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="your.email@example.com"
+              />
 
               {/* Message */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '५. प्रतिक्रिया सन्देश' : '5. Feedback Message'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, styles.textArea, dynamicStyles.input]}
-                  value={feedbackMessage}
-                  onChangeText={setFeedbackMessage}
-                  multiline
-                  numberOfLines={4}
-                  placeholder={
-                    isHi
-                      ? 'अपने अनुभव, सुधार हेतु सुझाव या प्रशंसा लिखें...'
-                      : 'Share your thoughts, suggestions or encouragement...'
-                  }
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
+              <FormField
+                inputRef={feedbackMessageRef}
+                testID="feedback-message-input"
+                label={isHi ? '५. प्रतिक्रिया सन्देश' : '5. Feedback Message'}
+                requiredLabel={isHi ? 'आवश्यक' : 'Required'}
+                charCount={{ current: feedbackMessage.length, max: 500 }}
+                helperText={
+                  isHi
+                    ? 'अपना अनुभव, प्रशंसा या कोई सुधार सुझाव सरल शब्दों में लिखें।'
+                    : 'Write what you liked or what we can make easier for you.'
+                }
+                accessibilityLabel={isHi ? 'प्रतिक्रिया सन्देश' : 'Feedback Message'}
+                value={feedbackMessage}
+                onChangeText={(text) => {
+                  setFeedbackMessage(text);
+                  if (feedbackValidationError) setFeedbackValidationError(null);
+                }}
+                maxLength={500}
+                multiline
+                numberOfLines={4}
+                placeholder={
+                  isHi
+                    ? 'अपने अनुभव, सुधार हेतु सुझाव या प्रशंसा लिखें...'
+                    : 'Share your thoughts, suggestions or encouragement...'
+                }
+              />
+
+              {feedbackValidationError ? (
+                <InlineFeedbackBanner
+                  testID="feedback-validation-error"
+                  tone="error"
+                  message={feedbackValidationError}
                 />
-              </View>
+              ) : null}
 
               {/* Submit Button */}
-              <TouchableOpacity
-                style={[styles.submitButton, isFeedbackSubmitting && { opacity: 0.7 }]}
-                onPress={handleSubmitFeedback}
+              <AppButton
+                testID="feedback-submit-btn"
+                accessibilityLabel={isHi ? 'प्रतिक्रिया भेजें' : 'Submit Feedback'}
+                label={isHi ? 'प्रतिक्रिया भेजें' : 'Submit Feedback'}
+                iconName="paper-plane"
+                loading={isFeedbackSubmitting}
                 disabled={isFeedbackSubmitting}
-              >
-                {isFeedbackSubmitting ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="paper-plane" size={16} color="#ffffff" />
-                    <Text style={styles.submitButtonText}>
-                      {isHi ? 'प्रतिक्रिया भेजें' : 'Submit Feedback'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
+                onPress={handleSubmitFeedback}
+                style={{ marginTop: 8 }}
+              />
             </View>
           </View>
         )}
@@ -699,7 +960,7 @@ export default function CommunityScreen() {
         {/* =========================================================================
             SEGMENT 4: REPORT BUG / ISSUE (POST /api/v1/public/issues)
            ========================================================================= */}
-        {activeSegment === 'issues' && (
+        {effectiveSegment === 'issues' && (
           <View style={styles.sectionWrap}>
             <View style={[styles.formCard, dynamicStyles.card]}>
               <View style={styles.formHeaderRow}>
@@ -714,35 +975,40 @@ export default function CommunityScreen() {
                   : 'Report functional or calculation issues directly to our engineering repository.'}
               </Text>
 
-              {issueSuccess && (
-                <View style={styles.successBanner}>
-                  <Ionicons name="checkmark-circle" size={18} color="#047857" />
-                  <Text style={styles.successBannerText}>{issueSuccess}</Text>
-                </View>
-              )}
+              {issueSuccess ? (
+                <InlineFeedbackBanner tone="success" message={issueSuccess} />
+              ) : null}
 
               {/* Title */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '१. समस्या का संक्षिप्त शीर्षक *' : '1. Issue Title *'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, dynamicStyles.input]}
-                  value={issueTitle}
-                  onChangeText={setIssueTitle}
-                  placeholder={
-                    isHi
-                      ? 'उदा. सूर्योदय समय गणना में ५ मिनट का अन्तर'
-                      : 'e.g. Sunrise calculation mismatch on custom GPS'
-                  }
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                />
-              </View>
+              <FormField
+                testID="issue-title-input"
+                label={isHi ? '१. समस्या का संक्षिप्त शीर्षक' : '1. Issue Title'}
+                requiredLabel={isHi ? 'आवश्यक' : 'Required'}
+                helperText={
+                  isHi
+                    ? 'एक छोटे वाक्य में बताएं कि क्या समस्या दिखी।'
+                    : 'Summarize what went wrong in a short sentence.'
+                }
+                accessibilityLabel={isHi ? 'समस्या का शीर्षक' : 'Issue Title'}
+                value={issueTitle}
+                onChangeText={(text) => {
+                  setIssueTitle(text);
+                  if (issueValidationError) setIssueValidationError(null);
+                }}
+                maxLength={120}
+                returnKeyType="next"
+                onSubmitEditing={() => issueDescRef.current?.focus()}
+                placeholder={
+                  isHi
+                    ? 'उदा. सूर्योदय समय गणना में ५ मिनट का अन्तर'
+                    : 'e.g. Sunrise time looks off for custom city'
+                }
+              />
 
               {/* Severity Chips */}
               <View style={styles.fieldBlock}>
                 <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '२. गम्भीरता स्तर (Severity)' : '2. Severity Level'}
+                  {isHi ? '२. गम्भीरता स्तर' : '2. How serious is it?'}
                 </Text>
                 <View style={styles.chipsRow}>
                   {[
@@ -755,6 +1021,10 @@ export default function CommunityScreen() {
                     return (
                       <TouchableOpacity
                         key={s.id}
+                        testID={`issue-severity-${s.id}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={isHi ? s.labelHi : s.labelEn}
+                        accessibilityState={{ selected: isSelected }}
                         style={[
                           styles.chipOption,
                           dynamicStyles.subCard,
@@ -762,7 +1032,13 @@ export default function CommunityScreen() {
                         ]}
                         onPress={() => setIssueSeverity(s.id as IssueSeverity)}
                       >
-                        <Text style={[styles.chipOptionText, isSelected && { color: '#ffffff' }]}>
+                        <Text
+                          style={[
+                            styles.chipOptionText,
+                            isDark && !isSelected && { color: theme.textSecondary },
+                            isSelected && { color: '#ffffff' },
+                          ]}
+                        >
                           {isHi ? s.labelHi : s.labelEn}
                         </Text>
                       </TouchableOpacity>
@@ -772,91 +1048,110 @@ export default function CommunityScreen() {
               </View>
 
               {/* Description */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '३. समस्या का विस्तृत विवरण *' : '3. Issue Description *'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, styles.textArea, dynamicStyles.input]}
-                  value={issueDescription}
-                  onChangeText={setIssueDescription}
-                  multiline
-                  numberOfLines={4}
-                  placeholder={
-                    isHi
-                      ? 'समस्या कब और कैसे उत्पन्न हुई? विस्तृत जानकारी लिखें...'
-                      : 'Describe what happened, expected behavior vs observed behavior...'
-                  }
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                />
-              </View>
+              <FormField
+                inputRef={issueDescRef}
+                testID="issue-description-input"
+                label={isHi ? '३. समस्या का विस्तृत विवरण' : '3. Issue Description'}
+                requiredLabel={isHi ? 'आवश्यक' : 'Required'}
+                charCount={{ current: issueDescription.length, max: 600 }}
+                helperText={
+                  isHi
+                    ? 'बताएं कि आपने क्या देखा और वास्तव में क्या होना चाहिए था।'
+                    : 'Tell us what you expected to see and what happened instead.'
+                }
+                accessibilityLabel={isHi ? 'समस्या का विवरण' : 'Issue Description'}
+                value={issueDescription}
+                onChangeText={(text) => {
+                  setIssueDescription(text);
+                  if (issueValidationError) setIssueValidationError(null);
+                }}
+                maxLength={600}
+                multiline
+                numberOfLines={4}
+                placeholder={
+                  isHi
+                    ? 'समस्या कब और कैसे उत्पन्न हुई? विस्तृत जानकारी लिखें...'
+                    : 'Describe what happened, expected behavior vs observed behavior...'
+                }
+              />
 
               {/* Steps to Reproduce */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '४. दोहराने के चरण (Steps to Reproduce)' : '4. Steps to Reproduce'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, styles.textArea, dynamicStyles.input]}
-                  value={issueSteps}
-                  onChangeText={setIssueSteps}
-                  multiline
-                  numberOfLines={3}
-                  placeholder={
-                    isHi
-                      ? '१. पञ्चाङ्ग टैब खोलें\n२. जीपीएस बटन दबाएं...'
-                      : '1. Open Dinacharya tab\n2. Click GPS detect...'
-                  }
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                />
-              </View>
+              <FormField
+                inputRef={issueStepsRef}
+                testID="issue-steps-input"
+                label={isHi ? '४. समस्या कैसे दिखी (चरण)' : '4. Steps to Reproduce'}
+                optionalLabel={isHi ? 'वैकल्पिक' : 'Optional'}
+                accessibilityLabel={isHi ? 'दोहराने के चरण' : 'Steps to Reproduce'}
+                value={issueSteps}
+                onChangeText={setIssueSteps}
+                maxLength={400}
+                multiline
+                numberOfLines={3}
+                placeholder={
+                  isHi
+                    ? '१. पञ्चाङ्ग टैब खोलें\n२. जीपीएस बटन दबाएं...'
+                    : '1. Open Dinacharya tab\n2. Tap city button...'
+                }
+              />
 
               {/* Reporter Name & Email */}
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '५. आपका नाम' : '5. Your Name'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, dynamicStyles.input]}
-                  value={issueName}
-                  onChangeText={setIssueName}
-                  placeholder={isHi ? 'नाम' : 'Your Name'}
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-                />
-              </View>
+              <FormField
+                inputRef={issueNameRef}
+                testID="issue-name-input"
+                label={isHi ? '५. आपका नाम' : '5. Your Name'}
+                optionalLabel={isHi ? 'वैकल्पिक' : 'Optional'}
+                accessibilityLabel={isHi ? 'आपका नाम' : 'Your Name'}
+                value={issueName}
+                onChangeText={setIssueName}
+                maxLength={80}
+                returnKeyType="next"
+                onSubmitEditing={() => issueEmailRef.current?.focus()}
+                placeholder={isHi ? 'नाम' : 'Your Name'}
+              />
 
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.fieldLabel, dynamicStyles.textPrimary]}>
-                  {isHi ? '६. आपका ईमेल पता *' : '6. Your Email *'}
-                </Text>
-                <TextInput
-                  style={[styles.inputField, dynamicStyles.input]}
-                  value={issueEmail}
-                  onChangeText={setIssueEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder="developer@example.com"
-                  placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
+              <FormField
+                inputRef={issueEmailRef}
+                testID="issue-email-input"
+                label={isHi ? '६. आपका ईमेल पता' : '6. Your Email'}
+                requiredLabel={isHi ? 'आवश्यक' : 'Required'}
+                helperText={
+                  isHi
+                    ? 'ताकि समस्या ठीक होने पर हम आपको सूचित कर सकें।'
+                    : 'Used only so we can follow up once fixed.'
+                }
+                accessibilityLabel={isHi ? 'आपका ईमेल पता' : 'Your Email'}
+                value={issueEmail}
+                onChangeText={(text) => {
+                  setIssueEmail(text);
+                  if (issueValidationError) setIssueValidationError(null);
+                }}
+                maxLength={120}
+                returnKeyType="done"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="developer@example.com"
+              />
+
+              {issueValidationError ? (
+                <InlineFeedbackBanner
+                  testID="issue-validation-error"
+                  tone="error"
+                  message={issueValidationError}
                 />
-              </View>
+              ) : null}
 
               {/* Submit Button */}
-              <TouchableOpacity
-                style={[styles.submitButton, { backgroundColor: Palette.danger }, isIssueSubmitting && { opacity: 0.7 }]}
-                onPress={handleSubmitIssue}
+              <AppButton
+                testID="issue-submit-btn"
+                variant="danger"
+                accessibilityLabel={isHi ? 'बग रिपोर्ट दर्ज करें' : 'Submit Issue Report'}
+                label={isHi ? 'बग रिपोर्ट दर्ज करें' : 'Submit Issue Report'}
+                iconName="alert-circle"
+                loading={isIssueSubmitting}
                 disabled={isIssueSubmitting}
-              >
-                {isIssueSubmitting ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="alert-circle" size={16} color="#ffffff" />
-                    <Text style={styles.submitButtonText}>
-                      {isHi ? 'बग रिपोर्ट दर्ज करें' : 'Submit Issue Report'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
+                onPress={handleSubmitIssue}
+                style={{ marginTop: 8 }}
+              />
             </View>
           </View>
         )}
@@ -881,6 +1176,8 @@ const styles = StyleSheet.create({
   },
   heroTopRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: Spacing.sm,
@@ -889,42 +1186,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ecfdf5',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radius.pill,
-    gap: 5,
+    gap: 6,
   },
   liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
     backgroundColor: '#10b981',
   },
   liveBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#047857',
   },
   freeBadgePill: {
     backgroundColor: '#eff6ff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radius.pill,
   },
   freeBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#1d4ed8',
   },
+  helpBtn: {
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: Radius.pill,
+    backgroundColor: '#f4f4f5',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
+    lineHeight: 28,
   },
   heroSubtitle: {
-    fontSize: 12,
-    marginTop: 4,
-    lineHeight: 18,
+    fontSize: 14,
+    marginTop: 5,
+    lineHeight: 21,
   },
   segmentScroll: {
     flexDirection: 'row',
@@ -934,8 +1242,8 @@ const styles = StyleSheet.create({
   segmentChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: Radius.pill,
     gap: 6,
     borderWidth: 1,
@@ -953,26 +1261,26 @@ const styles = StyleSheet.create({
     borderColor: Palette.primary,
   },
   segmentChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#71717a',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#3f3f46',
   },
   segmentChipTextActive: {
     color: '#ffffff',
   },
   badgeCount: {
     backgroundColor: '#f4f4f5',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: Radius.pill,
   },
   badgeCountActive: {
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   badgeCountText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#3f3f46',
   },
   badgeCountTextActive: {
     color: '#ffffff',
@@ -982,21 +1290,35 @@ const styles = StyleSheet.create({
   },
   sectionHeaderRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
   sectionHeading: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
   },
   sectionSub: {
-    fontSize: 11,
+    fontSize: 13.5,
     marginTop: 2,
   },
   iconRefreshBtn: {
-    padding: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: MIN_TOUCH_TARGET,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: Radius.pill,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: Palette.primaryBorder,
+  },
+  refreshBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   loaderBox: {
     alignItems: 'center',
@@ -1005,7 +1327,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loaderText: {
-    fontSize: 12,
+    fontSize: 14,
   },
   errorCard: {
     borderRadius: Radius.lg,
@@ -1056,33 +1378,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Palette.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: Radius.sm,
-    gap: 4,
+    gap: 5,
   },
   releaseTagText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '700',
   },
   releaseDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   releaseDateText: {
-    fontSize: 11,
+    fontSize: 12.5,
   },
   releaseTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
-    lineHeight: 20,
-    marginTop: 2,
+    lineHeight: 23,
+    marginTop: 4,
   },
   releaseDesc: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 21,
   },
   contributorCard: {
     borderRadius: Radius.lg,
@@ -1095,36 +1417,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarImg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   avatarInitials: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitialsText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
   },
   contributorNameRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
   },
   contributorName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
-    flex: 1,
+    flexShrink: 1,
   },
   roleBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: Radius.pill,
   },
   roleLead: {
@@ -1140,31 +1463,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#f4f4f5',
   },
   roleBadgeText: {
-    fontSize: 9,
+    fontSize: 11.5,
     fontWeight: '800',
     color: '#18181b',
   },
   contributorJoined: {
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 13,
+    marginTop: 3,
   },
   contribStatsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     borderRadius: Radius.md,
-    padding: 10,
+    padding: 12,
     justifyContent: 'space-around',
   },
   contribStatItem: {
     alignItems: 'center',
+    minWidth: 72,
   },
   contribStatNumber: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
     color: Palette.primary,
   },
   contribStatLabel: {
-    fontSize: 9,
-    marginTop: 2,
+    fontSize: 12,
+    marginTop: 3,
     fontWeight: '600',
   },
   formCard: {
@@ -1179,12 +1505,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   formTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
   },
   formSub: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 21,
   },
   successBanner: {
     flexDirection: 'row',
@@ -1203,43 +1529,60 @@ const styles = StyleSheet.create({
   fieldBlock: {
     gap: 6,
   },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  charCounter: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
   fieldLabel: {
-    fontSize: 12,
+    fontSize: 14.5,
     fontWeight: '700',
   },
   inputField: {
     borderRadius: Radius.md,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13,
+    minHeight: COMFORT_TOUCH_TARGET,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
   },
   textArea: {
-    minHeight: 80,
+    minHeight: 96,
     textAlignVertical: 'top',
   },
   starRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
+    marginTop: 4,
   },
   starTouch: {
-    padding: 2,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   starDescText: {
-    marginLeft: 8,
-    fontSize: 12,
+    marginLeft: 6,
+    fontSize: 14,
     fontWeight: '600',
   },
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
   },
   chipOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -1249,9 +1592,9 @@ const styles = StyleSheet.create({
     borderColor: Palette.primary,
   },
   chipOptionText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#71717a',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#3f3f46',
   },
   chipOptionTextActive: {
     color: '#ffffff',
@@ -1271,5 +1614,16 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
+  },
+  errorInlineText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Palette.dangerText,
+    backgroundColor: Palette.dangerBg,
+    borderColor: Palette.dangerBorder,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
 });

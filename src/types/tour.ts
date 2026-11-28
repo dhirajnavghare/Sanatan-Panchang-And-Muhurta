@@ -9,6 +9,17 @@ export type TourTabRoute =
 
 export type TourViewMode = 'daily' | 'planner' | 'monthly';
 
+export type SpotlightShape = 'rounded-rect' | 'circle' | 'rect';
+export type TooltipPlacementPreference = 'auto' | 'top' | 'bottom' | 'left' | 'right';
+
+export type TourStepConditionType =
+  | 'location_permission'
+  | 'notification_permission'
+  | 'planner_empty'
+  | 'sadhana_empty'
+  | 'network_required'
+  | 'abhijit_status';
+
 export interface TourStep {
   id: string;
   tab: TourTabRoute;
@@ -26,8 +37,16 @@ export interface TourStep {
   howToUseHi: string;
   howToUseEn: string;
   targetTestID?: string;
+  shape?: SpotlightShape;
+  tooltipPlacement?: TooltipPlacementPreference;
   viewMode?: TourViewMode;
   plannerSubTab?: 'core' | 'all' | 'planned';
+  moreSection?: 'temples' | 'devatas' | 'vrat_katha';
+  communitySegment?: 'changelog' | 'contributors' | 'feedback' | 'issues';
+  muhurtaExpandAvoid?: boolean;
+  sectionId?: string;
+  conditionType?: TourStepConditionType;
+  addedInVersion?: number;
 }
 
 export interface SpotlightRect {
@@ -36,6 +55,20 @@ export interface SpotlightRect {
   width: number;
   height: number;
   borderRadius?: number;
+  shape?: SpotlightShape;
+  padding?: number;
+  isMeasured?: boolean;
+  targetId?: string;
+}
+
+export interface TourTargetRegistration {
+  targetId: string;
+  tab?: TourTabRoute;
+  measureNow: (allowScrollAdjust?: boolean) => void;
+  shape?: SpotlightShape;
+  borderRadius?: number;
+  tooltipPlacement?: TooltipPlacementPreference;
+  isVisible?: boolean;
 }
 
 export interface TourSection {
@@ -45,6 +78,7 @@ export interface TourSection {
   emoji: string;
   startStep: number;
   endStep: number;
+  addedInVersion?: number;
 }
 
 export interface ContextualHelpTopic {
@@ -60,4 +94,13 @@ export interface ContextualHelpTopic {
     descriptionHi: string;
     descriptionEn: string;
   }[];
+}
+
+export interface TourRuntimeContext {
+  plannedTaskCount: number;
+  completedSadhanaCount: number;
+  isAbhijitAvailableToday: boolean;
+  locationPermission: 'unknown' | 'granted' | 'denied';
+  notificationPermission: 'unknown' | 'granted' | 'denied';
+  hasNetworkErrorOnCommunity: boolean;
 }

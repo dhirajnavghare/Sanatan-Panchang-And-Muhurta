@@ -10,6 +10,9 @@ import {
   KeyboardAvoidingView,
   Text,
   View,
+  useColorScheme,
+  useWindowDimensions,
+  PixelRatio,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,13 +46,10 @@ import {
   buildDayPlannerSlots,
   getDayPlans,
   saveSlotPlan,
-  toggleSlotCompletion,
   addTodoToSlot,
   toggleTodoItem,
   deleteTodoItem,
   getLiveCosmicStatus,
-  generateWhatsAppPanchangShare,
-  DayPlannerSlot,
   DayPlansMap,
   LiveCosmicStatus,
   TodoItem,
@@ -58,7 +58,6 @@ import {
   loadUserProfile,
   saveUserProfile,
   loadUserLocation,
-  saveUserLocation,
   UserSacredProfile,
   DEFAULT_USER_PROFILE,
 } from '@/src/services/userProfile';
@@ -66,18 +65,24 @@ import { playTempleBell, triggerHaptic } from '@/src/services/sacredAudio';
 import { scheduleDailySacredReminders } from '@/src/services/sacredNotifications';
 import { DailyPanchangCardModal } from '@/src/components/DailyPanchangCardModal';
 import { AppTourModal } from '@/src/components/AppTourModal';
-import { hasSeenAppTour, markAppTourCompleted } from '@/src/services/appTour';
+import { markAppTourCompleted } from '@/src/services/appTour';
 import { MonthlyCalendarGrid } from '@/src/components/MonthlyCalendarGrid';
-import { calculateEkadashiParana, VratParanaDetails } from '@/src/services/vratParana';
+import { calculateEkadashiParana } from '@/src/services/vratParana';
 import { getTodayVratGuidance } from '@/src/services/vratGuidelines';
 import { VratHeroCard } from '@/src/components/VratHeroCard';
 import { DailyRashiCard } from '@/src/components/DailyRashiCard';
 import { useTour } from '@/src/services/appTourContext';
+import { useTourScroll } from '@/src/hooks/useTourScroll';
+import { displayProfileName, getAppTheme, MIN_TOUCH_TARGET, COMFORT_TOUCH_TARGET, Typography } from '@/src/utils/theme';
 
 export default function PanchangScreen() {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  const isCompactLayout = windowWidth < 380 || PixelRatio.getFontScale() > 1.25;
   const { language, setLanguage, calendarSystem } = useLanguage();
   const isHi = language === 'hi';
+  const isDark = useColorScheme() === 'dark';
+  const theme = getAppTheme(isDark);
 
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [viewMode, setViewMode] = useState<'daily' | 'planner' | 'monthly'>('daily');
@@ -90,40 +95,55 @@ export default function PanchangScreen() {
   const [isShareCardModalVisible, setIsShareCardModalVisible] = useState(false);
 
   // Tour & Contextual Guidance
-  const { isInteractiveTourActive, currentTourStep, openHelp } = useTour();
+  const {
+    isInteractiveTourActive,
+    isTryModeActive,
+    currentTourStep,
+    openHelp,
+    updateTourRuntimeContext,
+    refreshTourPersistence,
+  } = useTour();
   const mainScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+  const {
+    onScroll: onTourScroll,
+    onMomentumScrollEnd: onTourMomentumScrollEnd,
+    onScrollEndDrag: onTourScrollEndDrag,
+  } = useTourScroll('/(tabs)', mainScrollRef);
 
-  // Synchronize view mode and smooth auto-scroll with active tour step
-  useEffect(() => {
-    if (isInteractiveTourActive && currentTourStep) {
-      if (currentTourStep.viewMode) {
-        setViewMode(currentTourStep.viewMode);
-      }
-      if (currentTourStep.plannerSubTab) {
-        setPlannerFilter(currentTourStep.plannerSubTab);
-      }
-      if (currentTourStep.targetTestID === 'daily-rashi-card') {
-        mainScrollRef.current?.scrollTo({ y: 280, animated: false });
-      } else if (currentTourStep.targetTestID === 'inauspicious-triad-card') {
-        mainScrollRef.current?.scrollTo({ y: 440, animated: false });
-      } else {
-        // Steps 1-9 (header, lang, bell, share, day-pill, view-mode, live-banner, hero, bento)
-        // and Planner tabs (core, all, planned) are completely visible at y = 0
-        mainScrollRef.current?.scrollTo({ y: 0, animated: false });
-      }
-    }
-  }, [isInteractiveTourActive, currentTourStep]);
+  const [manualViewStepId, setManualViewStepId] = useState<string | null>(null);
+  const [manualPlannerStepId, setManualPlannerStepId] = useState<string | null>(null);
+
+  const effectiveViewMode: 'daily' | 'planner' | 'monthly' =
+    isInteractiveTourActive &&
+    currentTourStep?.tab === '/(tabs)' &&
+    currentTourStep.viewMode &&
+    manualViewStepId !== currentTourStep.id
+      ? currentTourStep.viewMode
+      : viewMode;
+  const effectivePlannerFilter: 'core' | 'all' | 'planned' =
+    isInteractiveTourActive &&
+    currentTourStep?.tab === '/(tabs)' &&
+    currentTourStep.plannerSubTab &&
+    manualPlannerStepId !== currentTourStep.id
+      ? currentTourStep.plannerSubTab
+      : plannerFilter;
 
   // First-Time App Tour state
   const [isTourModalVisible, setIsTourModalVisible] = useState(false);
 
   useEffect(() => {
-    hasSeenAppTour().then((seen) => {
-      if (!seen) {
-        setIsTourModalVisible(true);
-      }
-    });
-  }, []);
+    let mounted = true;
+    refreshTourPersistence()
+      .then((snap) => {
+        if (mounted && !snap.hasCompletedTour) {
+          setIsTourModalVisible(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [refreshTourPersistence]);
 
   const handleCloseTour = async () => {
     setIsTourModalVisible(false);
@@ -145,40 +165,52 @@ export default function PanchangScreen() {
   const [dayPlans, setDayPlans] = useState<DayPlansMap>({});
   const [editingInputs, setEditingInputs] = useState<Record<string, string>>({});
 
+  // Serialize AsyncStorage read-modify-write mutations to prevent rapid-tap race conditions
+  const mutationQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const enqueueMutation = useCallback((fn: () => Promise<void>) => {
+    mutationQueueRef.current = mutationQueueRef.current.then(fn, fn).catch(() => {});
+    return mutationQueueRef.current;
+  }, []);
+
   const dateKey = useMemo(() => getDateKey(currentDate), [currentDate]);
+  const todayKey = getDateKey(new Date());
+  const isSelectedToday = dateKey === todayKey;
 
-  // Load Sadhana habits and Day Plans for current date
-  const loadHabitsAndPlans = useCallback(async () => {
-    const completed = await getCompletedHabits(dateKey);
-    setCompletedHabits(completed);
-    const streak = await getSadhanaStreak();
-    setStreakCount(streak);
-
-    const plans = await getDayPlans(dateKey);
-    setDayPlans(plans);
-
-    // Initialize editing inputs with saved tasks
-    const initial: Record<string, string> = {};
-    Object.keys(plans).forEach((k) => {
-      initial[k] = plans[k].taskText;
-    });
-    setEditingInputs(initial);
+  // Load Sadhana habits and Day Plans for current date without prefilling editingInputs
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([getCompletedHabits(dateKey), getSadhanaStreak(), getDayPlans(dateKey)])
+      .then(([completed, streak, plans]) => {
+        if (!mounted) return;
+        setCompletedHabits(completed);
+        setStreakCount(streak);
+        setDayPlans(plans);
+        setEditingInputs({});
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
   }, [dateKey]);
 
-  useEffect(() => {
-    loadHabitsAndPlans();
-  }, [loadHabitsAndPlans]);
-
   const handleToggleHabit = async (habitId: string) => {
-    const res = await toggleHabitCompletion(habitId, dateKey);
-    setCompletedHabits(res.completedIds);
-    setStreakCount(res.streak);
+    await enqueueMutation(async () => {
+      const res = await toggleHabitCompletion(habitId, dateKey);
+      setCompletedHabits(res.completedIds);
+      setStreakCount(res.streak);
+    });
   };
 
   // 100% Offline Fast Ephemeris Calculation (< 1ms)
   const panchang: PanchangData = useMemo(() => {
     return calculatePanchang(currentDate, location, 'Lahiri', currentDate);
   }, [currentDate, location]);
+
+  const todayPanchang: PanchangData = useMemo(() => {
+    return isSelectedToday
+      ? panchang
+      : calculatePanchang(new Date(), location, 'Lahiri', new Date());
+  }, [isSelectedToday, panchang, location]);
 
   const activeMasa =
     calendarSystem === 'amanta'
@@ -189,16 +221,11 @@ export default function PanchangScreen() {
       ? `${panchang.masa.purnimantaNameDevanagari} मास`
       : `${panchang.masa.purnimantaName} Masa`;
 
-  const activeChoghadiya = useMemo(() => {
-    const all = [...panchang.choghadiya.day, ...panchang.choghadiya.night];
-    return all.find((c) => c.isCurrent) || all[0];
-  }, [panchang]);
-
   const spiritualPeriod = useMemo(() => {
-    const sunrise = panchang.sunTimes.sunrise ? new Date(panchang.sunTimes.sunrise) : undefined;
-    const sunset = panchang.sunTimes.sunset ? new Date(panchang.sunTimes.sunset) : undefined;
+    const sunrise = todayPanchang.sunTimes.sunrise ? new Date(todayPanchang.sunTimes.sunrise) : undefined;
+    const sunset = todayPanchang.sunTimes.sunset ? new Date(todayPanchang.sunTimes.sunset) : undefined;
     return getCurrentSpiritualPeriod(new Date(), sunrise, sunset);
-  }, [panchang]);
+  }, [todayPanchang]);
 
   const weekdayDevata = useMemo(() => {
     const day = currentDate.getDay();
@@ -207,30 +234,56 @@ export default function PanchangScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadUserLocation().then((loc) => {
-        setLocation((prev) => {
-          if (
-            prev.name !== loc.name ||
-            prev.latitude !== loc.latitude ||
-            prev.longitude !== loc.longitude
-          ) {
-            return loc;
-          }
-          return prev;
-        });
-      });
-      loadUserProfile().then(setUserProfile);
+      let mounted = true;
+      loadUserLocation()
+        .then((loc) => {
+          if (!mounted) return;
+          setLocation((prev) => {
+            if (
+              prev.name !== loc.name ||
+              prev.latitude !== loc.latitude ||
+              prev.longitude !== loc.longitude
+            ) {
+              return loc;
+            }
+            return prev;
+          });
+        })
+        .catch(() => {});
+      loadUserProfile()
+        .then((p) => {
+          if (mounted) setUserProfile(p);
+        })
+        .catch(() => {});
+      return () => {
+        mounted = false;
+      };
     }, [])
   );
 
   useEffect(() => {
-    loadUserProfile().then((p) => {
-      setUserProfile(p);
-      if (panchang) {
-        scheduleDailySacredReminders(panchang, p, dayPlans, location.timezone, 7, location, language);
-      }
-    });
-  }, [panchang, dayPlans, location, language]);
+    let mounted = true;
+    Promise.all([
+      loadUserProfile(),
+      isSelectedToday ? Promise.resolve(dayPlans) : getDayPlans(todayKey),
+    ])
+      .then(([profile, todayPlans]) => {
+        if (!mounted) return;
+        scheduleDailySacredReminders(
+          todayPanchang,
+          profile,
+          todayPlans,
+          location.timezone,
+          7,
+          location,
+          language
+        );
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [todayPanchang, todayKey, isSelectedToday, dayPlans, location, language]);
 
   const dailySankalpa = useMemo(() => {
     return generateDailySankalpa(panchang, location.name, userProfile.name, userProfile.gotra);
@@ -254,20 +307,21 @@ export default function PanchangScreen() {
 
   // Live Cosmic Status (Real-time pulse of right now)
   const liveStatus: LiveCosmicStatus = useMemo(() => {
-    return getLiveCosmicStatus(panchang, new Date(), location.timezone);
-  }, [panchang, location.timezone]);
+    return getLiveCosmicStatus(todayPanchang, new Date(), location.timezone);
+  }, [todayPanchang, location.timezone]);
 
-  // Day Planner Slots
+  // Day Planner Slots (highlight LIVE NOW only when inspecting today's date)
   const plannerSlots = useMemo(() => {
-    return buildDayPlannerSlots(panchang, currentDate);
-  }, [panchang, currentDate]);
+    const baseSlots = buildDayPlannerSlots(panchang, currentDate);
+    return isSelectedToday
+      ? baseSlots
+      : baseSlots.map((slot) => ({ ...slot, isCurrent: false }));
+  }, [panchang, currentDate, isSelectedToday]);
 
-  // Tasks planned for the active cosmic window (if any)
+  // Tasks planned for the active cosmic window (today only)
   const activeSlotTodos = useMemo(() => {
-    const targetMs = currentDate.getTime();
-    const currentSlot = plannerSlots.find(
-      (s) => targetMs >= s.startTime.getTime() && targetMs <= s.endTime.getTime()
-    );
+    if (!isSelectedToday) return null;
+    const currentSlot = plannerSlots.find((s) => s.isCurrent);
     if (!currentSlot) return null;
     const plan = dayPlans[currentSlot.id];
     if (!plan) return null;
@@ -281,7 +335,7 @@ export default function PanchangScreen() {
       slot: currentSlot,
       tasks: pendingTodos,
     };
-  }, [plannerSlots, dayPlans, currentDate]);
+  }, [plannerSlots, dayPlans, isSelectedToday]);
 
   const totalPlannedCount = useMemo(() => {
     return Object.values(dayPlans).reduce((acc, plan) => {
@@ -299,22 +353,36 @@ export default function PanchangScreen() {
     }, 0);
   }, [dayPlans]);
 
+  // Report live runtime telemetry for intelligent state-aware tour guidance
+  useEffect(() => {
+    updateTourRuntimeContext({
+      plannedTaskCount: totalPlannedCount,
+      completedSadhanaCount: completedHabits.length,
+      isAbhijitAvailableToday: Boolean(panchang.muhurtas.abhijitMuhurta),
+    });
+  }, [
+    totalPlannedCount,
+    completedHabits.length,
+    panchang.muhurtas.abhijitMuhurta,
+    updateTourRuntimeContext,
+  ]);
+
   const filteredSlots = useMemo(() => {
-    if (plannerFilter === 'core') {
+    if (effectivePlannerFilter === 'core') {
       return plannerSlots.filter((s) => {
         const plan = dayPlans[s.id];
         const hasTasks = (plan?.todos && plan.todos.length > 0) || Boolean(plan?.taskText);
         return s.isCore || hasTasks;
       });
     }
-    if (plannerFilter === 'planned') {
+    if (effectivePlannerFilter === 'planned') {
       return plannerSlots.filter((s) => {
         const plan = dayPlans[s.id];
         return (plan?.todos && plan.todos.length > 0) || Boolean(plan?.taskText);
       });
     }
     return plannerSlots;
-  }, [plannerSlots, plannerFilter, dayPlans]);
+  }, [plannerSlots, effectivePlannerFilter, dayPlans]);
 
   const handleInputChange = (slotId: string, text: string) => {
     setEditingInputs((prev) => ({ ...prev, [slotId]: text }));
@@ -323,44 +391,31 @@ export default function PanchangScreen() {
   const handleAddTodo = async (slotId: string, text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    const updated = await addTodoToSlot(dateKey, slotId, trimmed);
-    setDayPlans(updated);
     setEditingInputs((prev) => ({ ...prev, [slotId]: '' }));
+    await enqueueMutation(async () => {
+      const updated = await addTodoToSlot(dateKey, slotId, trimmed);
+      setDayPlans(updated);
+    });
   };
 
   const handleApplySuggestion = async (slotId: string, suggestion: string) => {
-    const updated = await addTodoToSlot(dateKey, slotId, suggestion);
-    setDayPlans(updated);
+    await enqueueMutation(async () => {
+      const updated = await addTodoToSlot(dateKey, slotId, suggestion);
+      setDayPlans(updated);
+    });
   };
 
   const handleToggleTodo = async (slotId: string, todoId: string) => {
-    const updated = await toggleTodoItem(dateKey, slotId, todoId);
-    setDayPlans(updated);
+    await enqueueMutation(async () => {
+      const updated = await toggleTodoItem(dateKey, slotId, todoId);
+      setDayPlans(updated);
+    });
   };
 
   const handleDeleteTodo = async (slotId: string, todoId: string) => {
-    const updated = await deleteTodoItem(dateKey, slotId, todoId);
-    setDayPlans(updated);
-  };
-
-  const handleSavePlan = async (slotId: string, text: string) => {
-    const currentCompleted = dayPlans[slotId]?.isCompleted || false;
-    const updated = await saveSlotPlan(dateKey, slotId, text, currentCompleted);
-    setDayPlans(updated);
-  };
-
-  const handleTogglePlanCompletion = async (slotId: string) => {
-    const updated = await toggleSlotCompletion(dateKey, slotId);
-    setDayPlans(updated);
-  };
-
-  const handleClearSlot = async (slotId: string) => {
-    const updated = await saveSlotPlan(dateKey, slotId, '');
-    setDayPlans(updated);
-    setEditingInputs((prev) => {
-      const next = { ...prev };
-      delete next[slotId];
-      return next;
+    await enqueueMutation(async () => {
+      const updated = await deleteTodoItem(dateKey, slotId, todoId);
+      setDayPlans(updated);
     });
   };
 
@@ -404,21 +459,17 @@ export default function PanchangScreen() {
     }, 80);
   };
 
-  // 1-Tap Viral WhatsApp Daily Panchang Share
-  const handleShareWhatsAppPanchang = async () => {
-    try {
-      const message = generateWhatsAppPanchangShare(
-        panchang,
-        currentDate,
-        location.name,
-        location.timezone,
-        isHi
-      );
-      await Share.share({ message });
-    } catch {
-      // ignore
-    }
+  const handleCycleVerse = (dir: 1 | -1) => {
+    const idx = SACRED_DAILY_VERSES.findIndex((v) => v.id === selectedVerse.id);
+    const nextIdx =
+      idx === -1
+        ? 0
+        : (idx + dir + SACRED_DAILY_VERSES.length) % SACRED_DAILY_VERSES.length;
+    setSelectedVerse(SACRED_DAILY_VERSES[nextIdx]);
   };
+
+  // Preserve import reference cleanly when user switches between date plans
+  void saveSlotPlan;
 
   const handleShareSankalpa = async () => {
     try {
@@ -441,10 +492,10 @@ export default function PanchangScreen() {
         <View style={{ backgroundColor: 'transparent' }}>
           <View style={styles.plannerHeaderRow}>
             <View style={{ flex: 1, paddingRight: 8, backgroundColor: 'transparent' }}>
-              <Text style={styles.plannerSectionTitle}>
+              <Text style={[styles.plannerSectionTitle, isDark && { color: theme.text }]}>
                 {isHi ? '🗓️ आज की दिन योजना (Day Planner)' : '🗓️ Hindu Day Planner'}
               </Text>
-              <Text style={styles.plannerSectionSub}>
+              <Text style={[styles.plannerSectionSub, isDark && { color: theme.textMuted }]}>
                 {isHi
                   ? 'शास्त्रसम्मत शुभ काल के अनुसार अपने कार्यों का नियोजन करें'
                   : 'Schedule tasks aligned with auspicious cosmic timings'}
@@ -461,68 +512,95 @@ export default function PanchangScreen() {
           </View>
 
           {/* Filter Tabs: Core vs All 24h vs Planned */}
-          <View style={styles.plannerFilterRow}>
-            <TourTarget targetId="planner-tab-core" borderRadius={12} style={{ flex: 1 }}>
+          <View style={[styles.plannerFilterRow, isDark && { backgroundColor: theme.cardMuted }, isCompactLayout && { flexWrap: 'wrap' }]}>
+            <TourTarget targetId="planner-tab-core" borderRadius={12} style={{ flex: 1, minWidth: isCompactLayout ? '46%' : undefined }}>
               <TouchableOpacity
                 testID="planner-tab-core"
+                accessibilityRole="tab"
+                accessibilityLabel={isHi ? 'मुख्य मुहूर्त' : 'Core Windows'}
+                accessibilityState={{ selected: effectivePlannerFilter === 'core' }}
                 style={[
                   styles.plannerFilterTab,
-                  { width: '100%' },
-                  plannerFilter === 'core' && styles.plannerFilterTabActive,
+                  { width: '100%', minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' },
+                  effectivePlannerFilter === 'core' && styles.plannerFilterTabActive,
                 ]}
-                onPress={() => setPlannerFilter('core')}
+                onPress={() => {
+                  if (isInteractiveTourActive && currentTourStep?.id) {
+                    setManualPlannerStepId(currentTourStep.id);
+                  }
+                  setPlannerFilter('core');
+                }}
               >
                 <Text
                   style={[
                     styles.plannerFilterTabText,
-                    plannerFilter === 'core' && styles.plannerFilterTabTextActive,
+                    isDark && { color: theme.textSecondary },
+                    effectivePlannerFilter === 'core' && styles.plannerFilterTabTextActive,
                   ]}
                 >
-                  {isHi ? '🌟 मुख्य मुहूर्त' : '🌟 Core Windows'}
+                  {isHi ? '🌟 मुख्य मुहूर्त' : '🌟 Core Times'}
                 </Text>
               </TouchableOpacity>
             </TourTarget>
 
-            <TourTarget targetId="planner-tab-all" borderRadius={12} style={{ flex: 1 }}>
+            <TourTarget targetId="planner-tab-all" borderRadius={12} style={{ flex: 1, minWidth: isCompactLayout ? '46%' : undefined }}>
               <TouchableOpacity
                 testID="planner-tab-all"
+                accessibilityRole="tab"
+                accessibilityLabel={isHi ? '24h सम्पूर्ण' : 'All 24h'}
+                accessibilityState={{ selected: effectivePlannerFilter === 'all' }}
                 style={[
                   styles.plannerFilterTab,
-                  { width: '100%' },
-                  plannerFilter === 'all' && styles.plannerFilterTabActive,
+                  { width: '100%', minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' },
+                  effectivePlannerFilter === 'all' && styles.plannerFilterTabActive,
                 ]}
-                onPress={() => setPlannerFilter('all')}
+                onPress={() => {
+                  if (isInteractiveTourActive && currentTourStep?.id) {
+                    setManualPlannerStepId(currentTourStep.id);
+                  }
+                  setPlannerFilter('all');
+                }}
               >
                 <Text
                   style={[
                     styles.plannerFilterTabText,
-                    plannerFilter === 'all' && styles.plannerFilterTabTextActive,
+                    isDark && { color: theme.textSecondary },
+                    effectivePlannerFilter === 'all' && styles.plannerFilterTabTextActive,
                   ]}
                 >
-                  {isHi ? '🕒 24h सम्पूर्ण' : '🕒 All 24h'}
+                  {isHi ? '🕒 24h सम्पूर्ण' : '🕒 Full 24h'}
                 </Text>
               </TouchableOpacity>
             </TourTarget>
 
-            <TourTarget targetId="planner-tab-planned" borderRadius={12} style={{ flex: 1 }}>
+            <TourTarget targetId="planner-tab-planned" borderRadius={12} style={{ flex: 1, minWidth: isCompactLayout ? '100%' : undefined }}>
               <TouchableOpacity
                 testID="planner-tab-planned"
+                accessibilityRole="tab"
+                accessibilityLabel={isHi ? 'नियोजित कार्य' : 'Planned tasks'}
+                accessibilityState={{ selected: effectivePlannerFilter === 'planned' }}
                 style={[
                   styles.plannerFilterTab,
-                  { width: '100%' },
-                  plannerFilter === 'planned' && styles.plannerFilterTabActive,
+                  { width: '100%', minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' },
+                  effectivePlannerFilter === 'planned' && styles.plannerFilterTabActive,
                 ]}
-                onPress={() => setPlannerFilter('planned')}
+                onPress={() => {
+                  if (isInteractiveTourActive && currentTourStep?.id) {
+                    setManualPlannerStepId(currentTourStep.id);
+                  }
+                  setPlannerFilter('planned');
+                }}
               >
                 <Text
                   style={[
                     styles.plannerFilterTabText,
-                    plannerFilter === 'planned' && styles.plannerFilterTabTextActive,
+                    isDark && { color: theme.textSecondary },
+                    effectivePlannerFilter === 'planned' && styles.plannerFilterTabTextActive,
                   ]}
                 >
                   {isHi
                     ? `✍️ नियोजित (${totalPlannedCount})`
-                    : `✍️ Planned (${totalPlannedCount})`}
+                    : `✍️ My Tasks (${totalPlannedCount})`}
                 </Text>
               </TouchableOpacity>
             </TourTarget>
@@ -533,19 +611,24 @@ export default function PanchangScreen() {
       {/* Slot Cards List */}
       <View style={styles.plannerCardsContainer}>
         {filteredSlots.length === 0 ? (
-          <View style={styles.plannerEmptyBox}>
+          <View
+            style={[
+              styles.plannerEmptyBox,
+              isDark && { backgroundColor: theme.card, borderColor: theme.border },
+            ]}
+          >
             <Text style={{ fontSize: 28, marginBottom: 8 }}>📝</Text>
-            <Text style={styles.plannerEmptyTitle}>
+            <Text style={[styles.plannerEmptyTitle, isDark && { color: theme.text }]}>
               {isHi ? 'कोई कार्य नियोजित नहीं है' : 'No tasks planned yet'}
             </Text>
-            <Text style={styles.plannerEmptySubtitle}>
+            <Text style={[styles.plannerEmptySubtitle, isDark && { color: theme.textMuted }]}>
               {isHi
                 ? 'ऊपर "मुख्य मुहूर्त" टैब पर जाएँ और अपने कार्यों को शुभ समय अनुसार जोड़ें।'
                 : 'Switch to "Core Windows" above to plan tasks during auspicious hours.'}
             </Text>
           </View>
         ) : (
-          filteredSlots.map((slot) => {
+          filteredSlots.map((slot, index) => {
             const plan = dayPlans[slot.id];
             const todos: TodoItem[] =
               plan?.todos && plan.todos.length > 0
@@ -571,28 +654,29 @@ export default function PanchangScreen() {
             const isMahashubh =
               slot.quality === 'Mahashubh' || slot.quality === 'Amrit';
 
-            return (
+            const cardNode = (
               <View
                 key={slot.id}
                 style={[
                   styles.plannerSlotCard,
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
                   slot.isCurrent && styles.plannerSlotCardCurrent,
-                  isAshubh && styles.plannerSlotCardAshubh,
-                  isAllDone && styles.plannerSlotCardDone,
+                  isAshubh && [styles.plannerSlotCardAshubh, isDark && { backgroundColor: '#271710', borderColor: theme.dangerBorder }],
+                  isAllDone && [styles.plannerSlotCardDone, isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder }],
                 ]}
               >
                 {/* Top Time & Quality Row */}
                 <View style={styles.slotTopRow}>
                   <View style={styles.slotTimeBlock}>
-                    <Text style={styles.slotTimeRange}>
+                    <Text style={[styles.slotTimeRange, isDark && { color: theme.primary }]}>
                       {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
                     </Text>
-                    <Text style={styles.slotTitle} numberOfLines={1}>
+                    <Text style={[styles.slotTitle, isDark && { color: theme.text }]}>
                       {isHi ? slot.titleHi : slot.title}
                     </Text>
                   </View>
 
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                     {slot.isCurrent && (
                       <View style={styles.currentActiveBadge}>
                         <Text style={styles.currentActiveBadgeText}>
@@ -605,13 +689,15 @@ export default function PanchangScreen() {
                       <View
                         style={[
                           styles.slotProgressBadge,
-                          isAllDone && styles.slotProgressBadgeDone,
+                          isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+                          isAllDone && [styles.slotProgressBadgeDone, isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder }],
                         ]}
                       >
                         <Text
                           style={[
                             styles.slotProgressBadgeText,
-                            isAllDone && styles.slotProgressBadgeTextDone,
+                            isDark && { color: theme.primary },
+                            isAllDone && [styles.slotProgressBadgeTextDone, isDark && { color: theme.successText }],
                           ]}
                         >
                           {isAllDone
@@ -624,43 +710,47 @@ export default function PanchangScreen() {
                     <View
                       style={[
                         styles.qualityBadge,
-                        isMahashubh && styles.qualityBadgeMahashubh,
-                        isAshubh && styles.qualityBadgeAshubh,
+                        isDark && { backgroundColor: theme.infoBg },
+                        isMahashubh && [styles.qualityBadgeMahashubh, isDark && { backgroundColor: theme.successBg }],
+                        isAshubh && [styles.qualityBadgeAshubh, isDark && { backgroundColor: theme.dangerBg }],
                       ]}
                     >
                       <Text
                         style={[
                           styles.qualityBadgeText,
-                          isMahashubh && styles.qualityBadgeTextMahashubh,
-                          isAshubh && styles.qualityBadgeTextAshubh,
+                          isDark && { color: theme.infoText },
+                          isMahashubh && [styles.qualityBadgeTextMahashubh, isDark && { color: theme.successText }],
+                          isAshubh && [styles.qualityBadgeTextAshubh, isDark && { color: theme.dangerText }],
                         ]}
                       >
                         {isAshubh
-                          ? isHi ? 'त्याज्य' : 'Avoid'
+                          ? isHi ? '⚠️ त्याज्य' : '⚠️ Avoid'
                           : isMahashubh
-                          ? isHi ? 'महाशुभ' : 'Supreme'
-                          : isHi ? 'शुभ' : 'Shubh'}
+                          ? isHi ? '🌟 महाशुभ' : '🌟 Best'
+                          : isHi ? '✨ शुभ' : '✨ Good'}
                       </Text>
                     </View>
                   </View>
                 </View>
 
-                {/* For What this time is for (शास्त्रीय प्रयोजन) */}
+                {/* For What this time is for */}
                 <View
                   style={[
                     styles.suitabilityBox,
-                    isAshubh && styles.suitabilityBoxAshubh,
+                    isDark && { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 },
+                    isAshubh && [styles.suitabilityBoxAshubh, isDark && { backgroundColor: theme.dangerBg, borderColor: theme.dangerBorder }],
                   ]}
                 >
-                  <Text style={styles.suitabilityHeading}>
+                  <Text style={[styles.suitabilityHeading, isDark && { color: theme.textSecondary }]}>
                     {isAshubh
                       ? isHi ? '⚠️ इस समय क्या न करें:' : '⚠️ What to avoid now:'
-                      : isHi ? '💡 यह समय किस कार्य के लिए है:' : '💡 What this time is for:'}
+                      : isHi ? '💡 यह समय किस कार्य के लिए है:' : '💡 Best used for:'}
                   </Text>
                   <Text
                     style={[
                       styles.suitabilityText,
-                      isAshubh && styles.suitabilityTextAshubh,
+                      isDark && { color: theme.text },
+                      isAshubh && [styles.suitabilityTextAshubh, isDark && { color: theme.dangerText }],
                     ]}
                   >
                     {isHi ? slot.suitabilityHi : slot.suitability}
@@ -668,53 +758,84 @@ export default function PanchangScreen() {
                 </View>
 
                 {/* Suggested Quick Chips (Tap to instantly add to To-Do list) */}
-                <View style={styles.quickChipsRow}>
-                  {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
-                    <TouchableOpacity
-                      key={sIdx}
-                      testID={`planner-subtask-chip-${sIdx}`}
-                      style={styles.suggestionChip}
-                      onPress={() => handleApplySuggestion(slot.id, suggestion)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.suggestionChipText}>+ {suggestion}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                {index === 0 ? (
+                  <TourTarget targetId="planner-first-slot-card" borderRadius={14}>
+                    <View style={styles.quickChipsRow}>
+                      {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
+                        <TouchableOpacity
+                          key={sIdx}
+                          testID={`planner-subtask-chip-${sIdx}`}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${isHi ? 'जोड़ें' : 'Add'} ${suggestion}`}
+                          style={[styles.suggestionChip, isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border }]}
+                          onPress={() => handleApplySuggestion(slot.id, suggestion)}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={[styles.suggestionChipText, isDark && { color: theme.textSecondary }]}>+ {suggestion}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </TourTarget>
+                ) : (
+                  <View style={styles.quickChipsRow}>
+                    {(isHi ? slot.suggestedTasksHi : slot.suggestedTasks).map((suggestion, sIdx) => (
+                      <TouchableOpacity
+                        key={sIdx}
+                        testID={`planner-subtask-chip-${sIdx}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${isHi ? 'जोड़ें' : 'Add'} ${suggestion}`}
+                        style={[styles.suggestionChip, isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border }]}
+                        onPress={() => handleApplySuggestion(slot.id, suggestion)}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[styles.suggestionChipText, isDark && { color: theme.textSecondary }]}>+ {suggestion}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
 
                 {/* To-Do Checklist Items */}
                 {todos.length > 0 && (
-                  <View style={styles.slotTodoList}>
+                  <View style={[styles.slotTodoList, isDark && { backgroundColor: theme.surface, borderColor: theme.border }]}>
                     {todos.map((todo) => (
-                      <View key={todo.id} style={styles.todoItemRow}>
+                      <View key={todo.id} style={[styles.todoItemRow, isDark && { borderBottomColor: theme.border }]}>
                         <TouchableOpacity
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: todo.isCompleted }}
+                          accessibilityLabel={
+                            todo.isCompleted
+                              ? (isHi ? `${todo.text} अपूर्ण चिह्नित करें` : `Mark ${todo.text} incomplete`)
+                              : (isHi ? `${todo.text} पूर्ण चिह्नित करें` : `Mark ${todo.text} done`)
+                          }
                           style={styles.todoCheckboxBtn}
                           onPress={() => handleToggleTodo(slot.id, todo.id)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                         >
                           <Ionicons
                             name={todo.isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
-                            size={22}
-                            color={todo.isCompleted ? '#059669' : '#d97706'}
+                            size={24}
+                            color={todo.isCompleted ? '#10b981' : theme.primary}
                           />
                         </TouchableOpacity>
 
                         <Text
                           style={[
                             styles.todoItemText,
-                            todo.isCompleted && styles.todoItemTextDone,
+                            isDark && { color: theme.text },
+                            todo.isCompleted && [styles.todoItemTextDone, isDark && { color: theme.textMuted }],
                           ]}
-                          numberOfLines={2}
                         >
                           {todo.text}
                         </Text>
 
                         <TouchableOpacity
+                          accessibilityRole="button"
+                          accessibilityLabel={isHi ? `${todo.text} हटाएं` : `Delete ${todo.text}`}
                           style={styles.todoDeleteBtn}
                           onPress={() => handleDeleteTodo(slot.id, todo.id)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                         >
-                          <Ionicons name="close" size={18} color="#a1a1aa" />
+                          <Ionicons name="close-circle-outline" size={20} color={theme.textMuted} />
                         </TouchableOpacity>
                       </View>
                     ))}
@@ -722,11 +843,17 @@ export default function PanchangScreen() {
                 )}
 
                 {/* Inline Add Task Input */}
-                <View style={styles.addTodoInputRow}>
-                  <Ionicons name="add" size={20} color="#b45309" style={{ marginLeft: 6 }} />
+                <View
+                  style={[
+                    styles.addTodoInputRow,
+                    isDark && { backgroundColor: theme.inputBg, borderColor: theme.inputBorder },
+                  ]}
+                >
+                  <Ionicons name="add" size={20} color={theme.primary} style={{ marginLeft: 6 }} />
                   <TextInput
                     testID="planner-custom-task-input"
-                    style={styles.addTodoTextInput}
+                    accessibilityLabel={isHi ? 'कार्य जोड़ें' : 'Add task'}
+                    style={[styles.addTodoTextInput, isDark && { color: theme.text }]}
                     placeholder={
                       isAshubh
                         ? isHi
@@ -736,7 +863,7 @@ export default function PanchangScreen() {
                         ? 'इस मुहूर्त में अपना कार्य जोड़ें...'
                         : 'Add task for this auspicious window...'
                     }
-                    placeholderTextColor="#a1a1aa"
+                    placeholderTextColor={theme.textSubtle}
                     value={inputValue}
                     onChangeText={(txt) => handleInputChange(slot.id, txt)}
                     returnKeyType="done"
@@ -745,6 +872,9 @@ export default function PanchangScreen() {
 
                   {inputValue.trim().length > 0 && (
                     <TouchableOpacity
+                      testID="planner-add-submit-btn"
+                      accessibilityRole="button"
+                      accessibilityLabel={isHi ? 'कार्य सहेजें' : 'Add task'}
                       style={styles.addTodoSubmitBtn}
                       onPress={() => handleAddTodo(slot.id, inputValue)}
                     >
@@ -754,53 +884,49 @@ export default function PanchangScreen() {
                 </View>
               </View>
             );
+
+            return cardNode;
           })
         )}
       </View>
 
       {/* Quick Astronomical Glance Bar */}
-      <View style={styles.quickAstroRow}>
-        <View style={styles.quickAstroItem}>
+      <View style={[styles.quickAstroRow, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <View style={[styles.quickAstroItem, isDark && { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={styles.quickAstroEmoji}>🌅</Text>
-          <View style={{ backgroundColor: 'transparent' }}>
-            <Text style={styles.quickAstroLabel}>{isHi ? 'सूर्योदय' : 'Sunrise'}</Text>
-            <Text style={styles.quickAstroVal}>{formatTime(panchang.sunTimes.sunrise)}</Text>
+          <View style={{ backgroundColor: 'transparent', flex: 1 }}>
+            <Text style={[styles.quickAstroLabel, isDark && { color: theme.textMuted }]}>{isHi ? 'सूर्योदय' : 'Sunrise'}</Text>
+            <Text style={[styles.quickAstroVal, isDark && { color: theme.text }]}>{formatTime(panchang.sunTimes.sunrise)}</Text>
           </View>
         </View>
 
-        <View style={styles.quickAstroDivider} />
-
-        <View style={styles.quickAstroItem}>
+        <View style={[styles.quickAstroItem, isDark && { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={styles.quickAstroEmoji}>🌇</Text>
-          <View style={{ backgroundColor: 'transparent' }}>
-            <Text style={styles.quickAstroLabel}>{isHi ? 'सूर्यास्त' : 'Sunset'}</Text>
-            <Text style={styles.quickAstroVal}>{formatTime(panchang.sunTimes.sunset)}</Text>
+          <View style={{ backgroundColor: 'transparent', flex: 1 }}>
+            <Text style={[styles.quickAstroLabel, isDark && { color: theme.textMuted }]}>{isHi ? 'सूर्यास्त' : 'Sunset'}</Text>
+            <Text style={[styles.quickAstroVal, isDark && { color: theme.text }]}>{formatTime(panchang.sunTimes.sunset)}</Text>
           </View>
         </View>
 
-        <View style={styles.quickAstroDivider} />
-
-        <View style={styles.quickAstroItem}>
+        <View style={[styles.quickAstroItem, isDark && { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={styles.quickAstroEmoji}>🌙</Text>
-          <View style={{ backgroundColor: 'transparent' }}>
-            <Text style={styles.quickAstroLabel}>{isHi ? 'चन्द्रोदय' : 'Moonrise'}</Text>
-            <Text style={styles.quickAstroVal}>
+          <View style={{ backgroundColor: 'transparent', flex: 1 }}>
+            <Text style={[styles.quickAstroLabel, isDark && { color: theme.textMuted }]}>{isHi ? 'चन्द्रोदय' : 'Moonrise'}</Text>
+            <Text style={[styles.quickAstroVal, isDark && { color: theme.text }]}>
               {panchang.moonTimes.moonrise
                 ? formatTime(panchang.moonTimes.moonrise)
-                : (isHi ? 'दिन में' : 'Day')}
+                : (isHi ? 'दिन में' : 'Daytime')}
             </Text>
           </View>
         </View>
 
-        <View style={styles.quickAstroDivider} />
-
-        <View style={styles.quickAstroItem}>
+        <View style={[styles.quickAstroItem, isDark && { backgroundColor: theme.dangerBg, borderColor: theme.dangerBorder }]}>
           <Text style={styles.quickAstroEmoji}>⚠️</Text>
-          <View style={{ backgroundColor: 'transparent' }}>
-            <Text style={[styles.quickAstroLabel, { color: '#b91c1c' }]}>
-              {isHi ? 'राहु काल' : 'Rahu'}
+          <View style={{ backgroundColor: 'transparent', flex: 1 }}>
+            <Text style={[styles.quickAstroLabel, { color: isDark ? theme.dangerText : '#b91c1c' }]}>
+              {isHi ? 'राहु काल' : 'Rahu Kaal'}
             </Text>
-            <Text style={[styles.quickAstroVal, { color: '#b91c1c' }]}>
+            <Text style={[styles.quickAstroVal, { color: isDark ? theme.dangerText : '#b91c1c' }]}>
               {formatTime(panchang.muhurtas.rahuKaal.startTime)}
             </Text>
           </View>
@@ -812,50 +938,53 @@ export default function PanchangScreen() {
   // Reusable Pan-Indian Inauspicious Triad Card
   const renderInauspiciousTriad = () => (
     <TourTarget targetId="inauspicious-triad-card" borderRadius={20}>
-      <View style={styles.inauspiciousTriadCard} testID="inauspicious-triad-card">
+      <View
+        style={[
+          styles.inauspiciousTriadCard,
+          isDark && { backgroundColor: '#271710', borderColor: theme.dangerBorder },
+        ]}
+        testID="inauspicious-triad-card"
+      >
         <View style={styles.inauspiciousTriadHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'transparent' }}>
-            <Text style={{ fontSize: 13 }}>⚠️</Text>
-            <Text style={styles.inauspiciousTriadTitle}>
-              {isHi ? 'त्रिकाल वर्ज्य (त्याज्य काल)' : 'Inauspicious Windows (To Avoid)'}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'transparent', flex: 1 }}>
+            <Text style={{ fontSize: 16 }}>⚠️</Text>
+            <Text style={[styles.inauspiciousTriadTitle, isDark && { color: '#fdba74' }]}>
+              {isHi ? 'त्रिकाल वर्ज्य (इन समयों में नया कार्य न करें)' : 'Times to Avoid Starting New Work'}
             </Text>
           </View>
-          <Text style={styles.inauspiciousTriadSub}>
-            {isHi ? 'दक्षिण एवं सर्व-भारतीय पञ्चाङ्ग' : 'South & Pan-Indian Panchangam'}
-          </Text>
         </View>
 
-        <View style={styles.inauspiciousTriadRow}>
+        <View style={[styles.inauspiciousTriadRow, isCompactLayout && { flexDirection: 'column' }]}>
           {/* 1. Rahu Kaal */}
-          <View style={styles.triadItem}>
-            <Text style={styles.triadBadgeTextRed}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
-            <Text style={styles.triadTimeText}>
+          <View style={[styles.triadItem, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.triadBadgeTextRed, isDark && { color: theme.dangerText }]}>{isHi ? 'राहु काल' : 'Rahu Kalam'}</Text>
+            <Text style={[styles.triadTimeText, isDark && { color: theme.text }]}>
               {formatTime(panchang.muhurtas.rahuKaal.startTime)} - {formatTime(panchang.muhurtas.rahuKaal.endTime)}
             </Text>
-            <Text style={styles.triadDescText}>
-              {isHi ? 'शुभ कार्य त्याज्य' : 'Avoid beginnings'}
+            <Text style={[styles.triadDescText, isDark && { color: theme.textMuted }]}>
+              {isHi ? 'शुभ कार्य आरम्भ न करें' : 'Avoid new beginnings'}
             </Text>
           </View>
 
           {/* 2. Yamagandam */}
-          <View style={styles.triadItem}>
-            <Text style={styles.triadBadgeTextOrange}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
-            <Text style={styles.triadTimeText}>
+          <View style={[styles.triadItem, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.triadBadgeTextOrange, isDark && { color: theme.primary }]}>{isHi ? 'यमगण्ड' : 'Yamagandam'}</Text>
+            <Text style={[styles.triadTimeText, isDark && { color: theme.text }]}>
               {formatTime(panchang.muhurtas.yamaganda.startTime)} - {formatTime(panchang.muhurtas.yamaganda.endTime)}
             </Text>
-            <Text style={styles.triadDescText}>
-              {isHi ? 'यात्रा व निवेश वर्जित' : 'Avoid travel & deals'}
+            <Text style={[styles.triadDescText, isDark && { color: theme.textMuted }]}>
+              {isHi ? 'यात्रा व बड़े सौदे टालें' : 'Avoid travel & deals'}
             </Text>
           </View>
 
           {/* 3. Gulika Kaal */}
-          <View style={styles.triadItem}>
-            <Text style={styles.triadBadgeTextPurple}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
-            <Text style={styles.triadTimeText}>
+          <View style={[styles.triadItem, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.triadBadgeTextPurple, isDark && { color: '#c4b5fd' }]}>{isHi ? 'गुलिक काल' : 'Gulika Kalam'}</Text>
+            <Text style={[styles.triadTimeText, isDark && { color: theme.text }]}>
               {formatTime(panchang.muhurtas.gulikaKaal.startTime)} - {formatTime(panchang.muhurtas.gulikaKaal.endTime)}
             </Text>
-            <Text style={styles.triadDescText}>
-              {isHi ? 'शनि पुत्र प्रभाव' : 'Saturn son window'}
+            <Text style={[styles.triadDescText, isDark && { color: theme.textMuted }]}>
+              {isHi ? 'शनि पुत्र प्रभाव काल' : 'Pause major launches'}
             </Text>
           </View>
         </View>
@@ -865,17 +994,21 @@ export default function PanchangScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#f8f8fa' }}
+      style={{ flex: 1, backgroundColor: theme.bg }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.bg }]}>
         <ScrollView
           ref={mainScrollRef}
-          style={styles.container}
+          style={[styles.container, { backgroundColor: theme.bg }]}
           contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top, 16) }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          scrollEnabled={!isInteractiveTourActive}
+          onScroll={onTourScroll}
+          onMomentumScrollEnd={onTourMomentumScrollEnd}
+          onScrollEndDrag={onTourScrollEndDrag}
+          scrollEventThrottle={16}
+          scrollEnabled={!isInteractiveTourActive || isTryModeActive}
         >
           {/* ========================================================= */}
           {/* TOP PROFILE, GREETING & VIRAL SHARE BAR                  */}
@@ -885,49 +1018,65 @@ export default function PanchangScreen() {
           <TourTarget targetId="header-bar" borderRadius={18}>
             <View style={styles.headerBar} testID="header-bar">
               {/* Row 1: Profile Avatar, Greeting Title, and Action Buttons */}
-              <View style={styles.headerTopRow}>
-                {/* Profile Avatar / Quick Nav to Profile */}
-                <TouchableOpacity
-                  style={styles.avatarContainer}
-                  onPress={() => router.navigate('/(tabs)/more' as any)}
-                  activeOpacity={0.8}
-                  accessibilityLabel={isHi ? 'प्रोफ़ाइल व अधिक' : 'Profile & More'}
-                >
-                  <View style={styles.avatarInner}>
-                    <Text style={styles.avatarGlyph}>🕉️</Text>
-                  </View>
-                </TouchableOpacity>
+              <View style={[styles.headerTopRow, isCompactLayout && { flexWrap: 'wrap', rowGap: 10 }]}>
+                <View style={styles.headerIdentityRow}>
+                  {/* Profile Avatar / Quick Nav to Profile */}
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    style={[
+                      styles.avatarContainer,
+                      isDark && { backgroundColor: theme.card, borderColor: theme.primary },
+                    ]}
+                    onPress={() => router.navigate('/(tabs)/more' as any)}
+                    activeOpacity={0.8}
+                    accessibilityLabel={isHi ? 'प्रोफ़ाइल व अधिक' : 'Profile & More'}
+                  >
+                    <View style={styles.avatarInner}>
+                      <Text style={styles.avatarGlyph}>🕉️</Text>
+                    </View>
+                  </TouchableOpacity>
 
-                <View style={styles.greetingContainer}>
-                  <Text style={styles.greetingTitle} numberOfLines={1}>
-                    {isHi
-                      ? `${spiritualPeriod.greetingHi}${userProfile.name ? `, ${userProfile.name}` : ''}`
-                      : `${spiritualPeriod.greetingEn}${userProfile.name ? `, ${userProfile.name}` : ''}`}
-                  </Text>
+                  <View style={styles.greetingContainer}>
+                    <Text style={[styles.greetingTitle, isDark && { color: theme.text }]}>
+                      {isHi
+                        ? `${spiritualPeriod.greetingHi}, ${displayProfileName(userProfile.name, true)}`
+                        : `${spiritualPeriod.greetingEn}, ${displayProfileName(userProfile.name, false)}`}
+                    </Text>
+                  </View>
                 </View>
 
                 <View style={styles.headerActionsGroup}>
                   {/* Contextual Help Button (?) */}
                   <TouchableOpacity
                     testID="header-help-btn"
-                    style={styles.helpActionBtn}
-                    onPress={async () => {
-                      await triggerHaptic('tap', userProfile.hapticsEnabled);
-                      openHelp(viewMode === 'planner' ? 'dayplanner' : 'dinacharya');
+                    accessibilityRole="button"
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                    style={[
+                      styles.helpActionBtn,
+                      isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primaryBorder },
+                    ]}
+                    onPress={() => {
+                      triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+                      openHelp(effectiveViewMode === 'planner' ? 'dayplanner' : 'dinacharya');
                     }}
                     activeOpacity={0.7}
                     accessibilityLabel={isHi ? 'मदद व गाइड' : 'Help & Guide'}
                   >
-                    <Ionicons name="help-circle-outline" size={17} color="#b45309" />
+                    <Ionicons name="help-circle-outline" size={20} color={theme.primary} />
                   </TouchableOpacity>
 
                   {/* 1-Tap Language Switcher (हिं / EN) */}
-                  <TourTarget targetId="header-lang-btn" borderRadius={17}>
+                  <TourTarget targetId="header-lang-btn" borderRadius={22} shape="circle">
                     <TouchableOpacity
                       testID="header-lang-btn"
-                      style={styles.langActionBtn}
-                      onPress={async () => {
-                        await triggerHaptic('tap', userProfile.hapticsEnabled);
+                      accessibilityRole="button"
+                      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                      style={[
+                        styles.langActionBtn,
+                        isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder },
+                      ]}
+                      onPress={() => {
+                        triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
                         setLanguage(language === 'hi' ? 'en' : 'hi');
                       }}
                       activeOpacity={0.7}
@@ -935,41 +1084,48 @@ export default function PanchangScreen() {
                         isHi ? 'अंग्रेज़ी भाषा चुनें (EN)' : 'Switch to Hindi (हिन्दी)'
                       }
                     >
-                      <Text style={styles.langActionBtnText}>
+                      <Text style={[styles.langActionBtnText, isDark && { color: theme.primary }]}>
                         {language === 'hi' ? 'EN' : 'हिं'}
                       </Text>
                     </TouchableOpacity>
                   </TourTarget>
 
                   {/* Sacred Temple Brass Bell Chime */}
-                  <TourTarget targetId="header-bell-btn" borderRadius={17}>
+                  <TourTarget targetId="header-bell-btn" borderRadius={22} shape="circle">
                     <TouchableOpacity
                       testID="header-bell-btn"
-                      style={styles.bellActionBtn}
-                      onPress={async () => {
-                        await triggerHaptic('tap', userProfile.hapticsEnabled);
+                      accessibilityRole="button"
+                      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                      style={[
+                        styles.bellActionBtn,
+                        isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder },
+                      ]}
+                      onPress={() => {
+                        triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
                         playTempleBell(0.8);
                       }}
                       activeOpacity={0.7}
                       accessibilityLabel={isHi ? 'मन्दिर घंटी बजाएं' : 'Ring Temple Bell'}
                     >
-                      <Text style={{ fontSize: 16 }}>🔔</Text>
+                      <Text style={{ fontSize: 18 }}>🔔</Text>
                     </TouchableOpacity>
                   </TourTarget>
 
                   {/* Viral 1-Tap WhatsApp Daily Share Card Button */}
-                  <TourTarget targetId="header-share-btn" borderRadius={17}>
+                  <TourTarget targetId="header-share-btn" borderRadius={22} shape="circle">
                     <TouchableOpacity
                       testID="header-share-btn"
+                      accessibilityRole="button"
+                      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                       style={styles.whatsAppShareBtn}
-                      onPress={async () => {
-                        await triggerHaptic('tap', userProfile.hapticsEnabled);
+                      onPress={() => {
+                        triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
                         setIsShareCardModalVisible(true);
                       }}
                       activeOpacity={0.8}
                       accessibilityLabel={isHi ? 'WhatsApp शेयर कार्ड' : 'WhatsApp Share Card'}
                     >
-                      <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
+                      <Ionicons name="logo-whatsapp" size={20} color="#ffffff" />
                     </TouchableOpacity>
                   </TourTarget>
                 </View>
@@ -977,29 +1133,33 @@ export default function PanchangScreen() {
 
               {/* Row 2: Dedicated Panchang & Location Context Bar */}
               <TouchableOpacity
-                style={styles.headerSubBar}
+                accessibilityRole="button"
+                style={[
+                  styles.headerSubBar,
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
                 onPress={() => router.navigate('/(tabs)/settings' as any)}
                 activeOpacity={0.7}
                 accessibilityLabel={
-                  isHi ? 'तिथि व स्थान विवरण (सेटिंग्स)' : 'Tithi and location details (Settings)'
+                  isHi ? 'तिथि व स्थान विवरण (सेटिंग्स में शहर बदलें)' : 'Tithi and location details (Tap to change city)'
                 }
               >
                 <View style={styles.subBarPanchang}>
                   <Ionicons
                     name="calendar-outline"
-                    size={13}
-                    color="#d97706"
-                    style={{ marginRight: 4 }}
+                    size={15}
+                    color={theme.primary}
+                    style={{ marginRight: 5 }}
                   />
-                  <Text style={styles.subBarDateText}>
+                  <Text style={[styles.subBarDateText, isDark && { color: theme.text }]}>
                     {isHi ? 'आज ' : 'Today '}
                     {currentDate.toLocaleDateString(isHi ? 'hi-IN' : 'en-US', {
                       day: 'numeric',
                       month: 'short',
                     })}
                   </Text>
-                  <Text style={styles.subBarBullet}>•</Text>
-                  <Text style={styles.subBarTithiText} numberOfLines={1}>
+                  <Text style={[styles.subBarBullet, isDark && { color: theme.textMuted }]}>•</Text>
+                  <Text style={[styles.subBarTithiText, isDark && { color: theme.primary }]}>
                     {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
                   </Text>
                 </View>
@@ -1007,18 +1167,18 @@ export default function PanchangScreen() {
                 <View style={styles.subBarLocation}>
                   <Ionicons
                     name="location-sharp"
-                    size={12}
-                    color="#ea580c"
+                    size={14}
+                    color={theme.primary}
                     style={{ marginRight: 3 }}
                   />
-                  <Text style={styles.subBarLocationText} numberOfLines={1}>
+                  <Text style={[styles.subBarLocationText, isDark && { color: theme.textSecondary }]}>
                     {location.name.split(',')[0]}
                   </Text>
                   <Ionicons
                     name="chevron-forward"
-                    size={12}
-                    color="#94a3b8"
-                    style={{ marginLeft: 2 }}
+                    size={14}
+                    color={isDark ? theme.textMuted : '#71717a'}
+                    style={{ marginLeft: 3 }}
                   />
                 </View>
               </TouchableOpacity>
@@ -1037,7 +1197,15 @@ export default function PanchangScreen() {
               const pillNode = (
                 <TouchableOpacity
                   testID={isSelected ? 'day-pill-selected' : `day-pill-${index}`}
-                  style={[styles.dayPill, isSelected && styles.dayPillSelected]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${d.toDateString()}`}
+                  accessibilityState={{ selected: isSelected }}
+                  style={[
+                    styles.dayPill,
+                    isDark && !isSelected && { backgroundColor: theme.card, borderColor: theme.border },
+                    isToday && !isSelected && { borderColor: theme.primary, borderWidth: 1.5 },
+                    isSelected && styles.dayPillSelected,
+                  ]}
                   onPress={() => handleSelectDate(d)}
                   activeOpacity={0.8}
                 >
@@ -1051,10 +1219,22 @@ export default function PanchangScreen() {
                         : styles.dayDotRegular,
                     ]}
                   />
-                  <Text style={[styles.dayNameText, isSelected && styles.dayNameTextSelected]}>
+                  <Text
+                    style={[
+                      styles.dayNameText,
+                      isDark && !isSelected && { color: theme.textMuted },
+                      isSelected && styles.dayNameTextSelected,
+                    ]}
+                  >
                     {isHi ? dayNamesHi[d.getDay()] : dayNamesEn[d.getDay()]}
                   </Text>
-                  <Text style={[styles.dayNumberText, isSelected && styles.dayNumberTextSelected]}>
+                  <Text
+                    style={[
+                      styles.dayNumberText,
+                      isDark && !isSelected && { color: theme.text },
+                      isSelected && styles.dayNumberTextSelected,
+                    ]}
+                  >
                     {dayNum}
                   </Text>
                 </TouchableOpacity>
@@ -1078,46 +1258,91 @@ export default function PanchangScreen() {
           </View>
 
           {/* View Mode Switcher: Daily vs Planner vs Monthly Calendar Grid */}
-          <TourTarget targetId="view-mode-daily-btn" borderRadius={14}>
-            <View style={styles.viewModeSegment}>
+          <TourTarget targetId="view-mode-daily-btn" borderRadius={14} style={{ width: '100%' }}>
+            <View style={[styles.viewModeSegment, isDark && { backgroundColor: theme.cardMuted }]}>
               <TouchableOpacity
                 testID="view-mode-daily-btn"
-                style={[styles.viewModeBtn, viewMode === 'daily' && styles.viewModeBtnActive]}
-                onPress={async () => {
-                  await triggerHaptic('tap', userProfile.hapticsEnabled);
+                accessibilityRole="tab"
+                accessibilityLabel={isHi ? 'पञ्चाङ्ग' : 'Panchang'}
+                accessibilityState={{ selected: effectiveViewMode === 'daily' }}
+                style={[
+                  styles.viewModeBtn,
+                  effectiveViewMode === 'daily' && [styles.viewModeBtnActive, isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder }],
+                ]}
+                onPress={() => {
+                  triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+                  if (isInteractiveTourActive && currentTourStep?.id) {
+                    setManualViewStepId(currentTourStep.id);
+                  }
                   setViewMode('daily');
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.viewModeBtnText, viewMode === 'daily' && styles.viewModeBtnTextActive]} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.viewModeBtnText,
+                    isDark && { color: theme.textSecondary },
+                    effectiveViewMode === 'daily' && [styles.viewModeBtnTextActive, isDark && { color: theme.primary }],
+                  ]}
+                >
                   {isHi ? '☀️ पञ्चाङ्ग' : '☀️ Panchang'}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 testID="view-mode-planner-btn"
-                style={[styles.viewModeBtn, viewMode === 'planner' && styles.viewModeBtnActive]}
-                onPress={async () => {
-                  await triggerHaptic('tap', userProfile.hapticsEnabled);
+                accessibilityRole="tab"
+                accessibilityLabel={isHi ? 'दिन योजना' : 'Day Planner'}
+                accessibilityState={{ selected: effectiveViewMode === 'planner' }}
+                style={[
+                  styles.viewModeBtn,
+                  effectiveViewMode === 'planner' && [styles.viewModeBtnActive, isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder }],
+                ]}
+                onPress={() => {
+                  triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+                  if (isInteractiveTourActive && currentTourStep?.id) {
+                    setManualViewStepId(currentTourStep.id);
+                  }
                   setViewMode('planner');
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.viewModeBtnText, viewMode === 'planner' && styles.viewModeBtnTextActive]} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.viewModeBtnText,
+                    isDark && { color: theme.textSecondary },
+                    effectiveViewMode === 'planner' && [styles.viewModeBtnTextActive, isDark && { color: theme.primary }],
+                  ]}
+                >
                   {isHi ? '🗓️ दिन योजना' : '🗓️ Day Planner'}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 testID="view-mode-monthly-btn"
-                style={[styles.viewModeBtn, viewMode === 'monthly' && styles.viewModeBtnActive]}
-                onPress={async () => {
-                  await triggerHaptic('tap', userProfile.hapticsEnabled);
+                accessibilityRole="tab"
+                accessibilityLabel={isHi ? 'मासिक' : 'Monthly'}
+                accessibilityState={{ selected: effectiveViewMode === 'monthly' }}
+                style={[
+                  styles.viewModeBtn,
+                  effectiveViewMode === 'monthly' && [styles.viewModeBtnActive, isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder }],
+                ]}
+                onPress={() => {
+                  triggerHaptic('tap', userProfile.hapticsEnabled).catch(() => {});
+                  if (isInteractiveTourActive && currentTourStep?.id) {
+                    setManualViewStepId(currentTourStep.id);
+                  }
                   setViewMode('monthly');
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.viewModeBtnText, viewMode === 'monthly' && styles.viewModeBtnTextActive]} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.viewModeBtnText,
+                    isDark && { color: theme.textSecondary },
+                    effectiveViewMode === 'monthly' && [styles.viewModeBtnTextActive, isDark && { color: theme.primary }],
+                  ]}
+                >
                   {isHi ? '📅 मासिक' : '📅 Monthly'}
                 </Text>
               </TouchableOpacity>
@@ -1125,7 +1350,7 @@ export default function PanchangScreen() {
           </TourTarget>
 
           {/* 1. PLANNER VIEW MODE: Direct zero-scroll access */}
-          {viewMode === 'planner' ? (
+          {effectiveViewMode === 'planner' ? (
             <View testID="planner-view-mode-container" style={{ marginTop: 2 }}>
               {isCalculating ? (
                 <LoadingIndicator
@@ -1136,14 +1361,24 @@ export default function PanchangScreen() {
                   {renderDayPlannerSection()}
                   {renderInauspiciousTriad()}
                   <TouchableOpacity
-                    style={styles.switchBackToDailyBtn}
+                    testID="switch-back-daily-btn"
+                    accessibilityRole="button"
+                    accessibilityLabel={isHi ? 'सम्पूर्ण दैनिक पञ्चाङ्ग देखें' : 'View Full Daily Panchang'}
+                    style={[
+                      styles.switchBackToDailyBtn,
+                      { minHeight: MIN_TOUCH_TARGET },
+                      isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder },
+                    ]}
                     onPress={async () => {
                       await triggerHaptic('tap', userProfile.hapticsEnabled);
+                      if (isInteractiveTourActive && currentTourStep?.id) {
+                        setManualViewStepId(currentTourStep.id);
+                      }
                       setViewMode('daily');
                     }}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.switchBackToDailyBtnText}>
+                    <Text style={[styles.switchBackToDailyBtnText, isDark && { color: theme.primary }]}>
                       {isHi ? '☀️ सम्पूर्ण दैनिक पञ्चाङ्ग देखें →' : '☀️ View Full Daily Panchang →'}
                     </Text>
                   </TouchableOpacity>
@@ -1153,15 +1388,17 @@ export default function PanchangScreen() {
           ) : (
             <>
               {/* Conditional Monthly Calendar Grid */}
-              {viewMode === 'monthly' && (
-                <MonthlyCalendarGrid
-                  currentDate={currentDate}
-                  onSelectDate={(d) => {
-                    handleSelectDate(d);
-                  }}
-                  location={location}
-                  isHi={isHi}
-                />
+              {effectiveViewMode === 'monthly' && (
+                <TourTarget targetId="monthly-calendar-grid" borderRadius={20}>
+                  <MonthlyCalendarGrid
+                    currentDate={currentDate}
+                    onSelectDate={(d) => {
+                      handleSelectDate(d);
+                    }}
+                    location={location}
+                    isHi={isHi}
+                  />
+                </TourTarget>
               )}
 
           {/* Sacred Vrat Hero Card (Sankashti Moonrise, Ekadashi, Pradosha, Purnima) */}
@@ -1172,26 +1409,26 @@ export default function PanchangScreen() {
               hapticsEnabled={userProfile.hapticsEnabled}
             />
           ) : paranaInfo ? (
-            <View style={styles.paranaBanner}>
+            <View style={[styles.paranaBanner, isDark && { backgroundColor: theme.primaryBg, borderColor: theme.primary }]}>
               <View style={styles.paranaHeaderRow}>
                 <View style={styles.paranaTitleGroup}>
                   <Text style={styles.paranaEmoji}>🌟</Text>
-                  <Text style={styles.paranaTitle}>
+                  <Text style={[styles.paranaTitle, isDark && { color: theme.text }]}>
                     {isHi
                       ? (paranaInfo.isDwadashi ? 'एकादशी व्रत पारण मुहूर्त (आज)' : 'एकादशी व्रत पारण मुहूर्त (कल)')
                       : (paranaInfo.isDwadashi ? 'Ekadashi Fast Breaking (Today)' : 'Ekadashi Fast Breaking (Tomorrow)')}
                   </Text>
                 </View>
-                <View style={styles.paranaBadge}>
-                  <Text style={styles.paranaBadgeText}>
+                <View style={[styles.paranaBadge, isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder }]}>
+                  <Text style={[styles.paranaBadgeText, isDark && { color: theme.primary }]}>
                     {isHi ? paranaInfo.vratNameHi : paranaInfo.vratNameEn}
                   </Text>
                 </View>
               </View>
-              <Text style={styles.paranaTimeWindow}>
+              <Text style={[styles.paranaTimeWindow, isDark && { color: theme.primary }]}>
                 {paranaInfo.startTimeFormatted} — {paranaInfo.endTimeFormatted}
               </Text>
-              <Text style={styles.paranaGuidance}>
+              <Text style={[styles.paranaGuidance, isDark && { color: theme.textSecondary }]}>
                 {isHi ? paranaInfo.guidanceHi : paranaInfo.guidanceEn}
               </Text>
             </View>
@@ -1206,7 +1443,7 @@ export default function PanchangScreen() {
               style={[
                 styles.liveCosmicBanner,
                 {
-                  backgroundColor: liveStatus.badgeBg,
+                  backgroundColor: isDark ? theme.card : liveStatus.badgeBg,
                   borderColor: liveStatus.accentColor,
                 },
               ]}
@@ -1228,28 +1465,36 @@ export default function PanchangScreen() {
                     {isHi ? liveStatus.badgeHi : liveStatus.badgeEn}
                   </Text>
                 </View>
-                <Text style={styles.liveCosmicWindow}>
+                <Text style={[styles.liveCosmicWindow, isDark && { color: theme.textSecondary }]}>
                   {isHi ? liveStatus.windowHi : liveStatus.windowEn}
                 </Text>
               </View>
 
-              <Text style={styles.liveCosmicTitle}>
+              <Text style={[styles.liveCosmicTitle, isDark && { color: theme.text }]}>
                 {isHi ? liveStatus.titleHi : liveStatus.titleEn}
               </Text>
 
-              <Text style={styles.liveCosmicDesc} numberOfLines={2}>
+              <Text style={[styles.liveCosmicDesc, isDark && { color: theme.textSecondary }]}>
                 {isHi ? liveStatus.descriptionHi : liveStatus.descriptionEn}
               </Text>
 
               {activeSlotTodos && (
-                <View style={styles.liveCosmicTasksRow}>
-                  <Text style={styles.liveCosmicTasksTitle}>
+                <View style={[styles.liveCosmicTasksRow, isDark && { borderTopColor: theme.border }]}>
+                  <Text style={[styles.liveCosmicTasksTitle, isDark && { color: theme.text }]}>
                     {isHi ? '🎯 इस मुहूर्त हेतु नियोजित कार्य:' : '🎯 Tasks planned for this window:'}
                   </Text>
                   <View style={styles.liveCosmicTasksList}>
                     {activeSlotTodos.tasks.map((t, idx) => (
-                      <View key={idx} style={styles.liveCosmicTaskChip}>
-                        <Text style={styles.liveCosmicTaskChipText}>• {t.text}</Text>
+                      <View
+                        key={idx}
+                        style={[
+                          styles.liveCosmicTaskChip,
+                          isDark && { backgroundColor: theme.elevatedSurface, borderColor: theme.border },
+                        ]}
+                      >
+                        <Text style={[styles.liveCosmicTaskChipText, isDark && { color: theme.text }]}>
+                          • {t.text}
+                        </Text>
                       </View>
                     ))}
                   </View>
@@ -1261,34 +1506,65 @@ export default function PanchangScreen() {
           {/* ========================================================= */}
           {/* 3. SACRED ALIGNMENT HUB (Sadhana & Vedic Sankalpa)        */}
           {/* ========================================================= */}
-          <View style={styles.sacredAlignmentRow}>
+          <View style={[styles.sacredAlignmentRow, isCompactLayout && { flexDirection: 'column' }]}>
             {/* Left Card: Daily Sadhana Checklist */}
             <TourTarget targetId="hero-challenge-card" borderRadius={18} style={{ flex: 1 }}>
               <TouchableOpacity
                 testID="hero-challenge-card"
-                style={[styles.sacredAlignmentCardLeft, { width: '100%' }]}
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'दैनिक सूक्ष्म साधनाएं चेकलिस्ट' : '5 Sacred Micro-Habits checklist'}
+                style={[
+                  styles.sacredAlignmentCardLeft,
+                  { width: '100%' },
+                  isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder },
+                ]}
                 activeOpacity={0.88}
                 onPress={() => setIsSadhanaModalVisible(true)}
               >
                 <View style={styles.alignmentCardHeader}>
-                  <Text style={styles.alignmentCardTag}>
-                    {isHi ? '📿 नित्यकर्म साधना' : '📿 Daily Sadhana'}
+                  <Text style={[styles.alignmentCardTag, isDark && { color: theme.primary }]}>
+                    {isHi ? '📿 नित्यकर्म साधना' : '📿 Daily Habits'}
                   </Text>
                   {streakCount > 0 && (
-                    <Text style={styles.alignmentCardStreak}>🔥 {streakCount}d</Text>
+                    <Text
+                      style={[
+                        styles.alignmentCardStreak,
+                        isDark && { backgroundColor: theme.primaryBg, color: theme.primary },
+                      ]}
+                    >
+                      🔥 {streakCount}d
+                    </Text>
                   )}
                 </View>
-                <Text style={styles.alignmentCardTitle}>
-                  {isHi ? 'दैनिक सूक्ष्म साधनाएं' : '5 Sacred Micro-Habits'}
+                <Text style={[styles.alignmentCardTitle, isDark && { color: theme.text }]}>
+                  {isHi ? 'दैनिक सूक्ष्म साधनाएं' : '5 Daily Spiritual Habits'}
                 </Text>
-                <Text style={styles.alignmentCardSub} numberOfLines={1}>
-                  {completedHabits.length}/5 {isHi ? 'साधनाएं पूर्ण' : 'habits completed'}
+                <Text style={[styles.alignmentCardSub, isDark && { color: theme.textSecondary }]}>
+                  {completedHabits.length}/5 {isHi ? 'साधनाएं पूर्ण' : 'completed today'}
                 </Text>
-                <View style={styles.alignmentCardFooter}>
-                  <Text style={styles.alignmentCardAction}>
-                    {isHi ? 'चेकलिस्ट देखें →' : 'View Checklist →'}
+                <View
+                  style={{
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: isDark ? theme.cardMuted : 'rgba(217,119,6,0.16)',
+                    overflow: 'hidden',
+                    marginTop: 8,
+                  }}
+                >
+                  <View
+                    style={{
+                      height: '100%',
+                      borderRadius: 3,
+                      width: `${Math.min(100, (completedHabits.length / 5) * 100)}%`,
+                      backgroundColor: completedHabits.length === 5 ? '#10b981' : theme.primary,
+                    }}
+                  />
+                </View>
+                <View style={[styles.alignmentCardFooter, isDark && { borderTopColor: theme.border }]}>
+                  <Text style={[styles.alignmentCardAction, isDark && { color: theme.primary }]}>
+                    {isHi ? 'चेकलिस्ट देखें →' : 'Open Checklist →'}
                   </Text>
-                  <Ionicons name="checkmark-done" size={14} color="#047857" />
+                  <Ionicons name="checkmark-done" size={16} color={isDark ? theme.successText : '#047857'} />
                 </View>
               </TouchableOpacity>
             </TourTarget>
@@ -1297,29 +1573,40 @@ export default function PanchangScreen() {
             <TourTarget targetId="bento-tall-card" borderRadius={18} style={{ flex: 1 }}>
               <TouchableOpacity
                 testID="bento-tall-card"
-                style={[styles.sacredAlignmentCardRight, { width: '100%' }]}
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'दैनिक वैदिक सङ्कल्प पढ़ें' : 'Recite Daily Vedic Sankalpa'}
+                style={[
+                  styles.sacredAlignmentCardRight,
+                  { width: '100%' },
+                  isDark && { backgroundColor: theme.card, borderColor: theme.primaryBorder },
+                ]}
                 activeOpacity={0.88}
                 onPress={() => setIsSankalpaModalVisible(true)}
               >
                 <View style={styles.alignmentCardHeader}>
-                  <Text style={styles.alignmentCardTag}>
-                    {isHi ? '📜 दैनिक सङ्कल्प' : '📜 Vedic Sankalpa'}
+                  <Text style={[styles.alignmentCardTag, isDark && { color: theme.primary }]}>
+                    {isHi ? '📜 दैनिक सङ्कल्प' : '📜 Daily Prayer Vow'}
                   </Text>
-                  <Text style={styles.alignmentCardStreak}>
-                    {isHi ? 'आज का व्रत' : 'Daily Vow'}
+                  <Text
+                    style={[
+                      styles.alignmentCardStreak,
+                      isDark && { backgroundColor: theme.primaryBg, color: theme.primary },
+                    ]}
+                  >
+                    {isHi ? 'आज का व्रत' : 'Today'}
                   </Text>
                 </View>
-                <Text style={styles.alignmentCardTitle} numberOfLines={1}>
-                  {userProfile.gotra ? `${userProfile.gotra} गोत्र` : isHi ? 'वैदिक संकल्प' : 'Vedic Vow'}
+                <Text style={[styles.alignmentCardTitle, isDark && { color: theme.text }]}>
+                  {userProfile.gotra ? `${userProfile.gotra} गोत्र` : isHi ? 'वैदिक संकल्प' : 'Morning Sankalpa'}
                 </Text>
-                <Text style={styles.alignmentCardSub} numberOfLines={1}>
-                  {activeMasa} • {panchang.tithi.current.nameDevanagari || panchang.tithi.current.name}
+                <Text style={[styles.alignmentCardSub, isDark && { color: theme.textSecondary }]}>
+                  {activeMasa} • {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
                 </Text>
-                <View style={styles.alignmentCardFooter}>
-                  <Text style={styles.alignmentCardAction}>
-                    {isHi ? 'सङ्कल्प लें →' : 'Recite Vow →'}
+                <View style={[styles.alignmentCardFooter, isDark && { borderTopColor: theme.border }]}>
+                  <Text style={[styles.alignmentCardAction, isDark && { color: theme.primary }]}>
+                    {isHi ? 'सङ्कल्प लें →' : 'Read & Share →'}
                   </Text>
-                  <Ionicons name="arrow-forward" size={13} color="#b45309" />
+                  <Ionicons name="arrow-forward" size={15} color={theme.primary} />
                 </View>
               </TouchableOpacity>
             </TourTarget>
@@ -1352,43 +1639,46 @@ export default function PanchangScreen() {
               {/* 5 SACRED LIMBS (PANCHA-ANGA) EXPANDABLE ACCORDION       */}
               {/* ======================================================= */}
               <TouchableOpacity
-                style={styles.limbsHeaderBtn}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: isLimbsExpanded }}
+                accessibilityLabel={isHi ? 'पञ्चाङ्ग के ५ मूल अंग खोलें या बंद करें' : 'Toggle The 5 Sacred Limbs of Panchang'}
+                style={[styles.limbsHeaderBtn, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}
                 onPress={() => setIsLimbsExpanded((prev) => !prev)}
                 activeOpacity={0.8}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 16 }}>🪐</Text>
-                  <Text style={styles.limbsHeaderText}>
-                    {isHi ? 'पञ्चाङ्ग के ५ मूल अंग (विस्तार)' : 'The 5 Sacred Limbs (Pancha-Anga)'}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                  <Text style={{ fontSize: 18 }}>🪐</Text>
+                  <Text style={[styles.limbsHeaderText, isDark && { color: theme.text }]}>
+                    {isHi ? 'पञ्चाङ्ग के ५ मूल अंग (तिथि, नक्षत्र, योग...)' : '5 Parts of Panchang (Tithi, Star, Yoga...)'}
                   </Text>
                 </View>
                 <Ionicons
                   name={isLimbsExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={18}
-                  color="#71717a"
+                  size={20}
+                  color={theme.textSecondary}
                 />
               </TouchableOpacity>
 
               {isLimbsExpanded && (
                 <View style={styles.limbsContainer}>
                   {/* 1. Tithi */}
-                  <View style={styles.limbCard}>
+                  <View style={[styles.limbCard, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
                     <View style={styles.limbTop}>
-                      <Text style={styles.limbIndex}>{isHi ? '१. तिथि' : '1. Tithi'}</Text>
-                      <Text style={styles.limbStatus}>
+                      <Text style={[styles.limbIndex, isDark && { color: theme.textSecondary }]}>{isHi ? '१. तिथि (चान्द्र दिन)' : '1. Tithi (Lunar Day)'}</Text>
+                      <Text style={[styles.limbStatus, isDark && { backgroundColor: theme.primaryBg, color: theme.primary }]}>
                         {isHi
                           ? `${panchang.tithi.current.pakshaDevanagari} पक्ष`
                           : `${panchang.tithi.current.paksha} Paksha`}
                       </Text>
                     </View>
-                    <Text style={styles.limbName}>
+                    <Text style={[styles.limbName, isDark && { color: theme.text }]}>
                       {isHi ? panchang.tithi.current.nameDevanagari : panchang.tithi.current.name}
                     </Text>
                     <View style={styles.limbFooter}>
-                      <Text style={styles.limbEnd}>
-                        {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.tithi.endTime)}
+                      <Text style={[styles.limbEnd, isDark && { color: theme.textMuted }]}>
+                        {isHi ? 'समाप्ति:' : 'Ends at'} {formatTime(panchang.tithi.endTime)}
                       </Text>
-                      <Text style={styles.limbDeity}>
+                      <Text style={[styles.limbDeity, isDark && { color: theme.textSecondary }]}>
                         {isHi ? 'देवता:' : 'Deity:'}{' '}
                         {cleanDeityName(panchang.tithi.current.deity, isHi)}
                       </Text>
@@ -1396,25 +1686,25 @@ export default function PanchangScreen() {
                   </View>
 
                   {/* 2. Nakshatra */}
-                  <View style={styles.limbCard}>
+                  <View style={[styles.limbCard, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
                     <View style={styles.limbTop}>
-                      <Text style={styles.limbIndex}>{isHi ? '२. नक्षत्र' : '2. Nakshatra'}</Text>
-                      <Text style={styles.limbStatus}>
+                      <Text style={[styles.limbIndex, isDark && { color: theme.textSecondary }]}>{isHi ? '२. नक्षत्र (चन्द्र तारामंडल)' : '2. Nakshatra (Moon Star)'}</Text>
+                      <Text style={[styles.limbStatus, isDark && { backgroundColor: theme.primaryBg, color: theme.primary }]}>
                         {isHi
                           ? `चरण ${panchang.nakshatra.current.pada}`
                           : `Pada ${panchang.nakshatra.current.pada}`}
                       </Text>
                     </View>
-                    <Text style={styles.limbName}>
+                    <Text style={[styles.limbName, isDark && { color: theme.text }]}>
                       {isHi
                         ? panchang.nakshatra.current.nameDevanagari
                         : panchang.nakshatra.current.name}
                     </Text>
                     <View style={styles.limbFooter}>
-                      <Text style={styles.limbEnd}>
-                        {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.nakshatra.endTime)}
+                      <Text style={[styles.limbEnd, isDark && { color: theme.textMuted }]}>
+                        {isHi ? 'समाप्ति:' : 'Ends at'} {formatTime(panchang.nakshatra.endTime)}
                       </Text>
-                      <Text style={styles.limbDeity}>
+                      <Text style={[styles.limbDeity, isDark && { color: theme.textSecondary }]}>
                         {isHi ? 'स्वामी:' : 'Lord:'}{' '}
                         {cleanPlanetLord(panchang.nakshatra.current.lord, isHi)}
                       </Text>
@@ -1422,44 +1712,46 @@ export default function PanchangScreen() {
                   </View>
 
                   {/* 3. Yoga */}
-                  <View style={styles.limbCard}>
+                  <View style={[styles.limbCard, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
                     <View style={styles.limbTop}>
-                      <Text style={styles.limbIndex}>{isHi ? '३. योग' : '3. Yoga'}</Text>
+                      <Text style={[styles.limbIndex, isDark && { color: theme.textSecondary }]}>{isHi ? '३. योग (सूर्य-चन्द्र संयोग)' : '3. Yoga (Day Energy)'}</Text>
                       <Text
                         style={[
                           styles.limbStatus,
                           panchang.yoga.current.nature === 'Auspicious'
-                            ? { color: '#10b981', backgroundColor: '#ecfdf5' }
-                            : { color: '#ef4444', backgroundColor: '#fef2f2' },
+                            ? { color: isDark ? theme.successText : '#047857', backgroundColor: isDark ? theme.successBg : '#ecfdf5' }
+                            : { color: isDark ? theme.dangerText : '#b91c1c', backgroundColor: isDark ? theme.dangerBg : '#fef2f2' },
                         ]}
                       >
                         {isHi
                           ? panchang.yoga.current.nature === 'Auspicious'
-                            ? 'शुभ'
-                            : 'अशुभ'
-                          : panchang.yoga.current.nature}
+                            ? '✓ शुभ'
+                            : '⚠️ अशुभ'
+                          : panchang.yoga.current.nature === 'Auspicious'
+                          ? '✓ Good'
+                          : '⚠️ Caution'}
                       </Text>
                     </View>
-                    <Text style={styles.limbName}>
+                    <Text style={[styles.limbName, isDark && { color: theme.text }]}>
                       {isHi ? panchang.yoga.current.nameDevanagari : panchang.yoga.current.name}
                     </Text>
                     <View style={styles.limbFooter}>
-                      <Text style={styles.limbEnd}>
-                        {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.yoga.endTime)}
+                      <Text style={[styles.limbEnd, isDark && { color: theme.textMuted }]}>
+                        {isHi ? 'समाप्ति:' : 'Ends at'} {formatTime(panchang.yoga.endTime)}
                       </Text>
-                      <Text style={styles.limbDeity}>
+                      <Text style={[styles.limbDeity, isDark && { color: theme.textSecondary }]}>
                         {isHi
-                          ? `संख्या ${panchang.yoga.current.index}`
-                          : `Index ${panchang.yoga.current.index} / 27`}
+                          ? `संख्या ${panchang.yoga.current.index} / २७`
+                          : `#${panchang.yoga.current.index} of 27`}
                       </Text>
                     </View>
                   </View>
 
                   {/* 4. Karana */}
-                  <View style={styles.limbCard}>
+                  <View style={[styles.limbCard, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
                     <View style={styles.limbTop}>
-                      <Text style={styles.limbIndex}>{isHi ? '४. करण' : '4. Karana'}</Text>
-                      <Text style={styles.limbStatus}>
+                      <Text style={[styles.limbIndex, isDark && { color: theme.textSecondary }]}>{isHi ? '४. करण (अर्ध तिथि)' : '4. Karana (Half Lunar Day)'}</Text>
+                      <Text style={[styles.limbStatus, isDark && { backgroundColor: theme.primaryBg, color: theme.primary }]}>
                         {isHi
                           ? panchang.karana.current.type === 'Chara'
                             ? 'चर'
@@ -1467,14 +1759,14 @@ export default function PanchangScreen() {
                           : panchang.karana.current.type}
                       </Text>
                     </View>
-                    <Text style={styles.limbName}>
+                    <Text style={[styles.limbName, isDark && { color: theme.text }]}>
                       {isHi ? panchang.karana.current.nameDevanagari : panchang.karana.current.name}
                     </Text>
                     <View style={styles.limbFooter}>
-                      <Text style={styles.limbEnd}>
-                        {isHi ? 'समाप्ति:' : 'Till'} {formatTime(panchang.karana.endTime)}
+                      <Text style={[styles.limbEnd, isDark && { color: theme.textMuted }]}>
+                        {isHi ? 'समाप्ति:' : 'Ends at'} {formatTime(panchang.karana.endTime)}
                       </Text>
-                      <Text style={styles.limbDeity}>
+                      <Text style={[styles.limbDeity, isDark && { color: theme.textSecondary }]}>
                         {isHi ? 'देवता:' : 'Deity:'}{' '}
                         {cleanDeityName(panchang.karana.current.deity, isHi)}
                       </Text>
@@ -1482,28 +1774,49 @@ export default function PanchangScreen() {
                   </View>
 
                   {/* 5. Vara */}
-                  <View style={styles.limbCard}>
+                  <View style={[styles.limbCard, isDark && { backgroundColor: theme.card, borderColor: theme.border }]}>
                     <View style={styles.limbTop}>
-                      <Text style={styles.limbIndex}>{isHi ? '५. वार' : '5. Solar Day'}</Text>
-                      <Text style={styles.limbStatus}>
-                        {isHi ? 'सौर दिवस' : 'Sunrise-based'}
+                      <Text style={[styles.limbIndex, isDark && { color: theme.textSecondary }]}>{isHi ? '५. वार (सौर दिवस)' : '5. Weekday (Vara)'}</Text>
+                      <Text style={[styles.limbStatus, isDark && { backgroundColor: theme.primaryBg, color: theme.primary }]}>
+                        {isHi ? 'सूर्योदय से' : 'Sunrise-based'}
                       </Text>
                     </View>
-                    <Text style={styles.limbName}>
+                    <Text style={[styles.limbName, isDark && { color: theme.text }]}>
                       {isHi ? panchang.vara.nameDevanagari : panchang.vara.name}
                     </Text>
                     <View style={styles.limbFooter}>
-                      <Text style={styles.limbEnd}>
-                        {isHi ? 'अधिपति:' : 'Lord:'}{' '}
+                      <Text style={[styles.limbEnd, isDark && { color: theme.textMuted }]}>
+                        {isHi ? 'स्वामी ग्रह:' : 'Ruling Planet:'}{' '}
                         {cleanPlanetLord(panchang.vara.lordPlanet, isHi)}
                       </Text>
-                      <Text style={styles.limbDeity}>
+                      <Text style={[styles.limbDeity, isDark && { color: theme.textSecondary }]}>
                         {isHi ? `संवत् ${panchang.samvat.vikramSamvat}` : `Vikram ${panchang.samvat.vikramSamvat}`}
                       </Text>
                     </View>
                   </View>
                 </View>
               )}
+
+              {/* Daily Wellness / Shastric Shloka Quick Access */}
+              <TouchableOpacity
+                testID="daily-shloka-card"
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'आज का कल्याणकारी श्लोक पढ़ें' : 'Read Daily Sacred Verse'}
+                style={[
+                  styles.limbsHeaderBtn,
+                  isDark && { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+                onPress={() => setIsVerseModalVisible(true)}
+                activeOpacity={0.85}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                  <Text style={{ fontSize: 18 }}>📖</Text>
+                  <Text style={[styles.limbsHeaderText, isDark && { color: theme.text }]}>
+                    {isHi ? selectedVerse.titleHi : selectedVerse.title}
+                  </Text>
+                </View>
+                <Ionicons name="open-outline" size={18} color={theme.primary} />
+              </TouchableOpacity>
             </>
           )}
         </>
@@ -1514,50 +1827,67 @@ export default function PanchangScreen() {
         {/* ========================================================= */}
         {/* MODAL 1: DAILY VEDIC SANKALPA                             */}
         {/* ========================================================= */}
-        <Modal visible={isSankalpaModalVisible} animationType="slide" transparent>
+        <Modal
+          visible={isSankalpaModalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setIsSankalpaModalVisible(false)}
+        >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, isDark && { backgroundColor: theme.surface, borderColor: theme.border, borderTopWidth: 1 }]}>
               <View style={styles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={{ fontSize: 20 }}>📜</Text>
-                  <Text style={styles.modalTitle}>
+                  <Text style={[styles.modalTitle, isDark && { color: theme.text }]}>
                     {isHi ? 'दैनिक वैदिक सङ्कल्प' : 'Daily Vedic Sankalpa'}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => setIsSankalpaModalVisible(false)}>
-                  <Ionicons name="close-circle" size={26} color="#71717a" />
+                <TouchableOpacity
+                  testID="sankalpa-close-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'सङ्कल्प बंद करें' : 'Close Sankalpa modal'}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  style={[styles.modalCloseBtn, isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border }]}
+                  onPress={() => setIsSankalpaModalVisible(false)}
+                >
+                  <Ionicons name="close" size={22} color={isDark ? theme.textSecondary : '#52525b'} />
                 </TouchableOpacity>
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }}>
-                <View style={styles.sankalpaPillHeader}>
-                  <Text style={styles.sankalpaPillLocation}>📍 {location.name}</Text>
-                  <Text style={styles.sankalpaPillDate}>
+                <View style={[styles.sankalpaPillHeader, isDark && { backgroundColor: theme.cardMuted }]}>
+                  <Text style={[styles.sankalpaPillLocation, isDark && { color: theme.text }]}>📍 {location.name}</Text>
+                  <Text style={[styles.sankalpaPillDate, isDark && { color: theme.textSecondary }]}>
                     संवत् {panchang.samvat.vikramSamvat} • {activeMasa}
                   </Text>
                   {userProfile.gotra ? (
-                    <Text style={[styles.sankalpaPillDate, { color: '#b45309', fontWeight: '700' }]}>
+                    <Text style={[styles.sankalpaPillDate, { color: theme.primary, fontWeight: '700' }]}>
                       गोत्र: {userProfile.gotra} {userProfile.name ? `• यजमान: ${userProfile.name}` : ''}
                     </Text>
                   ) : null}
                 </View>
 
-                <Text style={styles.sankalpaSanskrit}>{dailySankalpa.sanskrit}</Text>
+                <Text style={[styles.sankalpaSanskrit, isDark && { color: theme.text }]}>{dailySankalpa.sanskrit}</Text>
 
-                <View style={styles.meaningDivider} />
+                <View style={[styles.meaningDivider, isDark && { backgroundColor: theme.border }]} />
 
-                <Text style={styles.meaningLabel}>{isHi ? 'भावार्थ (हिंदी):' : 'Meaning (Hindi):'}</Text>
-                <Text style={styles.meaningText}>{dailySankalpa.hindi}</Text>
+                <Text style={[styles.meaningLabel, isDark && { color: theme.primary }]}>
+                  {isHi ? 'भावार्थ (हिंदी):' : 'Meaning (Hindi):'}
+                </Text>
+                <Text style={[styles.meaningText, isDark && { color: theme.textSecondary }]}>{dailySankalpa.hindi}</Text>
 
-                <View style={styles.meaningDivider} />
+                <View style={[styles.meaningDivider, isDark && { backgroundColor: theme.border }]} />
 
-                <Text style={styles.meaningLabel}>English Contemplation:</Text>
-                <Text style={styles.meaningText}>{dailySankalpa.english}</Text>
+                <Text style={[styles.meaningLabel, isDark && { color: theme.primary }]}>English Contemplation:</Text>
+                <Text style={[styles.meaningText, isDark && { color: theme.textSecondary }]}>{dailySankalpa.english}</Text>
               </ScrollView>
 
               <View style={styles.modalFooterBtns}>
                 <TouchableOpacity
-                  style={styles.shareBtn}
+                  testID="sankalpa-share-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'सङ्कल्प साझा करें' : 'Share Sankalpa'}
+                  style={[styles.shareBtn, { minHeight: MIN_TOUCH_TARGET }]}
                   onPress={handleShareSankalpa}
                   activeOpacity={0.8}
                 >
@@ -1566,7 +1896,10 @@ export default function PanchangScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.doneBtn}
+                  testID="sankalpa-done-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'सङ्कल्प सम्पन्न' : 'Done'}
+                  style={[styles.doneBtn, { minHeight: MIN_TOUCH_TARGET }]}
                   onPress={() => setIsSankalpaModalVisible(false)}
                   activeOpacity={0.8}
                 >
@@ -1580,20 +1913,32 @@ export default function PanchangScreen() {
         {/* ========================================================= */}
         {/* MODAL 2: INTERACTIVE DAILY SADHANA HABIT CHECKLIST        */}
         {/* ========================================================= */}
-        <Modal visible={isSadhanaModalVisible} animationType="slide" transparent>
+        <Modal
+          visible={isSadhanaModalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setIsSadhanaModalVisible(false)}
+        >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, isDark && { backgroundColor: theme.surface, borderColor: theme.border, borderTopWidth: 1 }]}>
               <View style={styles.modalHeader}>
-                <View style={{ backgroundColor: 'transparent' }}>
-                  <Text style={styles.modalTitle}>
+                <View style={{ backgroundColor: 'transparent', flex: 1 }}>
+                  <Text style={[styles.modalTitle, isDark && { color: theme.text }]}>
                     {isHi ? 'दैनिक नित्यकर्म साधना' : 'Daily Sadhana Checklist'}
                   </Text>
-                  <Text style={styles.modalSubtitle}>
+                  <Text style={[styles.modalSubtitle, isDark && { color: theme.textMuted }]}>
                     {isHi ? 'प्रतिदिन की ५ सूक्ष्म साधनाएं' : '5 essential daily sacred micro-habits'}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => setIsSadhanaModalVisible(false)}>
-                  <Ionicons name="close-circle" size={26} color="#71717a" />
+                <TouchableOpacity
+                  testID="sadhana-close-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'साधना सूची बंद करें' : 'Close Sadhana checklist'}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  style={[styles.modalCloseBtn, isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border }]}
+                  onPress={() => setIsSadhanaModalVisible(false)}
+                >
+                  <Ionicons name="close" size={22} color={isDark ? theme.textSecondary : '#52525b'} />
                 </TouchableOpacity>
               </View>
 
@@ -1603,7 +1948,15 @@ export default function PanchangScreen() {
                   return (
                     <TouchableOpacity
                       key={habit.id}
-                      style={[styles.habitRow, isDone && styles.habitRowDone]}
+                      testID={`sadhana-habit-${habit.id}`}
+                      accessibilityRole="checkbox"
+                      accessibilityLabel={isHi ? habit.titleHi : habit.titleEn}
+                      accessibilityState={{ checked: isDone }}
+                      style={[
+                        styles.habitRow,
+                        isDark && !isDone && { backgroundColor: theme.card, borderColor: theme.border },
+                        isDone && [styles.habitRowDone, isDark && { backgroundColor: theme.successBg, borderColor: theme.successBorder }],
+                      ]}
                       onPress={() => handleToggleHabit(habit.id)}
                       activeOpacity={0.8}
                     >
@@ -1611,18 +1964,24 @@ export default function PanchangScreen() {
                         <Ionicons
                           name={habit.iconName as any}
                           size={20}
-                          color={isDone ? '#ffffff' : '#d97706'}
+                          color={isDone ? '#ffffff' : theme.primary}
                         />
                       </View>
 
                       <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-                        <Text style={[styles.habitTitle, isDone && styles.habitTitleDone]}>
+                        <Text
+                          style={[
+                            styles.habitTitle,
+                            isDark && { color: theme.text },
+                            isDone && styles.habitTitleDone,
+                          ]}
+                        >
                           {isHi ? habit.titleHi : habit.titleEn}
                         </Text>
-                        <Text style={styles.habitDesc}>
+                        <Text style={[styles.habitDesc, isDark && { color: theme.textMuted }]}>
                           {isHi ? habit.descHi : habit.descEn}
                         </Text>
-                        <Text style={styles.habitTime}>
+                        <Text style={[styles.habitTime, isDark && { color: theme.primary }]}>
                           ⏰ {isHi ? habit.timeContextHi : habit.timeContext}
                         </Text>
                       </View>
@@ -1639,6 +1998,8 @@ export default function PanchangScreen() {
 
               <TouchableOpacity
                 testID="sadhana-save-btn"
+                accessibilityRole="button"
+                accessibilityLabel={isHi ? 'साधना सहेजें' : 'Save Sadhana'}
                 style={styles.sadhanaDoneBtn}
                 onPress={() => setIsSadhanaModalVisible(false)}
                 activeOpacity={0.8}
@@ -1654,42 +2015,81 @@ export default function PanchangScreen() {
         {/* ========================================================= */}
         {/* MODAL 3: SHASTRA VERSE & ARGYA RECITER                    */}
         {/* ========================================================= */}
-        <Modal visible={isVerseModalVisible} animationType="slide" transparent>
+        <Modal
+          visible={isVerseModalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setIsVerseModalVisible(false)}
+        >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, isDark && { backgroundColor: theme.surface, borderColor: theme.border, borderTopWidth: 1 }]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
+                <Text style={[styles.modalTitle, isDark && { color: theme.text }, { flex: 1, paddingRight: 8 }]}>
                   {isHi ? selectedVerse.titleHi : selectedVerse.title}
                 </Text>
-                <TouchableOpacity onPress={() => setIsVerseModalVisible(false)}>
-                  <Ionicons name="close-circle" size={26} color="#71717a" />
+                <TouchableOpacity
+                  testID="verse-close-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'श्लोक बंद करें' : 'Close Verse'}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  style={[styles.modalCloseBtn, isDark && { backgroundColor: theme.cardMuted, borderColor: theme.border }]}
+                  onPress={() => setIsVerseModalVisible(false)}
+                >
+                  <Ionicons name="close" size={22} color={isDark ? theme.textSecondary : '#52525b'} />
                 </TouchableOpacity>
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
-                <View style={styles.contextPill}>
-                  <Ionicons name="time-outline" size={14} color="#d97706" />
-                  <Text style={styles.contextPillText}>
+                <View style={[styles.contextPill, isDark && { backgroundColor: theme.primaryBg }]}>
+                  <Ionicons name="time-outline" size={16} color={theme.primary} />
+                  <Text style={[styles.contextPillText, isDark && { color: theme.primary }]}>
                     {isHi ? selectedVerse.timeContextHi : selectedVerse.timeContext}
                   </Text>
                 </View>
 
-                <Text style={styles.verseSanskrit}>{selectedVerse.shloka}</Text>
-                <Text style={styles.verseTranslit}>{selectedVerse.transliteration}</Text>
+                <Text style={[styles.verseSanskrit, isDark && { color: theme.text, backgroundColor: theme.cardMuted, borderColor: theme.border }]}>{selectedVerse.shloka}</Text>
+                <Text style={[styles.verseTranslit, isDark && { color: theme.textMuted }]}>{selectedVerse.transliteration}</Text>
 
-                <View style={styles.meaningDivider} />
-                <Text style={styles.meaningLabel}>{isHi ? 'भावार्थ:' : 'Meaning:'}</Text>
-                <Text style={styles.meaningText}>
+                <View style={[styles.meaningDivider, isDark && { backgroundColor: theme.border }]} />
+                <Text style={[styles.meaningLabel, isDark && { color: theme.primary }]}>{isHi ? 'भावार्थ:' : 'Meaning:'}</Text>
+                <Text style={[styles.meaningText, isDark && { color: theme.textSecondary }]}>
                   {isHi ? selectedVerse.meaningHi : selectedVerse.meaning}
                 </Text>
               </ScrollView>
 
-              <TouchableOpacity
-                style={styles.doneBtn}
-                onPress={() => setIsVerseModalVisible(false)}
-              >
-                <Text style={styles.doneBtnText}>{isHi ? 'बन्द करें' : 'Close'}</Text>
-              </TouchableOpacity>
+              <View style={[styles.modalFooterBtns, isCompactLayout && { flexWrap: 'wrap' }]}>
+                <TouchableOpacity
+                  testID="verse-prev-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'पिछला श्लोक' : 'Previous verse'}
+                  style={[styles.shareBtn, { backgroundColor: isDark ? theme.cardMuted : '#52525b', minHeight: COMFORT_TOUCH_TARGET }]}
+                  onPress={() => handleCycleVerse(-1)}
+                >
+                  <Ionicons name="arrow-back" size={18} color="#ffffff" />
+                  <Text style={styles.shareBtnText}>{isHi ? 'पिछला' : 'Prev'}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  testID="verse-next-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'अगला श्लोक' : 'Next verse'}
+                  style={[styles.shareBtn, { minHeight: COMFORT_TOUCH_TARGET }]}
+                  onPress={() => handleCycleVerse(1)}
+                >
+                  <Text style={styles.shareBtnText}>{isHi ? 'अगला श्लोक' : 'Next'}</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#ffffff" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  testID="verse-done-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={isHi ? 'बन्द करें' : 'Close'}
+                  style={[styles.doneBtn, { minHeight: COMFORT_TOUCH_TARGET }]}
+                  onPress={() => setIsVerseModalVisible(false)}
+                >
+                  <Text style={styles.doneBtnText}>{isHi ? 'बन्द करें' : 'Close'}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
@@ -1703,6 +2103,7 @@ export default function PanchangScreen() {
           devataInfo={weekdayDevata}
           verse={selectedVerse}
           userName={userProfile.name}
+          timezone={location.timezone}
         />
 
         {/* First-Time User App Tour Walkthrough Modal */}
@@ -1735,21 +2136,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
+  },
+  headerIdentityRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 160,
   },
   avatarContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: MIN_TOUCH_TARGET,
+    height: MIN_TOUCH_TARGET,
+    borderRadius: MIN_TOUCH_TARGET / 2,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#f59e0b',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
   },
   avatarInner: {
     alignItems: 'center',
@@ -1757,16 +2160,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   avatarGlyph: {
-    fontSize: 18,
+    fontSize: 20,
   },
   greetingContainer: {
     flex: 1,
     marginLeft: 10,
-    marginRight: 6,
+    marginRight: 4,
     justifyContent: 'center',
   },
   greetingTitle: {
-    fontSize: 15,
+    fontSize: 17,
+    lineHeight: 23,
     fontWeight: '700',
     color: '#18181b',
     letterSpacing: -0.2,
@@ -1778,111 +2182,99 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   helpActionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: MIN_TOUCH_TARGET / 2,
     backgroundColor: 'rgba(217, 119, 6, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(217, 119, 6, 0.2)',
+    borderColor: 'rgba(217, 119, 6, 0.25)',
   },
   langActionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: MIN_TOUCH_TARGET / 2,
     backgroundColor: '#fff7ed',
     borderWidth: 1,
     borderColor: '#fed7aa',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 6,
   },
   langActionBtnText: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#ea580c',
   },
   bellActionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: MIN_TOUCH_TARGET / 2,
     backgroundColor: '#fffbeb',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#fde68a',
-    shadowColor: '#d97706',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 2,
   },
   whatsAppShareBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#25d366', // Authentic WhatsApp Green
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: MIN_TOUCH_TARGET / 2,
+    backgroundColor: '#16a34a',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#16a34a',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 2,
   },
   whatsAppShareBtnText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
   headerSubBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
+    minHeight: MIN_TOUCH_TARGET,
     backgroundColor: '#ffffff',
-    marginTop: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#fed7aa',
-    shadowColor: '#ea580c',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
   },
   subBarPanchang: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     flexShrink: 1,
   },
   subBarDateText: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#3f3f46',
   },
   subBarBullet: {
-    fontSize: 11,
-    color: '#cbd5e1',
-    marginHorizontal: 5,
+    fontSize: 13,
+    color: '#a1a1aa',
+    marginHorizontal: 6,
   },
   subBarTithiText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#d97706',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#b45309',
   },
   subBarLocation: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexShrink: 0,
-    marginLeft: 8,
+    flexShrink: 1,
   },
   subBarLocationText: {
-    fontSize: 11,
+    fontSize: 13.5,
     fontWeight: '600',
-    color: '#71717a',
-    maxWidth: 100,
+    color: '#52525b',
   },
   cityActionBtn: {
     width: 36,
@@ -1904,20 +2296,25 @@ const styles = StyleSheet.create({
   viewModeSegment: {
     flexDirection: 'row',
     backgroundColor: '#f4f4f5',
-    borderRadius: 12,
-    padding: 3,
-    marginBottom: 12,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 14,
     gap: 4,
   },
   viewModeBtn: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 9,
+    minHeight: MIN_TOUCH_TARGET,
+    paddingVertical: 9,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   viewModeBtnActive: {
     backgroundColor: '#ffffff',
+    borderColor: '#fde68a',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -1925,9 +2322,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   viewModeBtnText: {
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#71717a',
+    color: '#52525b',
     textAlign: 'center',
   },
   viewModeBtnTextActive: {
@@ -1937,6 +2334,7 @@ const styles = StyleSheet.create({
   switchBackToDailyBtn: {
     marginTop: 14,
     marginBottom: 20,
+    minHeight: COMFORT_TOUCH_TARGET,
     backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -1945,15 +2343,9 @@ const styles = StyleSheet.create({
     borderColor: '#fed7aa',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#f59e0b',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 1,
   },
   switchBackToDailyBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...Typography.button,
     color: '#b45309',
   },
 
@@ -1961,21 +2353,18 @@ const styles = StyleSheet.create({
   paranaBanner: {
     backgroundColor: '#fffbeb',
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     borderWidth: 1.5,
     borderColor: '#f59e0b',
     marginBottom: 14,
-    shadowColor: '#d97706',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 2,
   },
   paranaHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 6,
   },
   paranaTitleGroup: {
     flexDirection: 'row',
@@ -1984,57 +2373,54 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   paranaEmoji: {
-    fontSize: 16,
+    fontSize: 18,
   },
   paranaTitle: {
-    fontSize: 13,
+    ...Typography.cardTitle,
     fontWeight: '800',
     color: '#92400e',
+    flex: 1,
   },
   paranaBadge: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   paranaBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#b45309',
   },
   paranaTimeWindow: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '900',
     color: '#b45309',
     marginVertical: 4,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   paranaGuidance: {
-    fontSize: 11.5,
+    ...Typography.bodyMuted,
     color: '#78350f',
-    lineHeight: 16,
   },
 
   // Live Cosmic Pulse Banner
   liveCosmicBanner: {
     borderRadius: 18,
     borderWidth: 1.5,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
   },
   liveCosmicTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 6,
     backgroundColor: 'transparent',
   },
   livePulseGroup: {
@@ -2044,45 +2430,45 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   livePulseDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
   },
   liveCosmicBadgeText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
     letterSpacing: 0.2,
     textTransform: 'uppercase',
   },
   liveCosmicWindow: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#52525b',
   },
   liveCosmicTitle: {
-    fontSize: 15,
+    fontSize: 17,
+    lineHeight: 23,
     fontWeight: '800',
     color: '#18181b',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   liveCosmicDesc: {
-    fontSize: 12,
+    ...Typography.bodyMuted,
     color: '#3f3f46',
-    lineHeight: 16,
     fontWeight: '500',
   },
   liveCosmicTasksRow: {
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.08)',
     backgroundColor: 'transparent',
   },
   liveCosmicTasksTitle: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: '#374151',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   liveCosmicTasksList: {
     flexDirection: 'row',
@@ -2091,15 +2477,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   liveCosmicTaskChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.06)',
   },
   liveCosmicTaskChipText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1f2937',
   },
@@ -2236,84 +2622,79 @@ const styles = StyleSheet.create({
   // Sacred Alignment Dual-Card Quick Hub
   sacredAlignmentRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     marginBottom: 16,
     backgroundColor: 'transparent',
   },
   sacredAlignmentCardLeft: {
     flex: 1,
-    padding: 12,
+    padding: 14,
     borderRadius: 18,
-    backgroundColor: '#fef3c7', // Warm amber cream
+    backgroundColor: '#fef3c7',
     borderWidth: 1,
     borderColor: '#fde68a',
-    shadowColor: '#d97706',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
     justifyContent: 'space-between',
+    minHeight: 120,
   },
   sacredAlignmentCardRight: {
     flex: 1,
-    padding: 12,
+    padding: 14,
     borderRadius: 18,
-    backgroundColor: '#ffedd5', // Warm peach saffron
+    backgroundColor: '#ffedd5',
     borderWidth: 1,
     borderColor: '#fed7aa',
-    shadowColor: '#b45309',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
     justifyContent: 'space-between',
+    minHeight: 120,
   },
   alignmentCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 6,
     backgroundColor: 'transparent',
   },
   alignmentCardTag: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#b45309',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   alignmentCardStreak: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#b45309',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 10,
   },
   alignmentCardTitle: {
-    fontSize: 13,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '800',
     color: '#18181b',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   alignmentCardSub: {
-    fontSize: 11,
-    color: '#71717a',
-    lineHeight: 15,
+    fontSize: 13.5,
+    color: '#52525b',
+    lineHeight: 19,
   },
   alignmentCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 6,
+    marginTop: 10,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    borderTopColor: 'rgba(0, 0, 0, 0.06)',
     backgroundColor: 'transparent',
   },
   alignmentCardAction: {
-    fontSize: 11,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#b45309',
   },
@@ -2321,38 +2702,39 @@ const styles = StyleSheet.create({
   // Quick Astro Glance Bar below planner
   quickAstroRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    gap: 8,
     backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#f4f4f5',
+    borderColor: '#e4e4e7',
     borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    padding: 12,
     marginTop: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
   },
   quickAstroItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'transparent',
+    gap: 8,
+    flexBasis: '47%',
+    flexGrow: 1,
+    backgroundColor: '#fafafa',
+    borderWidth: 1,
+    borderColor: '#f4f4f5',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
   },
   quickAstroEmoji: {
-    fontSize: 16,
+    fontSize: 18,
   },
   quickAstroLabel: {
-    fontSize: 10,
+    fontSize: 12.5,
     fontWeight: '600',
-    color: '#71717a',
+    color: '#52525b',
   },
   quickAstroVal: {
-    fontSize: 12,
+    fontSize: 14.5,
     fontWeight: '700',
     color: '#18181b',
   },
@@ -2364,74 +2746,78 @@ const styles = StyleSheet.create({
 
   // Pan-Indian Inauspicious Triad (Rahu, Yamagandam, Gulika)
   inauspiciousTriadCard: {
-    backgroundColor: '#fff7ed', // Soft warm cream
+    backgroundColor: '#fff7ed',
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#fed7aa',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     marginBottom: 16,
   },
   inauspiciousTriadHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
     backgroundColor: 'transparent',
   },
   inauspiciousTriadTitle: {
-    fontSize: 12,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#9a3412',
+    flexShrink: 1,
   },
   inauspiciousTriadSub: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: '#c2410c',
   },
   inauspiciousTriadRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
     backgroundColor: 'transparent',
   },
   triadItem: {
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#fed7aa',
   },
   triadBadgeTextRed: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#dc2626',
-    marginBottom: 2,
+    color: '#b91c1c',
+    marginBottom: 3,
+    textAlign: 'center',
   },
   triadBadgeTextOrange: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#d97706',
-    marginBottom: 2,
+    color: '#b45309',
+    marginBottom: 3,
+    textAlign: 'center',
   },
   triadBadgeTextPurple: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#7c3aed',
-    marginBottom: 2,
+    color: '#6d28d9',
+    marginBottom: 3,
+    textAlign: 'center',
   },
   triadTimeText: {
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '700',
     color: '#1f2937',
     textAlign: 'center',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   triadDescText: {
-    fontSize: 9,
-    color: '#6b7280',
+    fontSize: 12,
+    color: '#52525b',
     textAlign: 'center',
   },
 
@@ -2439,7 +2825,7 @@ const styles = StyleSheet.create({
   weekStripContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 18,
+    marginBottom: 16,
     backgroundColor: 'transparent',
   },
   dayPillWrapper: {
@@ -2448,31 +2834,23 @@ const styles = StyleSheet.create({
   },
   dayPill: {
     width: '100%',
+    minHeight: 62,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 18,
     backgroundColor: '#ffffff',
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#e4e4e7',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
   },
   dayPillSelected: {
-    backgroundColor: '#b45309', // Sacred Kesariya / Amber active day pill
+    backgroundColor: '#b45309',
     borderColor: '#92400e',
-    shadowColor: '#b45309',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
   },
   dayDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     marginBottom: 4,
   },
   dayDotRegular: {
@@ -2485,17 +2863,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   dayNameText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#71717a',
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#52525b',
     marginBottom: 2,
   },
   dayNameTextSelected: {
-    color: '#a1a1aa',
+    color: '#fef3c7',
+    fontWeight: '700',
   },
   dayNumberText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16.5,
+    fontWeight: '800',
     color: '#18181b',
   },
   dayNumberTextSelected: {
@@ -2794,56 +3173,58 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   plannerSectionTitle: {
-    fontSize: 19,
-    fontWeight: '800',
+    ...Typography.sectionHeading,
+    fontSize: 20,
     color: '#18181b',
-    letterSpacing: -0.3,
   },
   plannerSectionSub: {
-    fontSize: 12,
-    color: '#71717a',
-    marginTop: 2,
-    fontWeight: '500',
+    ...Typography.bodyMuted,
+    color: '#52525b',
+    marginTop: 3,
   },
   plannerProgressBadge: {
     backgroundColor: '#fef3c7',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   plannerProgressText: {
-    fontSize: 11,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#b45309',
   },
   plannerFilterRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 12,
-    backgroundColor: 'transparent',
+    marginBottom: 14,
+    padding: 4,
+    borderRadius: 14,
+    backgroundColor: '#f4f4f5',
   },
   plannerFilterTab: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#e4e4e7',
+    borderColor: 'transparent',
+    alignItems: 'center',
   },
   plannerFilterTabActive: {
     backgroundColor: '#b45309',
     borderColor: '#92400e',
   },
   plannerFilterTabText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#52525b',
+    textAlign: 'center',
   },
   plannerFilterTabTextActive: {
     color: '#ffffff',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   plannerCardsContainer: {
     gap: 12,
@@ -2911,31 +3292,32 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   slotTimeRange: {
-    fontSize: 11,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#52525b',
   },
   slotTitle: {
-    fontSize: 15,
+    fontSize: 16.5,
+    lineHeight: 22,
     fontWeight: '800',
     color: '#18181b',
-    marginTop: 1,
+    marginTop: 2,
   },
   currentActiveBadge: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 8,
   },
   currentActiveBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#b45309',
   },
   qualityBadge: {
     backgroundColor: '#e0f2fe',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 8,
   },
   qualityBadgeMahashubh: {
@@ -2945,7 +3327,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fee2e2',
   },
   qualityBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#0369a1',
   },
@@ -2958,23 +3340,21 @@ const styles = StyleSheet.create({
   suitabilityBox: {
     backgroundColor: '#f8fafc',
     borderRadius: 12,
-    padding: 10,
+    padding: 12,
     marginBottom: 10,
   },
   suitabilityBoxAshubh: {
     backgroundColor: '#ffe4e6',
   },
   suitabilityHeading: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#64748b',
-    marginBottom: 2,
+    color: '#475569',
+    marginBottom: 3,
   },
   suitabilityText: {
-    fontSize: 12,
+    ...Typography.bodyMuted,
     color: '#334155',
-    lineHeight: 16,
-    fontWeight: '500',
   },
   suitabilityTextAshubh: {
     color: '#9f1239',
@@ -2982,27 +3362,29 @@ const styles = StyleSheet.create({
   quickChipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 10,
+    gap: 8,
+    marginBottom: 12,
     backgroundColor: 'transparent',
   },
   suggestionChip: {
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
     backgroundColor: '#f4f4f5',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#e4e4e7',
   },
   suggestionChipText: {
-    fontSize: 11,
-    color: '#52525b',
+    fontSize: 13.5,
+    color: '#3f3f46',
     fontWeight: '600',
   },
   slotProgressBadge: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#fde68a',
@@ -3012,7 +3394,7 @@ const styles = StyleSheet.create({
     borderColor: '#86efac',
   },
   slotProgressBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#b45309',
   },
@@ -3020,7 +3402,7 @@ const styles = StyleSheet.create({
     color: '#15803d',
   },
   slotTodoList: {
-    marginBottom: 8,
+    marginBottom: 10,
     backgroundColor: '#f8fafc',
     borderRadius: 12,
     paddingHorizontal: 10,
@@ -3031,20 +3413,23 @@ const styles = StyleSheet.create({
   todoItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
     paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
   todoCheckboxBtn: {
-    paddingRight: 8,
-    paddingVertical: 2,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   todoItemText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1e293b',
-    lineHeight: 18,
+    lineHeight: 21,
   },
   todoItemTextDone: {
     textDecorationLine: 'line-through',
@@ -3052,8 +3437,11 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   todoDeleteBtn: {
-    padding: 4,
-    marginLeft: 6,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
   },
   addTodoInputRow: {
     flexDirection: 'row',
@@ -3062,27 +3450,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e4e4e7',
-    minHeight: 40,
-    paddingHorizontal: 4,
+    minHeight: COMFORT_TOUCH_TARGET,
+    paddingHorizontal: 6,
   },
   addTodoTextInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: '#18181b',
     fontWeight: '500',
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 10,
   },
   addTodoSubmitBtn: {
+    minHeight: MIN_TOUCH_TARGET - 4,
+    justifyContent: 'center',
     backgroundColor: '#b45309',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginRight: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginRight: 2,
   },
   addTodoSubmitBtnText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
   },
   inputRow: {
@@ -3123,27 +3513,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 52,
     backgroundColor: '#ffffff',
     borderRadius: 18,
-    padding: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e4e4e7',
   },
   limbsHeaderText: {
-    fontSize: 14,
-    fontWeight: '700',
+    ...Typography.cardTitle,
     color: '#18181b',
+    flexShrink: 1,
   },
   limbsContainer: {
-    gap: 8,
+    gap: 10,
     marginBottom: 16,
     backgroundColor: 'transparent',
   },
   limbCard: {
     backgroundColor: '#ffffff',
     borderRadius: 14,
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#e4e4e7',
   },
@@ -3151,25 +3543,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 5,
     backgroundColor: 'transparent',
   },
   limbIndex: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#52525b',
   },
   limbStatus: {
-    fontSize: 10,
+    fontSize: 12.5,
     fontWeight: '700',
-    color: '#d97706',
+    color: '#b45309',
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   limbName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '800',
     color: '#18181b',
   },
@@ -3177,24 +3571,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 6,
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
     backgroundColor: 'transparent',
   },
   limbEnd: {
-    fontSize: 11,
-    color: '#71717a',
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#52525b',
+    fontWeight: '600',
   },
   limbDeity: {
-    fontSize: 11,
-    color: '#71717a',
+    fontSize: 13,
+    color: '#52525b',
     fontWeight: '600',
   },
 
   // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -3203,7 +3599,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     padding: 20,
     paddingBottom: 32,
-    maxHeight: '85%',
+    maxHeight: '88%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -3212,41 +3608,53 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     backgroundColor: 'transparent',
   },
+  modalCloseBtn: {
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: MIN_TOUCH_TARGET / 2,
+    backgroundColor: '#f4f4f5',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    ...Typography.sectionHeading,
+    fontSize: 19,
     color: '#18181b',
   },
   modalSubtitle: {
-    fontSize: 12,
+    ...Typography.bodyMuted,
     color: '#71717a',
     marginTop: 2,
   },
   sankalpaPillHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
     backgroundColor: '#fef3c7',
-    padding: 8,
+    padding: 10,
     borderRadius: 10,
     marginBottom: 12,
   },
   sankalpaPillLocation: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: '#b45309',
   },
   sankalpaPillDate: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#92400e',
   },
   sankalpaSanskrit: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 15.5,
+    lineHeight: 24,
     color: '#18181b',
     fontWeight: '600',
     backgroundColor: '#fafaf9',
-    padding: 12,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e7e5e4',
@@ -3257,14 +3665,13 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   meaningLabel: {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#71717a',
+    color: '#52525b',
     marginBottom: 4,
   },
   meaningText: {
-    fontSize: 13,
-    lineHeight: 19,
+    ...Typography.body,
     color: '#27272a',
   },
   modalFooterBtns: {
@@ -3275,56 +3682,50 @@ const styles = StyleSheet.create({
   },
   shareBtn: {
     flex: 1,
+    minWidth: 96,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#25d366',
+    backgroundColor: '#16a34a',
     paddingVertical: 13,
+    paddingHorizontal: 10,
     borderRadius: 16,
   },
   shareBtnText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '700',
   },
   doneBtn: {
     flex: 1,
-    minHeight: 48,
-    backgroundColor: '#b45309', // Sacred Kesariya / Amber instead of jet black
+    minWidth: 96,
+    minHeight: COMFORT_TOUCH_TARGET,
+    backgroundColor: '#b45309',
     paddingVertical: 13,
+    paddingHorizontal: 10,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#b45309',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
   },
   doneBtnText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '700',
   },
   sadhanaDoneBtn: {
     width: '100%',
     minHeight: 52,
-    backgroundColor: '#047857', // Sacred emerald green matching completed habits
+    backgroundColor: '#047857',
     paddingVertical: 14,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,
-    shadowColor: '#047857',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
   },
   sadhanaDoneBtnText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
   },
@@ -3334,8 +3735,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minHeight: 64,
     backgroundColor: '#fafafa',
-    padding: 12,
+    padding: 14,
     borderRadius: 16,
     marginBottom: 10,
     borderWidth: 1,
@@ -3346,9 +3748,9 @@ const styles = StyleSheet.create({
     borderColor: '#86efac',
   },
   habitIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: '#fef3c7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -3357,7 +3759,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#10b981',
   },
   habitTitle: {
-    fontSize: 14,
+    fontSize: 15.5,
     fontWeight: '700',
     color: '#18181b',
   },
@@ -3365,52 +3767,52 @@ const styles = StyleSheet.create({
     color: '#047857',
   },
   habitDesc: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 2,
-    lineHeight: 15,
+    fontSize: 13.5,
+    color: '#52525b',
+    marginTop: 3,
+    lineHeight: 19,
   },
   habitTime: {
-    fontSize: 10,
-    color: '#d97706',
-    fontWeight: '600',
-    marginTop: 4,
+    fontSize: 12.5,
+    color: '#b45309',
+    fontWeight: '700',
+    marginTop: 5,
   },
 
   // Verse Modal
   contextPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     backgroundColor: '#fef3c7',
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
     marginBottom: 10,
   },
   contextPillText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#b45309',
   },
   verseSanskrit: {
-    fontSize: 15,
+    fontSize: 16.5,
     fontWeight: '700',
     color: '#18181b',
-    lineHeight: 24,
+    lineHeight: 26,
     backgroundColor: '#fffbeb',
-    padding: 12,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#fde68a',
   },
   verseTranslit: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#78350f',
     fontStyle: 'italic',
-    marginTop: 8,
-    lineHeight: 18,
+    marginTop: 10,
+    lineHeight: 21,
   },
 
   // City Modal

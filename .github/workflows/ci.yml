@@ -2,14 +2,17 @@ name: CI
 
 on:
   push:
-    branches: [main, Phase2-issue-fix-3]
+    branches: [main, Phase2-issue-fix-3, feature/app-tour]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   validate:
-    name: Typecheck & Automated Test Suite
+    name: Typecheck, Lint, Quality Gate, Coverage & Bundle Export
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Kolkata
 
     steps:
       - name: Checkout Code
@@ -27,5 +30,56 @@ jobs:
       - name: Verify TypeScript Typecheck
         run: npm run typecheck
 
-      - name: Run Jest Test Suites
-        run: npm test
+      - name: Verify Zero-Warning ESLint
+        run: npm run lint:strict
+
+      - name: Run Repository Quality & Tour Integrity Gate
+        run: npm run check:quality
+
+      - name: Run Full Jest Suite (Unit, Component, Screen, E2E, Visual) with Coverage Thresholds
+        run: npm run test:ci
+
+      - name: Validate Public Expo Config & Android Release JS Bundle Export
+        run: npm run build:validate
+
+      - name: Upload Coverage & Visual Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage-and-baselines
+          path: |
+            coverage/
+            __tests__/visual/baselines/
+          retention-days: 14
+
+  maestro-e2e:
+    name: Real-Device Maestro E2E & Pixel Screenshot Validation
+    runs-on: macos-latest
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies & Maestro CLI
+        run: |
+          npm ci
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Boot iOS Simulator & Build Preview App
+        run: |
+          npx expo prebuild --platform ios --non-interactive
+          npx expo run:ios --configuration Release
+
+      - name: Execute Maestro End-to-End Suites
+        run: maestro test .maestro/
+
+      - name: Verify Device Visual PNG Diffs
+        run: npm run test:visual:png
